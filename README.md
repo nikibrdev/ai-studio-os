@@ -107,7 +107,7 @@ ai-studio-os/
 
 ### Лицензия
 
-Лицензия будет определена до первого публичного релиза (см. Open Questions в отчёте этапа Foundation). Файл [LICENSE](LICENSE) содержит placeholder.
+Проект распространяется под лицензией **Apache License 2.0** — см. [LICENSE](LICENSE) и [ADR-001](docs/adr/ADR-001-license.md). Контрибуции принимаются на условиях той же лицензии.
 
 ## Статус
 

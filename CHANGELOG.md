@@ -31,6 +31,7 @@
 - EPIC-002 Foundation: Go-модуль `ai-studio-os` (go.mod, `.golangci.yml`, Makefile) и контракты ядра — интерфейсы без реализации: `internal/core` (EventBus, Agent, Tool, Workflow, RepositoryProvider, MemoryProvider, словари Role/TaskState) и доменные пакеты `internal/domain/{task,project,event,workflow}` (TASK-001…TASK-011).
 - По итогам code review EPIC-002: слоистая структура `internal/{core,domain,application,infrastructure}`; Agent → `Execute(ctx, Request) (Response, error)` с абстрактными Request/Response до ADR-005; Engine/Reader → Commands/Queries; `make verify` (gofumpt → golangci-lint → vet → test → markdownlint → docs/Mermaid, `scripts/verify-docs.sh`); README в каждом модуле; каталог `engineering/` (reviews, retrospective, decisions, metrics); процесс «план → утверждение → код → ревью → merge» закреплён в CLAUDE.md.
 - ADR-015 (принят): `internal/core` упразднён — платформенные абстракции → `internal/platform` (EventBus, Agent, Tool, MemoryProvider, RepositoryProvider), язык домена → `internal/domain/shared` (Role, TaskState), контракт Workflow → `workflow.Rules`; слои domain → application → platform → infrastructure.
+- ADR-001 (принят): лицензия **Apache License 2.0**; полный текст в LICENSE.
 
 #### Changed
 
