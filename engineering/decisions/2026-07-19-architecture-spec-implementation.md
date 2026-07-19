@@ -29,6 +29,15 @@
 
 Место хранения спецификаций: раздел в README модуля или отдельные файлы (например, `docs/architecture/specs/`) — уточнить при первой спецификации (Domain Layer).
 
+### Дополнение 2026-07-19: вопрос решён архитектором
+
+Приняты **оба уровня с разными ролями**:
+
+- **README в модуле** — краткая документация разработчика (1–2 страницы): назначение, зависимости, экспортируемые сущности, ограничения, ссылки.
+- **Specification в `docs/specifications/<слой>/<модуль>.md`** — полноценное ТЗ: требования, сценарии, инварианты, события, ограничения, будущие расширения. Каталог: `docs/specifications/{domain,application,platform,infrastructure}`. Именно отсюда Claude Code берёт требования перед реализацией.
+
+Введено **правило нового пакета**: пакет не появляется без README + Specification + TASK + Acceptance Criteria ([docs/specifications/README.md](../../docs/specifications/README.md)); шаблон — [Specification.md](../../.claude/templates/Specification.md).
+
 ## Статус
 
 Актуален

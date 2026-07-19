@@ -55,7 +55,12 @@ ai-studio-os/
 │   ├── api/                     # Документация API (placeholder)
 │   ├── development/             # Процессы разработки
 │   ├── operations/              # Эксплуатация (placeholder)
-│   └── roadmap/                 # Детализация roadmap (placeholder)
+│   ├── roadmap/                 # Детализация roadmap, эпики
+│   └── specifications/          # Полные спецификации модулей (ТЗ)
+│       ├── domain/
+│       ├── application/
+│       ├── platform/
+│       └── infrastructure/
 ├── docker/                      # Docker-конфигурация (наполняется позже)
 ├── scripts/                     # Служебные скрипты
 ├── examples/                    # Примеры использования
@@ -64,8 +69,9 @@ ai-studio-os/
 ├── CONSTITUTION.md              # Конституция проекта
 ├── ROADMAP.md
 ├── CHANGELOG.md
-├── LICENSE                      # Placeholder до выбора лицензии
+├── LICENSE                      # Apache License 2.0 (ADR-001)
 ├── Makefile
+├── .gitattributes
 └── .gitignore
 ```
 

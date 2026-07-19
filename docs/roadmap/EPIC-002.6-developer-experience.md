@@ -22,20 +22,20 @@
 
 - Domain Layer и прикладной код; CI (это EPIC-002.5); деплой.
 
-## Декомпозиция (предварительная)
+## Декомпозиция
 
 | Задача | Содержание |
 |---|---|
-| TASK-021 | Pre-commit хук `make verify` (git hooks + установка через setup-скрипт) |
+| TASK-021 | Git-хуки по уровням ([решение](../../engineering/decisions/2026-07-19-quality-gates.md)): pre-commit — gofumpt → golangci-lint → go vet; pre-push — полный `make verify`; установка хуков через setup-скрипт |
 | TASK-022 | `.editorconfig` |
 | TASK-023 | `.vscode/extensions.json` + `.vscode/tasks.json` |
-| TASK-024 | Devcontainer (если подтверждено) |
+| TASK-024 | Devcontainer — минимальный: Go 1.24, Node LTS, pnpm, golangci-lint, gofumpt, markdownlint, Git, Make; без PostgreSQL/Redis/Qdrant (инфраструктура — отдельно через Docker Compose) |
 | TASK-025 | `scripts/setup` + `docs/development/onboarding.md` («клонируй → одна команда → готов») |
 
-## Вопросы до старта
+## Решения по вопросам (приняты 2026-07-19)
 
-1. Devcontainer: делаем сейчас или откладываем? («если захотите использовать» — нужно подтверждение).
-2. Pre-commit: полный `make verify` (медленнее, надёжнее) или быстрый набор (fmt + lint + vet), а полный — в CI?
+1. Devcontainer — **делаем сразу**, минимальный (состав в TASK-024); отвечает только за среду разработки.
+2. Pre-commit — **быстрый набор** (fmt + lint + vet, секунды); полный `make verify` — на pre-push и обязательно в GitHub Actions, без исключений.
 
 ## Критерии завершения
 

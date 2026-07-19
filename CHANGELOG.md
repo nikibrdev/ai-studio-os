@@ -32,6 +32,9 @@
 - По итогам code review EPIC-002: слоистая структура `internal/{core,domain,application,infrastructure}`; Agent → `Execute(ctx, Request) (Response, error)` с абстрактными Request/Response до ADR-005; Engine/Reader → Commands/Queries; `make verify` (gofumpt → golangci-lint → vet → test → markdownlint → docs/Mermaid, `scripts/verify-docs.sh`); README в каждом модуле; каталог `engineering/` (reviews, retrospective, decisions, metrics); процесс «план → утверждение → код → ревью → merge» закреплён в CLAUDE.md.
 - ADR-015 (принят): `internal/core` упразднён — платформенные абстракции → `internal/platform` (EventBus, Agent, Tool, MemoryProvider, RepositoryProvider), язык домена → `internal/domain/shared` (Role, TaskState), контракт Workflow → `workflow.Rules`; слои domain → application → platform → infrastructure.
 - ADR-001 (принят): лицензия **Apache License 2.0**; полный текст в LICENSE.
+- Двухуровневая документация модулей: краткий README в модуле + полная спецификация в `docs/specifications/{domain,application,platform,infrastructure}` (шаблон Specification.md); правило нового пакета: README + Specification + TASK + Acceptance Criteria.
+- Уровни проверок: pre-commit (fmt+lint+vet) → pre-push (`make verify`) → GitHub Actions (`make verify`, без исключений); devcontainer подтверждён (минимальный состав); `.gitattributes` с нормализацией окончаний строк.
+- Правило необратимости архитектурных решений закреплено в шаблоне ADR и engineering/decisions.
 
 #### Changed
 
