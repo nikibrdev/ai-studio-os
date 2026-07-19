@@ -35,6 +35,9 @@
 - Двухуровневая документация модулей: краткий README в модуле + полная спецификация в `docs/specifications/{domain,application,platform,infrastructure}` (шаблон Specification.md); правило нового пакета: README + Specification + TASK + Acceptance Criteria.
 - Уровни проверок: pre-commit (fmt+lint+vet) → pre-push (`make verify`) → GitHub Actions (`make verify`, без исключений); devcontainer подтверждён (минимальный состав); `.gitattributes` с нормализацией окончаний строк.
 - Правило необратимости архитектурных решений закреплено в шаблоне ADR и engineering/decisions.
+- Паспорт проекта PROJECT_MANIFEST.md, прогресс PROJECT_HEALTH.md, индекс решений docs/adr/DECISIONS_INDEX.md.
+- Запрет прямых коммитов в `main` без исключений (feature branch → PR → Review → Merge, даже соло; ревью может выполнять Claude).
+- Метрики: `make metrics` (scripts/metrics.sh) — снимки в engineering/metrics/; первый снимок 2026-07-20.
 
 #### Changed
 

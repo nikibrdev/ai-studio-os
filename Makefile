@@ -4,7 +4,7 @@
 # make verify — полная проверка одной командой:
 #   gofumpt -> golangci-lint -> go vet -> go test -> markdownlint -> docs (ссылки + Mermaid)
 
-.PHONY: help build vet fmt fmt-check lint test md-lint docs-check verify
+.PHONY: help build vet fmt fmt-check lint test md-lint docs-check verify metrics
 
 help: ## Показать список целей
 	@echo "AI Studio OS"
@@ -18,6 +18,7 @@ help: ## Показать список целей
 	@echo "  make md-lint    - markdownlint (npx; в CI обязателен)"
 	@echo "  make docs-check - ссылки и Mermaid в документации"
 	@echo "  make verify     - все проверки одной командой"
+	@echo "  make metrics    - снимок метрик в engineering/metrics/"
 
 build:
 	go build ./...
@@ -46,3 +47,6 @@ docs-check:
 verify: fmt-check lint vet test md-lint docs-check
 	@echo ""
 	@echo "verify: все проверки пройдены"
+
+metrics:
+	@bash scripts/metrics.sh

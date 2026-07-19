@@ -65,6 +65,8 @@ ai-studio-os/
 ├── scripts/                     # Служебные скрипты
 ├── examples/                    # Примеры использования
 ├── README.md
+├── PROJECT_MANIFEST.md          # Паспорт проекта (версия, эпик, состояние слоёв)
+├── PROJECT_HEALTH.md            # Прогресс по направлениям
 ├── CLAUDE.md                    # Инструкция для Claude Code
 ├── CONSTITUTION.md              # Конституция проекта
 ├── ROADMAP.md

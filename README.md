@@ -31,7 +31,7 @@ Developer по умолчанию реализуется через Claude Code,
 
 **Архитектура заморожена (Architecture Freeze, 2026-07-19); начата реализация.**
 
-Пять блокирующих архитектурных решений приняты ([docs/adr/](docs/adr/): ADR-002, 003, 004, 009, 014); архитектурная документация ([docs/architecture/](docs/architecture/)) — единственный источник истины для реализации. Идёт EPIC-002 Foundation: контракты ядра (`internal/core`) — только интерфейсы, без логики.
+Актуальное состояние проекта одним взглядом: **[PROJECT_MANIFEST.md](PROJECT_MANIFEST.md)** (паспорт), **[PROJECT_HEALTH.md](PROJECT_HEALTH.md)** (прогресс), **[индекс решений](docs/adr/DECISIONS_INDEX.md)**. Архитектура заморожена; контракты ядра готовы (интерфейсы без логики); идёт EPIC-002.5 Engineering Platform.
 
 ### Архитектурные принципы
 

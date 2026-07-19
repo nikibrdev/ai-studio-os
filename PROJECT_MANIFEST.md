@@ -1,0 +1,55 @@
+# PROJECT_MANIFEST — паспорт проекта
+
+## Назначение
+
+Единый документ, отвечающий на вопрос «что сейчас представляет собой проект»: версия, статус, текущий эпик, состояние слоёв и качества. Обновляется в каждом изменении, меняющем состояние проекта (в том же PR).
+
+## Содержание
+
+### Паспорт
+
+| Поле | Значение |
+|---|---|
+| **Project** | AI Studio OS |
+| **Version** | v0.2 (архитектура; кодовая база — pre-release, только контракты) |
+| **Status** | **Architecture Frozen** (2026-07-19) |
+| **Current Epic** | [EPIC-002.5 Engineering Platform](docs/roadmap/EPIC-002.5-engineering-platform.md) |
+| **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
+| **Current Branch** | main |
+| **License** | Apache License 2.0 ([ADR-001](docs/adr/ADR-001-license.md)) |
+
+### Состояние слоёв и компонентов
+
+| Компонент | Состояние |
+|---|---|
+| Architecture | **Frozen** (ADR-002, 003, 004, 009, 014, 015 приняты) |
+| Domain | Contracts ready; логика Not Started (EPIC-003) |
+| Application | Not Started |
+| Platform (контракты) | Contracts ready |
+| Infrastructure | Not Started |
+| API | Not Started (REST, после Application) |
+| Dashboard | Not Started (v0.6) |
+| Developer Engine | Planning (v0.3; блокеры — ADR-005, ADR-006) |
+| Workflow | State machine спроектирована; контракты готовы; реализация Not Started |
+
+### Контрольные точки
+
+| Поле | Значение |
+|---|---|
+| **Last ADR** | [ADR-015](docs/adr/ADR-015-internal-layering.md) (internal layering) |
+| **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
+| **Quality** | All checks passed: gofumpt, golangci-lint (0 issues), go vet, go build, docs (0 битых ссылок) |
+| **Открытые решения** | 8 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
+| **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
+
+### Правило обновления
+
+Манифест — часть Definition of Done для изменений, затрагивающих: версию, эпик, состояние слоя, последний ADR/ревью. Устаревший манифест — блокирующее замечание ревью.
+
+## Статус
+
+Актуален
+
+## Последнее обновление
+
+2026-07-19
