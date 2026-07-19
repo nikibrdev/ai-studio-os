@@ -16,6 +16,7 @@
 | **Current Epic** | [EPIC-002.5 Engineering Platform](docs/roadmap/EPIC-002.5-engineering-platform.md) |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
+| **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
 | **License** | Apache License 2.0 ([ADR-001](docs/adr/ADR-001-license.md)) |
 
 ### Состояние слоёв и компонентов
