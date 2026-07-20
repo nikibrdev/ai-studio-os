@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Единая терминология проекта. Все документы и код используют термины в значениях, определённых здесь. Полные описания сущностей — [docs/architecture/domain-model.md](../../docs/architecture/domain-model.md).
+Единая терминология проекта. Все документы и код используют термины в значениях, определённых здесь. Полные описания сущностей — [docs/architecture/domain-model.md](../../docs/architecture/domain-model.md); ключевые понятия предметной области как бизнес-концепции (Ubiquitous Language, DDD) — [docs/domain/ubiquitous-language.md](../../docs/domain/ubiquitous-language.md).
 
 ## Содержание
 
@@ -58,4 +58,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

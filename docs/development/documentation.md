@@ -33,12 +33,13 @@
 | `docs/architecture/` | Архитектура системы |
 | `docs/adr/` | Архитектурные решения (ADR) |
 | `docs/development/` | Процессы разработки |
+| `docs/domain/` | Единый язык предметной области и границы контекстов (Ubiquitous Language, Bounded Contexts) |
 | `docs/specifications/` | Полные спецификации модулей (ТЗ для реализации) |
 | `docs/api/` | Документация API (с v0.2+) |
 | `docs/operations/` | Эксплуатация (позже) |
 | `docs/roadmap/` | Детализация roadmap |
 | `.claude/` | Документы, управляющие поведением AI-агентов |
-| Корень | README, CONSTITUTION, CLAUDE, ROADMAP, CHANGELOG |
+| Корень | README, VISION, CONSTITUTION, CLAUDE, CONTRIBUTING, ROADMAP, CHANGELOG, PROJECT_MANIFEST, PROJECT_HEALTH |
 
 Правило разграничения: `docs/` описывает систему; `.claude/` управляет агентами.
 
@@ -77,4 +78,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
