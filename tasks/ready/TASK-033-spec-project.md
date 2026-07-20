@@ -30,7 +30,8 @@ Project — пятый, последний модуль в порядке про
 
 ## Критерии приёмки
 
-- [ ] Спецификация содержит все 12 обязательных разделов Specification-Domain.md.
+- [ ] Спецификация содержит все 16 обязательных разделов Specification-Domain.md.
+- [ ] Пройдены три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md).
 - [ ] Согласована с уже принятым кодом `internal/domain/project` — расхождения (если есть) зафиксированы как Open Questions.
 - [ ] Непротиворечива с ADR-013, domain-model.md, утверждёнными спецификациями Artifact (TASK-029) и Task (TASK-032).
 - [ ] Статус спецификации — «Утверждена».
@@ -55,3 +56,4 @@ Project — пятый, последний модуль в порядке про
 
 2026-07-20 — Architect — EPIC-003 открыт в режиме Domain Specifications First; задача поставлена в очередь (пятая по порядку проектирования).
 2026-07-20 — Architect — введён Domain Specification Review (12 обязательных разделов, Specification-Domain.md); задача синхронизирована с новым шаблоном перед стартом.
+2026-07-20 — Architect — введён Three-Pass Review (+4 раздела до 16, три прохода проверки, сознательный темп).
