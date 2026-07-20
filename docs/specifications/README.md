@@ -38,6 +38,10 @@ docs/specifications/
 
 Задача на реализацию без спецификации не соответствует Definition of Ready.
 
+### Усиленное требование для Domain Layer
+
+Начиная с v0.3 (Domain Layer, EPIC-003) спецификация доменного пакета обязательно содержит: назначение, инварианты, **допустимые состояния** (для пакетов с жизненным циклом), входные/выходные события, Acceptance Criteria — и должна быть **утверждена** до начала реализации. Цикл: Architecture → Specification → Implementation → Review → Merge. Решение: [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md).
+
 ## Статус
 
 Актуален
