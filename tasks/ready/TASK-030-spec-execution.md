@@ -30,7 +30,8 @@ Execution — второй модуль в порядке проектирова
 
 ## Критерии приёмки
 
-- [ ] Спецификация содержит все 12 обязательных разделов Specification-Domain.md.
+- [ ] Спецификация содержит все 16 обязательных разделов Specification-Domain.md.
+- [ ] Пройдены три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md).
 - [ ] Непротиворечива с ADR-005, ADR-016, domain-model.md и утверждённой спецификацией Artifact (TASK-029).
 - [ ] Статус спецификации — «Утверждена».
 - [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
@@ -54,3 +55,4 @@ Execution — второй модуль в порядке проектирова
 
 2026-07-20 — Architect — EPIC-003 открыт в режиме Domain Specifications First; задача поставлена в очередь (вторая по порядку проектирования).
 2026-07-20 — Architect — введён Domain Specification Review (12 обязательных разделов, Specification-Domain.md); задача синхронизирована с новым шаблоном перед стартом.
+2026-07-20 — Architect — введён Three-Pass Review (+4 раздела до 16, три прохода проверки, сознательный темп).

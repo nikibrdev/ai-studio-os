@@ -12,7 +12,7 @@
 
 ### Этап 1 — Domain Specifications (текущий; без кода)
 
-Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — Domain Specification Review, 12 обязательных разделов ([решение](../../engineering/decisions/2026-07-20-domain-specification-review.md), расширяет [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)): Purpose, Responsibilities, Invariants, Lifecycle, Relationships, Domain Events, Commands, Queries, Acceptance Criteria, Future Extensions, Anti-Responsibilities, Decision Log. Порядок написания — по порядку проектирования из ADR-016/domain-model.md:
+Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — 16 обязательных разделов ([решение 1](../../engineering/decisions/2026-07-20-domain-specification-review.md), [решение 2](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), расширяют [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)): Purpose, Responsibilities, Invariants, Lifecycle, Relationships, Domain Events, Commands, Queries, Examples, Acceptance Criteria, Future Extensions, Anti-Responsibilities, Non-Goals, Removal Test, Decision Log, Open Questions. Перед утверждением каждая спецификация проходит [три независимых прохода проверки](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency, Future-proof Review). Ожидаемый темп — сознательно небольшой: одна спецификация может занять несколько PR, если по ходу работы возникают вопросы о жизненном цикле, инвариантах или связях — это признак процесса, а не задержка. Порядок написания — по порядку проектирования из ADR-016/domain-model.md:
 
 1. `Artifact` (`docs/specifications/domain/artifact.md`)
 2. `Execution` (`docs/specifications/domain/execution.md`)
@@ -32,7 +32,8 @@
 
 ## Критерии завершения (этап 1)
 
-- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 12 разделов Domain Specification Review в каждой.
+- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 16 разделов в каждой.
+- [ ] Каждая спецификация прошла три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency, Future-proof Review).
 - [ ] Каждая спецификация непротиворечива с уже принятыми ADR-005/ADR-016/domain-model.md и друг с другом (например: `ExecutorTask`/`Artifact`/`ExecutionStatus` в спецификации Execution/Executor не противоречат абстрактным типам `internal/platform`).
 - [ ] Все пять спецификаций явно утверждены архитектором (статус «Утверждена», не «Черновик»).
 - [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
@@ -50,7 +51,8 @@
 ## Риски и зависимости
 
 - Спецификации Task/Project пишутся поверх уже существующего кода ([internal/domain/task](../../internal/domain/task/), [internal/domain/project](../../internal/domain/project/)) — риск обнаружить расхождение между кодом и новым порядком/решениями (ADR-016 и т.д.); если найдено — фиксируется как Open Question, код в рамках этапа 1 не трогается.
-- Спецификации Artifact/Execution/Executor взаимозависимы (Execution ссылается на Artifact и использует Executor) — пишутся и утверждаются по отдельности (один PR — одна задача), но проверяются на согласованность друг с другом перед утверждением каждой следующей.
+- Спецификации Artifact/Execution/Executor взаимозависимы (Execution ссылается на Artifact и использует Executor) — утверждаются по отдельности, но проверяются на согласованность друг с другом перед утверждением каждой следующей.
+- Одна задача (например, TASK-029) может закрываться несколькими PR, если по ходу работы возникают вопросы, требующие решения архитектора, — сознательно принятый риск против скорости ([решение](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md)).
 
 ## Статус
 
