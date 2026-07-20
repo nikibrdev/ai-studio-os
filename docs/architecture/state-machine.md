@@ -42,7 +42,7 @@ stateDiagram-v2
 ### Состояния
 
 | Состояние | Смысл | Терминальное |
-|---|---|---|
+| --- | --- | --- |
 | Backlog | Задача зафиксирована, но не готова к работе | нет |
 | Ready | Definition of Ready выполнен; задачу можно брать в работу | нет |
 | In Progress | Исполнитель роли Developer выполняет задачу | нет |
@@ -56,7 +56,7 @@ stateDiagram-v2
 ### Правила переходов
 
 | Переход | Инициатор | Условие (guard) | Событие |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | → Backlog (создание) | Любая роль | Задача оформлена по шаблону Task | TaskCreated |
 | Backlog → Ready | Project Manager | Definition of Ready выполнен | TaskPlanned |
 | Ready → Backlog | Project Manager | Требования изменились, DoR нарушен | TaskReturnedToBacklog |

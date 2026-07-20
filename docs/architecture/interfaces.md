@@ -82,7 +82,7 @@
 ### Сводная таблица
 
 | Интерфейс | Кто реализует | Кто использует | Статус решений |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Agent | Адаптеры в `agents/` | Orchestrator, модуль `execution` | ADR-005, ADR-006 — Decision Required |
 | Tool | Реализации в `tools/` | Агенты (через Tool Layer) | детали — v0.8 |
 | Event Bus | In-Memory (MVP); позже Redis Streams / NATS | Все модули Core, Orchestrator | ADR-002 — принято |

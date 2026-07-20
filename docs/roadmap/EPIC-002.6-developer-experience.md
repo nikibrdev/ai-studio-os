@@ -25,7 +25,7 @@
 ## Декомпозиция
 
 | Задача | Содержание |
-|---|---|
+| --- | --- |
 | TASK-021 | Git-хуки по уровням ([решение](../../engineering/decisions/2026-07-19-quality-gates.md)): pre-commit — gofumpt → golangci-lint → go vet; pre-push — полный `make verify`; установка хуков через setup-скрипт |
 | TASK-022 | `.editorconfig` |
 | TASK-023 | `.vscode/extensions.json` + `.vscode/tasks.json` |

@@ -28,7 +28,7 @@
 ## Декомпозиция
 
 | Задача | Содержание | Зависимости |
-|---|---|---|
+| --- | --- | --- |
 | TASK-012 | `git init`, первый коммит (Conventional Commits), ветка `main`, создание GitHub-репозитория, push | решения по вопросам 1–3 ниже |
 | TASK-013 | `.github/workflows/verify.yml`: make verify (Go 1.24, golangci-lint, gofumpt, node для markdownlint) на PR и push | TASK-012 |
 | TASK-014 | CODEOWNERS (владелец — мейнтейнер; на `docs/adr/` и `CONSTITUTION.md` — только мейнтейнер) | вопрос 3 |

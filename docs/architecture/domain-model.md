@@ -229,7 +229,7 @@ classDiagram
 ### Сводная таблица владения данными
 
 | Модуль | Сущности |
-|---|---|
+| --- | --- |
 | `project` | Project (+ назначения исполнителей ролей в проекте) |
 | `task` | Epic, Task |
 | `workflow` | Workflow, WorkflowStep, Role |

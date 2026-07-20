@@ -9,7 +9,7 @@
 ### Паспорт
 
 | Поле | Значение |
-|---|---|
+| --- | --- |
 | **Project** | AI Studio OS |
 | **Version** | v0.2 (архитектура; кодовая база — pre-release, только контракты) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
@@ -22,7 +22,7 @@
 ### Состояние слоёв и компонентов
 
 | Компонент | Состояние |
-|---|---|
+| --- | --- |
 | Architecture | **Frozen** (ADR-002, 003, 004, 009, 014, 015 приняты) |
 | Domain | Contracts ready; логика Not Started (EPIC-003) |
 | Application | Not Started |
@@ -36,7 +36,7 @@
 ### Контрольные точки
 
 | Поле | Значение |
-|---|---|
+| --- | --- |
 | **Last ADR** | [ADR-015](docs/adr/ADR-015-internal-layering.md) (internal layering) |
 | **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена (прямой push отклонён, force-push/удаление запрещены) |

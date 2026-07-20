@@ -46,7 +46,7 @@ flowchart TB
 ### Карта архитектурной документации
 
 | Документ | Содержание |
-|---|---|
+| --- | --- |
 | [system-design.md](system-design.md) | Системный дизайн: приложения, хранилища, потоки |
 | [components.md](components.md) | Компоненты и их ответственность (+ Component Diagram) |
 | [core.md](core.md) | Состав ядра, управление состоянием, зависимости |
@@ -69,7 +69,7 @@ flowchart TB
 **Архитектура заморожена 2026-07-19.** Пять блокирующих ADR приняты решением архитектора проекта:
 
 | ADR | Решение |
-|---|---|
+| --- | --- |
 | [ADR-002](../adr/ADR-002-event-delivery.md) | In-Memory Event Bus; интерфейс неизменен; будущая замена — Redis Streams / NATS |
 | [ADR-003](../adr/ADR-003-api-protocol.md) | REST API (Dashboard → REST → Go Core) |
 | [ADR-004](../adr/ADR-004-task-storage.md) | PostgreSQL — источник истины задач; `tasks/` — markdown-экспорт |

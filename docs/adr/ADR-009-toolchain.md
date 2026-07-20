@@ -21,7 +21,7 @@
 Зафиксировано:
 
 | Позиция | Решение |
-|---|---|
+| --- | --- |
 | Backend | **Go 1.24** |
 | Frontend | **Next.js 15** |
 | Package Manager (frontend) | **pnpm** |

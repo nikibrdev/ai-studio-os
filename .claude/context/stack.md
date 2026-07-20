@@ -9,7 +9,7 @@
 ### Стек
 
 | Назначение | Технология | Примечание |
-|---|---|---|
+| --- | --- | --- |
 | Backend | **Go 1.24** | единый `go.mod` в корне ([ADR-009](../../docs/adr/ADR-009-toolchain.md)) |
 | Frontend | **Next.js 15** | `apps/dashboard` |
 | Package manager (frontend) | **pnpm** | [ADR-009](../../docs/adr/ADR-009-toolchain.md) |
