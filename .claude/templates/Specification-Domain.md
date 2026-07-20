@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Обязательный шаблон полной спецификации для доменных модулей (`docs/specifications/domain/<module>.md`), усиливающий базовый [Specification.md](Specification.md) девятнадцатью разделами — не «по возможности», а всегда, для каждого модуля EPIC-003 и далее ([Domain Specification Review](../../engineering/decisions/2026-07-20-domain-specification-review.md); дополнено [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md) и [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md), решения архитектора 2026-07-20). Спецификация без одного из этих разделов не соответствует Definition of Ready на реализацию. Перед запросом ревью спецификация проходит [чек-лист трёх проверок](../checklists/DomainSpecificationReview.md).
+Обязательный шаблон полной спецификации для доменных модулей (`docs/specifications/domain/<module>.md`), усиливающий базовый [Specification.md](Specification.md) двадцатью разделами — не «по возможности», а всегда, для каждого модуля EPIC-003 и далее ([Domain Specification Review](../../engineering/decisions/2026-07-20-domain-specification-review.md); дополнено [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md) и [Reference Status](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md), решения архитектора 2026-07-20). Спецификация без одного из этих разделов не соответствует Definition of Ready на реализацию. Перед запросом ревью спецификация проходит [чек-лист трёх проверок](../checklists/DomainSpecificationReview.md).
 
 **Главный принцип** ([Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md)): цель — не завершить документ, а исключить неправильные трактовки сущности. Хорошая спецификация ценна не только тем, что объясняет, чем сущность является, но и тем, что явно показывает, чем она не является, — именно это предотвращает архитектурные ошибки спустя месяцы или годы.
 
@@ -121,12 +121,28 @@ Workflow).>
 
 ## Open Questions
 
-<Обязательный финальный раздел, даже если пуст — явный сигнал, что
-спецификация либо завершена полностью, либо есть нерешённые вопросы.>
+<Обязательный раздел, даже если пуст — явный сигнал, что спецификация
+либо завершена полностью, либо есть нерешённые вопросы.>
+
+## Stability Assessment
+
+<Самый последний раздел документа, короткий. Отвечает не на вопрос
+«что решено», а на вопрос «насколько устойчиво то, что решено»:
+
+- **Current assessment** — Stable for v1 | Provisional | Experimental.
+- **Confidence** — High | Medium | Low.
+- **Known revision triggers** — перечень конкретных будущих событий
+  (обычно совпадает с «Ожидаемыми» из Future Extensions), каждое из
+  которых, скорее всего, потребует пересмотра этой спецификации.
+
+Через годы человек, впервые открывший документ, должен сразу увидеть,
+считается модель устоявшейся или временной — без чтения всего текста.>
 
 ## Статус
 
-<Черновик | Утверждена | Реализована>
+<Черновик | Утверждена | Reference | Реализована — Reference означает
+не просто «утверждена», а «эта спецификация — образец для следующих»;
+присваивается решением архитектора, не автоматически при утверждении.>
 
 ## Последнее обновление
 

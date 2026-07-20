@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Обязательные три независимых прохода проверки для каждой спецификации `docs/specifications/domain/<module>.md` ([Specification-Domain.md](../templates/Specification-Domain.md)) перед переводом статуса в «Утверждена» и запросом ревью. Решения архитектора 2026-07-20: [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md). Не заменяет [PR.md](PR.md) — проходится дополнительно, до него.
+Обязательные три независимых прохода проверки для каждой спецификации `docs/specifications/domain/<module>.md` ([Specification-Domain.md](../templates/Specification-Domain.md)) перед переводом статуса в «Утверждена» и запросом ревью. Решения архитектора 2026-07-20: [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md), [Reference Status](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md) (добавляет Delta Review в Pass 2). Не заменяет [PR.md](PR.md) — проходится дополнительно, до него.
 
 ## Содержание
 
@@ -38,6 +38,14 @@
 - [ ] Domain Events не дублируют и не конфликтуют с каталогом [events.md](../../docs/architecture/events.md).
 - [ ] Anti-Responsibilities этой сущности не противоречат Responsibilities соседних модулей (и наоборот).
 - [ ] Согласованность с принятыми ADR, которые упоминает Decision Log.
+
+**Delta Review** ([решение](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md), обязателен начиная со второй спецификации Domain Layer — TASK-030 и далее; для первой, Artifact, не проводился) — три вопроса относительно всех уже утверждённых спецификаций, в первую очередь Reference:
+
+- [ ] Требует ли новая спецификация изменить уже утверждённую модель?
+- [ ] Использует ли она уже утверждённые понятия одинаковым образом?
+- [ ] Не вводит ли она новое понятие, уже существующее под другим названием?
+
+Если ответ на первый вопрос «да» — изменение утверждённой/Reference спецификации оформляется отдельно (новый ADR, Domain Revision PR или явно обоснованное изменение с этим же Delta Review), а не вносится незаметно.
 
 ### Pass 3 — Future-proof Review
 

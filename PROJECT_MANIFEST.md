@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.3 Domain Layer — этап 1 (Domain Specifications First) в работе ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-003 Domain Layer](docs/roadmap/EPIC-003-domain-layer.md) — этап 1 (Domain Specifications First): TASK-029…033 в `tasks/ready/`, реализация не начинается без утверждения всех пяти спецификаций |
+| **Current Epic** | [EPIC-003 Domain Layer](docs/roadmap/EPIC-003-domain-layer.md) — этап 1 (Domain Specifications First): [Artifact](docs/specifications/domain/artifact.md) утверждена, статус **Reference** (первая доменная спецификация проекта); TASK-030…033 (Execution/Executor/Task/Project) — далее, с обязательным Delta Review |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -24,7 +24,7 @@
 | Компонент | Состояние |
 | --- | --- |
 | Architecture | **Frozen** (ADR-002, 003, 004, 009, 014, 015 приняты) |
-| Domain | Contracts ready; спецификации в работе (EPIC-003, этап 1); логика — Not Started, ждёт утверждения спецификаций |
+| Domain | Contracts ready; первая спецификация утверждена ([Artifact](docs/specifications/domain/artifact.md), Reference); 4 из 5 спецификаций в очереди; логика — Not Started |
 | Application | Not Started |
 | Platform (контракты) | Contracts ready |
 | Infrastructure | Not Started |
