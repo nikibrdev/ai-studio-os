@@ -56,11 +56,11 @@ flowchart TB
 
 #### Orchestrator (`apps/orchestrator/`)
 
-Координатор процесса: назначение исполнителей ролей, запуск агентов (через контракт Agent), реакция на события жизненного цикла задач. Доменных правил и durable-состояния не содержит ([core.md](core.md)).
+Координатор процесса: назначение исполнителей ролей, запуск исполнителей (через контракт Executor), реакция на события жизненного цикла задач. Доменных правил и durable-состояния не содержит ([core.md](core.md)).
 
 #### Ядро (`internal/`)
 
-Структура по слоям ([ADR-015](../adr/ADR-015-internal-layering.md)): `internal/domain/` — предметная область (`shared` — язык домена; модули, концептуальный набор — десять: `project`, `task`, `workflow`, `agent`, `execution`, `tool`, `event`, `memory`, `git`, `identity`), `internal/application`, `internal/platform` (абстракции платформы: EventBus, Agent, Tool, MemoryProvider, RepositoryProvider), `internal/infrastructure`. Ответственность и владение сущностями — [core.md](core.md) и [domain-model.md](domain-model.md); границы — [module-boundaries.md](module-boundaries.md).
+Структура по слоям ([ADR-015](../adr/ADR-015-internal-layering.md)): `internal/domain/` — предметная область (`shared` — язык домена; модули, концептуальный набор — десять: `project`, `task`, `workflow`, `agent`, `execution`, `tool`, `event`, `memory`, `git`, `identity`), `internal/application`, `internal/platform` (абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider), `internal/infrastructure`. Ответственность и владение сущностями — [core.md](core.md) и [domain-model.md](domain-model.md); границы — [module-boundaries.md](module-boundaries.md).
 
 #### Публичные пакеты (`pkg/`)
 
@@ -68,7 +68,7 @@ flowchart TB
 
 #### Агенты (`agents/`)
 
-Адаптеры AI-провайдеров к контракту Agent ([interfaces.md](interfaces.md)); Claude Code — по умолчанию для роли Developer. Контракт — [ADR-005](../adr/ADR-005-agent-adapter-contract.md); среда выполнения — [ADR-006](../adr/ADR-006-agent-execution-environment.md).
+Адаптеры технических бэкендов к контракту Executor ([interfaces.md](interfaces.md)); Claude Code — по умолчанию для роли Developer. Контракт — принято, [ADR-005](../adr/ADR-005-executor-contract.md); среда выполнения — [ADR-006](../adr/ADR-006-agent-execution-environment.md).
 
 #### Инструменты (`tools/`)
 
@@ -98,4 +98,4 @@ flowchart TB
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

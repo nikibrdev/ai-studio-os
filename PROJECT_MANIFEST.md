@@ -30,17 +30,17 @@
 | Infrastructure | Not Started |
 | API | Not Started (REST, после Application) |
 | Dashboard | Not Started (v0.6) |
-| Developer Engine | Planning (v0.3; блокеры — ADR-005, ADR-006) |
+| Developer Engine | Planning (v0.3; ADR-005 принят — Executor Contract; блокер — ADR-006) |
 | Workflow | State machine спроектирована; контракты готовы; реализация Not Started |
 
 ### Контрольные точки
 
 | Поле | Значение |
 | --- | --- |
-| **Last ADR** | [ADR-015](docs/adr/ADR-015-internal-layering.md) (internal layering) |
+| **Last ADR** | [ADR-005](docs/adr/ADR-005-executor-contract.md) (Executor Contract — Accept/Artifacts/Status/Finish; `platform.Agent` → `platform.Executor` в коде) |
 | **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
-| **Открытые решения** | 8 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
+| **Открытые решения** | 7 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
 
 ### Правило обновления
@@ -53,4 +53,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

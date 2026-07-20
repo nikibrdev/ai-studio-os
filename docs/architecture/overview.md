@@ -41,7 +41,7 @@ flowchart TB
 
 1. **Modular Monolith.** Один деплоймент с жёсткими границами модулей ([module-boundaries.md](module-boundaries.md)). Переход к сервисам возможен позже и потребует ADR.
 2. **Event-Driven Architecture.** Модули взаимодействуют через события ([event-model.md](event-model.md), каталог — [events.md](events.md)). Механизм доставки — Decision Required ([ADR-002](../adr/ADR-002-event-delivery.md)).
-3. **Agent-agnostic ядро.** Ядро не знает о конкретных AI-моделях; агенты подключаются через адаптеры ([agents.md](agents.md)); Claude Code — реализация роли Developer по умолчанию.
+3. **Executor-agnostic ядро.** Ядро не знает о конкретных AI-моделях или исполнителях; они подключаются через адаптеры к контракту Executor ([agents.md](agents.md), [ADR-005](../adr/ADR-005-executor-contract.md)); Claude Code — реализация роли Developer по умолчанию.
 4. **Clean Architecture.** Зависимости направлены внутрь; состав ядра — [core.md](core.md).
 5. **Documentation First / Interface First.** Контракты ([interfaces.md](interfaces.md)) и документы создаются раньше реализации.
 
@@ -54,7 +54,7 @@ flowchart TB
 | [core.md](core.md) | Состав ядра, управление состоянием, зависимости |
 | [domain-model.md](domain-model.md) | Сущности домена и владение данными (+ Domain Diagram) |
 | [module-boundaries.md](module-boundaries.md) | Границы модулей: разрешено / запрещено |
-| [interfaces.md](interfaces.md) | Контракты: Agent, Tool, Event Bus, Workflow, Memory, Repository |
+| [interfaces.md](interfaces.md) | Контракты: Executor, Tool, Event Bus, Workflow, Memory, Repository |
 | [state-machine.md](state-machine.md) | Канонический жизненный цикл задачи (+ State Diagram) |
 | [event-model.md](event-model.md) | Принципы событийной модели |
 | [events.md](events.md) | Каталог событий (+ Sequence Diagram) |
@@ -79,11 +79,13 @@ flowchart TB
 | [ADR-009](../adr/ADR-009-toolchain.md) | Go 1.24 · Next.js 15 · pnpm · golangci-lint · gofumpt |
 | [ADR-014](../adr/ADR-014-module-interaction.md) | Все проходят через Core: Core → Events → Workflow → Agent Runtime → Tools |
 
-Замороженная архитектура **не изменяется**; любое изменение — только новым ADR, заменяющим существующий. Реализация ведётся строго по этим документам.
+Замороженная архитектура **не изменяется**; любое изменение — только новым ADR, заменяющим существующий. Реализация ведётся строго по этим документам. (Термин «Agent Runtime» в тексте ADR-014 сохранён дословно как принятое решение; после [ADR-005](../adr/ADR-005-executor-contract.md) в остальных документах используется «Executor Runtime» — суть решения не менялась, обновлена только терминология.)
+
+Полный и актуальный список ADR со статусами — [DECISIONS_INDEX.md](../adr/DECISIONS_INDEX.md).
 
 ### Остающиеся Decision Required
 
-Не блокируют текущую реализацию, решаются перед соответствующими этапами: [ADR-001](../adr/ADR-001-license.md) (лицензия), [ADR-005](../adr/ADR-005-agent-adapter-contract.md) и [ADR-006](../adr/ADR-006-agent-execution-environment.md) (v0.3), [ADR-007](../adr/ADR-007-pm-qa-executors.md), [ADR-008](../adr/ADR-008-git-policies.md), [ADR-010](../adr/ADR-010-documentation-language.md), [ADR-011](../adr/ADR-011-task-identifiers.md), [ADR-012](../adr/ADR-012-identity-and-auth.md), [ADR-013](../adr/ADR-013-managed-projects.md).
+Не блокируют текущую реализацию, решаются перед соответствующими этапами: [ADR-001](../adr/ADR-001-license.md) (лицензия), [ADR-006](../adr/ADR-006-agent-execution-environment.md) (среда выполнения Executor, v0.3), [ADR-007](../adr/ADR-007-pm-qa-executors.md), [ADR-008](../adr/ADR-008-git-policies.md), [ADR-010](../adr/ADR-010-documentation-language.md), [ADR-011](../adr/ADR-011-task-identifiers.md), [ADR-012](../adr/ADR-012-identity-and-auth.md), [ADR-013](../adr/ADR-013-managed-projects.md).
 
 ## Статус
 

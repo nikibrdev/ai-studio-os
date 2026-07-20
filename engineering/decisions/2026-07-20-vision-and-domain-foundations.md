@@ -17,7 +17,7 @@
 3. **Bounded Contexts.** [docs/domain/bounded-contexts.md](../../docs/domain/bounded-contexts.md) — пять контекстов (Planning, Development, Review, Execution, Memory), карта их связей; один открытый вопрос зафиксирован честно (граница контекста Execution — двоякое прочтение исходной формулировки).
 4. **Commands / Events / Queries.** Явное разделение записи, факта и чтения — новый принцип в [engineering-principles.md](../../docs/architecture/engineering-principles.md); формализует уже применённый в EPIC-002 паттерн (`internal/domain/task`).
 5. **Golden Path.** [docs/architecture/golden-path.md](../../docs/architecture/golden-path.md) — эталонный сквозной сценарий; критерий приоритизации: каждый новый модуль оценивается по тому, приближает ли он систему к этому сценарию.
-6. **Агенты — плагины.** Ядро — операционная система для любых Исполнителей (Executor); AI-агент — один из видов Executor'а, не центральное понятие. Переформулировано в [agents.md](../../docs/architecture/agents.md); переименование `platform.Agent` в код не внесено — зафиксировано как терминологический Decision Required к моменту [ADR-005](../../docs/adr/ADR-005-agent-adapter-contract.md).
+6. **Агенты — плагины.** Ядро — операционная система для любых Исполнителей (Executor); AI-агент — один из видов Executor'а, не центральное понятие. Переформулировано в [agents.md](../../docs/architecture/agents.md); переименование `platform.Agent` → `platform.Executor` в код внесено при принятии [ADR-005](../../docs/adr/ADR-005-executor-contract.md) (TASK-026, 2026-07-20).
 
 ### Последствия
 

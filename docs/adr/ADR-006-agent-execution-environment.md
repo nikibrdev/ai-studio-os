@@ -44,4 +44,4 @@
 
 ## Связанные материалы
 
-[agents.md](../architecture/agents.md) · [ADR-005](ADR-005-agent-adapter-contract.md) · [tools.md](../architecture/tools.md)
+[agents.md](../architecture/agents.md) · [ADR-005](ADR-005-executor-contract.md) · [tools.md](../architecture/tools.md)

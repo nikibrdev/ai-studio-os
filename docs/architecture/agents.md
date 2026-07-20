@@ -10,7 +10,7 @@
 
 Видение проекта ([VISION.md](../../VISION.md)) переформулирует эту модель жёстче, чем просто «роль ≠ исполнитель»: **AI Studio OS — операционная система, умеющая запускать любые типы Исполнителей (Executor)** — Claude Code, Codex, OpenHands, Aider, Cline, человека, в будущем — собственные модели. Ядро не знает, кто именно выполняет работу; оно знает только, что существует Executor, принимающий Context и возвращающий Result ([ubiquitous-language.md](../domain/ubiquitous-language.md)). Агент — лишь один из видов Executor'а: AI-плагин, а не центральное понятие платформы.
 
-Эта абстракция уже частично закреплена в коде: контракт `platform.Agent.Execute(ctx, Request) (Response, error)` намеренно абстрактен (`Request`/`Response` без полей до [ADR-005](../adr/ADR-005-agent-adapter-contract.md)) — не как временная заглушка, а как соответствие видению: ядро не должно приобретать зависимостей от конкретного провайдера или формата обмена раньше, чем это станет необходимо.
+Эта абстракция закреплена в коде: контракт `platform.Executor` (`Accept`/`Artifacts`/`Status`/`Finish`, [ADR-005](../adr/ADR-005-executor-contract.md), принято) — не как временная заглушка, а как соответствие видению: ядро не должно приобретать зависимостей от конкретного провайдера или формата обмена раньше, чем это станет необходимо; форма `ExecutorTask`/`Artifact`/`ExecutionStatus` остаётся абстрактной до Domain Layer.
 
 ### Ключевая идея: роль ≠ исполнитель
 
@@ -50,12 +50,12 @@
 
 ### Decision Required
 
-- [ADR-005](../adr/ADR-005-agent-adapter-contract.md) — контракт адаптера агента (формат обмена: задачи, контекст, события, отчёты); ключевое решение этапа v0.3.
-- [ADR-006](../adr/ADR-006-agent-execution-environment.md) — способ запуска и изоляции агентов, модель технических ограничений.
+- [ADR-006](../adr/ADR-006-agent-execution-environment.md) — способ запуска и изоляции исполнителей, модель технических ограничений.
 - [ADR-007](../adr/ADR-007-pm-qa-executors.md) — исполнители по умолчанию для ролей Project Manager и QA Engineer в MVP.
-- Переименование контракта `platform.Agent` в более общее имя (например, `Executor`), отражающее видение «агент — один из видов Исполнителя» — терминологический вопрос с реальным влиянием на код; не выполнено сейчас, рассмотреть вместе с [ADR-005](../adr/ADR-005-agent-adapter-contract.md) ([ubiquitous-language.md](../domain/ubiquitous-language.md), раздел Agent/Executor).
 
-Концептуальный контракт Agent описан в [interfaces.md](interfaces.md).
+Контракт адаптера технического бэкенда — [ADR-005](../adr/ADR-005-executor-contract.md) (принято): ровно четыре возможности (`Accept`, `Artifacts`, `Status`, `Finish`); терминология Agent/Executor — [ubiquitous-language.md](../domain/ubiquitous-language.md).
+
+Концептуальный контракт Executor описан в [interfaces.md](interfaces.md).
 
 ## Статус
 

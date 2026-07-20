@@ -48,6 +48,7 @@
 - Канонический жизненный цикл задачи расширен состояниями Testing и Cancelled (`docs/architecture/state-machine.md`); зависимые документы синхронизированы.
 - Обновлены по итогам аудита: overview, system-design, components, event-model, workflow (`docs/architecture/`), глоссарий и контекст (`.claude/context/`), CLAUDE.md, README каталогов `tasks/`.
 - **Architecture Freeze (2026-07-19)**: приняты ADR-002 (In-Memory Event Bus), ADR-003 (REST API), ADR-004 (PostgreSQL — источник истины задач, `tasks/` — экспорт), ADR-009 (Go 1.24, Next.js 15, pnpm, golangci-lint, gofumpt), ADR-014 (все проходят через Core); документация синхронизирована с решениями.
+- **ADR-005 принят (Executor Contract, 2026-07-20)**: Agent (логическая роль) и Executor (реальный технический бэкенд) разделены как понятия; контракт `internal/platform` — ровно четыре возможности (`Accept`, `Artifacts`, `Status`, `Finish`); `internal/platform/agent.go` переименован в `executor.go` (`Agent` → `Executor`, `Request`/`Response` → `ExecutorTask`/`Artifact`/`ExecutionStatus`, по-прежнему абстрактны до Domain Layer); терминология синхронизирована во всей документации, ссылавшейся на старый путь ADR или `platform.Agent` (TASK-026).
 
 ## Статус
 

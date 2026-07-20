@@ -16,7 +16,7 @@ flowchart TD
     CORE --> PKG["pkg/"]
     APIAPP --> PKG
     ORCH --> PKG
-    AG["agents/ — адаптеры агентов"] -->|"контракт Agent"| CONTRACTS["контракты internal/platform"]
+    AG["agents/ — адаптеры агентов"] -->|"контракт Executor"| CONTRACTS["контракты internal/platform"]
     TL["tools/ — инструменты"] -->|"контракт Tool"| CONTRACTS
     INFRA["internal/infrastructure<br/>PostgreSQL · Redis · Qdrant · GitHub"] -->|"реализуют контракты"| CONTRACTS
     CONTRACTS --- CORE
@@ -28,12 +28,12 @@ flowchart TD
 
 ### Правила междоменного взаимодействия (принято, [ADR-014](../adr/ADR-014-module-interaction.md))
 
-Схема: **Core → Events → Workflow → Agent Runtime → Tools**; все проходят через Core.
+Схема: **Core → Events → Workflow → Executor Runtime → Tools**; все проходят через Core. (Дословная формулировка принятого [ADR-014](../adr/ADR-014-module-interaction.md) использует термин «Agent Runtime» — терминология обновлена здесь после [ADR-005](../adr/ADR-005-executor-contract.md), суть решения не менялась.)
 
 1. Модуль Core может импортировать **только публичный контракт** другого модуля (`internal/core` и схемы событий). Импорт внутренних пакетов чужого модуля запрещён.
 2. Изменение чужого состояния — только командой модулю-владельцу.
 3. Узнавание о чужих изменениях и чтение чужих данных — только через события и собственные проекции; синхронные read-контракты не вводятся.
-4. Жёсткие запреты: **Tool → Core** (инструмент не вызывает ядро), **Agent → Database** (агент не обращается к хранилищам платформы), **Workflow → SQL** (workflow без прямого доступа к БД; персистентность — через порты Core).
+4. Жёсткие запреты: **Tool → Core** (инструмент не вызывает ядро), **Executor → Database** (исполнитель не обращается к хранилищам платформы), **Workflow → SQL** (workflow без прямого доступа к БД; персистентность — через порты Core).
 
 ### Границы по модулям и каталогам
 
@@ -44,7 +44,7 @@ flowchart TD
 | `internal/domain/shared/` | Domain | Язык домена: Role, TaskState (позже ID, ошибки, value objects) |
 | `internal/domain/<module>/` | Domain | Доменные модули; концептуальный набор — 10 модулей ([core.md](core.md)); созданы: task, project, event, workflow |
 | `internal/application/` | Application | Сценарии использования и проекции (заполняется эпиком Application Layer) |
-| `internal/platform/` | Platform | Абстракции платформы: EventBus, Agent, Tool, MemoryProvider, RepositoryProvider; домен-агностичен |
+| `internal/platform/` | Platform | Абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider; домен-агностичен |
 | `internal/infrastructure/` | Infrastructure | Адаптеры контрактов platform и портов domain: PostgreSQL, In-Memory Event Bus, GitHub, память |
 
 Правила зависимостей слоёв: `domain/shared` — только stdlib; `domain/<module>` — stdlib + shared + публичные контракты соседних модулей; `application` — domain + platform; `platform` — только stdlib; `infrastructure` — platform (реализация) + порты domain. Обратные зависимости запрещены. Каждый модуль обязан иметь README (назначение, зависимости, события, ответственность) — [documentation.md](../development/documentation.md).
@@ -67,8 +67,8 @@ flowchart TD
 
 #### `apps/orchestrator`
 
-- **Разрешено:** подписка на события (Event Bus); публичные команды модулей Core; контракт Agent; `pkg/`.
-- **Запрещено:** доменные правила (решения о допустимости переходов — у модулей `task`/`workflow`); хранение доменного состояния; прямой доступ к хранилищам; знание о конкретных AI-провайдерах (только контракт Agent).
+- **Разрешено:** подписка на события (Event Bus); публичные команды модулей Core; контракт Executor; `pkg/`.
+- **Запрещено:** доменные правила (решения о допустимости переходов — у модулей `task`/`workflow`); хранение доменного состояния; прямой доступ к хранилищам; знание о конкретных AI-провайдерах (только контракт Executor).
 
 #### `pkg/`
 
@@ -77,7 +77,7 @@ flowchart TD
 
 #### `agents/` (адаптеры агентов)
 
-- **Разрешено:** контракт Agent (публичный контракт Core); `pkg/`; SDK/CLI своего провайдера (по [ADR-005](../adr/ADR-005-agent-adapter-contract.md)).
+- **Разрешено:** контракт Executor (публичный контракт Core); `pkg/`; SDK/CLI своего провайдера (по [ADR-005](../adr/ADR-005-executor-contract.md)).
 - **Запрещено:** импорт модулей Core (кроме опубликованного контракта); прямой доступ к хранилищам платформы; обход Tool Layer для действий во внешней среде (после v0.8); знание о других адаптерах.
 
 #### `tools/` (реализации инструментов)
@@ -117,4 +117,4 @@ flowchart TD
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
