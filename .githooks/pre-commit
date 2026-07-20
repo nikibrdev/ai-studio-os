@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fast local gate (seconds): fmt -> lint -> vet.
+# Heavy checks (tests, markdownlint, docs) run on pre-push and in CI —
+# see engineering/decisions/2026-07-19-quality-gates.md.
+set -e
+
+make fmt-check
+make lint
+make vet
