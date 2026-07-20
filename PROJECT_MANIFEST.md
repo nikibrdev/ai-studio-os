@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.2 (архитектура; кодовая база — pre-release, только контракты) |
+| **Version** | v0.2 Architecture & Engineering Platform — Завершено; следующая — v0.3 Domain Layer ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-002.5 Engineering Platform](docs/roadmap/EPIC-002.5-engineering-platform.md) — Завершён; следующий — [EPIC-002.6 Developer Experience](docs/roadmap/EPIC-002.6-developer-experience.md) (план утверждён, не начат) |
+| **Current Epic** | [EPIC-002.6 Developer Experience](docs/roadmap/EPIC-002.6-developer-experience.md) — Утверждён, выполняется |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
