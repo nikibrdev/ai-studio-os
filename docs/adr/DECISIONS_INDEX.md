@@ -26,10 +26,11 @@
 | [013](ADR-013-managed-projects.md) | Decision Required | Подключение управляемых проектов (`projects/`) | Модуль project детально; среду агентов |
 | [014](ADR-014-module-interaction.md) | **Accepted** | Взаимодействие модулей — все проходят через Core, только события | Нет |
 | [015](ADR-015-internal-layering.md) | **Accepted** | Слои internal: domain(+shared) / application / platform / infrastructure | Нет |
+| [016](ADR-016-artifact-aggregate-root.md) | **Accepted** | Artifact — самостоятельный Aggregate Root, не часть Execution/Task/Project | Нет |
 
 ### Сводка
 
-- **Принято:** 8 (001, 002, 003, 004, 005, 009, 014, 015)
+- **Принято:** 9 (001, 002, 003, 004, 005, 009, 014, 015, 016)
 - **Decision Required:** 7 (006, 007, 008, 010, 011, 012, 013)
 - Ближайшие к принятию по roadmap: ADR-011 (нужен Task Engine, EPIC-003+), ADR-006 (среда выполнения Executor, v0.3).
 

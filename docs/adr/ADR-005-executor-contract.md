@@ -66,9 +66,9 @@ type Executor interface {
 
 `internal/platform/agent.go` → `executor.go` (интерфейс `Agent` → `Executor`, `Request`/`Response` → `ExecutorTask`/`Artifact`/`ExecutionStatus`); [docs/architecture/agents.md](../architecture/agents.md), [interfaces.md](../architecture/interfaces.md), [module-boundaries.md](../architecture/module-boundaries.md), [components.md](../architecture/components.md), [overview.md](../architecture/overview.md), [DECISIONS_INDEX.md](DECISIONS_INDEX.md) — обновлены (TASK-026).
 
-### Открытый вопрос
+### Открытый вопрос — закрыт [ADR-016](ADR-016-artifact-aggregate-root.md)
 
-Где размещается тип `Artifact`, когда он перестанет быть абстрактным placeholder'ом: `platform` домен-агностичен по [ADR-015](ADR-015-internal-layering.md) и не может зависеть от `domain`, но Artifact — по философии проекта («артефакты — настоящая ценность», [VISION.md](../../VISION.md)) — это язык предметной области, а не механика платформы. Вероятное решение: `platform.Artifact` остаётся минимальной ссылкой/маркером (то, чем оперирует контракт исполнения), а полноценная сущность Artifact с метаданными и связями определяется в `domain` и оборачивает/ссылается на platform-примитив — не решено, требует архитектора при проектировании модуля Artifact (Domain Layer, EPIC-003).
+Где размещается тип `Artifact`, когда он перестанет быть абстрактным placeholder'ом, — решено архитектором 2026-07-20: Artifact — самостоятельный Aggregate Root (модуль `artifact`, не `execution`), Execution лишь ссылается на произведённые им Artifact, не владеет ими. `platform.Artifact` остаётся минимальным абстрактным маркером контракта исполнения; полноценная сущность — в `domain/artifact`. Подробности — [ADR-016](ADR-016-artifact-aggregate-root.md).
 
 ## Связанные материалы
 
