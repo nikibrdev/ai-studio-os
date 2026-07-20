@@ -1,0 +1,34 @@
+name: Bug report
+description: Сообщить о дефекте в поведении системы
+labels: ["type: bug"]
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Шаги воспроизведения
+      description: Точная последовательность действий
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое поведение
+      description: Со ссылкой на документацию/спецификацию, если применимо
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Фактическое поведение
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Контекст
+      description: Версия, ветка, окружение, связанные задачи/PR
+    validations:
+      required: false

@@ -1,0 +1,32 @@
+name: Feature request
+description: Предложить новую возможность или изменение
+labels: ["type: feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Проблема
+      description: Какая потребность не закрыта сейчас
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предложение
+      description: Что предлагается сделать
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Рассмотренные альтернативы
+      description: Если есть
+    validations:
+      required: false
+  - type: checkboxes
+    id: architecture
+    attributes:
+      label: Архитектурное влияние
+      options:
+        - label: Требует нового ADR (новая технология, публичный контракт, изменение границ модулей)
+          required: false
