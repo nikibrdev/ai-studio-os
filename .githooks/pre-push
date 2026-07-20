@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Heavy local gate: full make verify before code leaves the machine.
+# See engineering/decisions/2026-07-19-quality-gates.md.
+set -e
+
+make verify
