@@ -27,8 +27,9 @@
 
 ### v0.3 Domain Layer — предметная область
 
-- Реализация доменных модулей: `task`, `project`, `workflow`, `event` (логика поверх контрактов из v0.2).
-- Для каждого пакета — утверждённая спецификация до реализации ([Specification.md](.claude/templates/Specification.md); требование Domain Layer — [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)).
+- [EPIC-003](docs/roadmap/EPIC-003-domain-layer.md): реализация доменных модулей, начиная не с `task`, а с порядка **Artifact → Execution → Executor → Task → Project** ([domain-model.md](docs/architecture/domain-model.md), [ADR-016](docs/adr/ADR-016-artifact-aggregate-root.md)).
+- Этап 1 — Domain Specifications First: полные спецификации всех пяти модулей утверждаются архитектором до единой строки Go ([Specification.md](.claude/templates/Specification.md); требование Domain Layer — [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)).
+- Этап 2 — реализация пяти модулей в том же порядке, только после утверждения этапа 1.
 
 **Результат:** доменная логика (в т.ч. state machine задачи) работает и покрыта тестами, без внешних зависимостей.
 

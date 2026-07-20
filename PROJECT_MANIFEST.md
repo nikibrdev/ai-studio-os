@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.2 Architecture & Engineering Platform — Завершено; следующая — v0.3 Domain Layer ([ROADMAP.md](ROADMAP.md)) |
+| **Version** | v0.3 Domain Layer — этап 1 (Domain Specifications First) в работе ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-002.6 Developer Experience](docs/roadmap/EPIC-002.6-developer-experience.md) — Завершён (мини-аудит пройден); следующий шаг — EPIC-003 Domain Layer, ждёт сигнала на старт |
+| **Current Epic** | [EPIC-003 Domain Layer](docs/roadmap/EPIC-003-domain-layer.md) — этап 1 (Domain Specifications First): TASK-029…033 в `tasks/ready/`, реализация не начинается без утверждения всех пяти спецификаций |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -24,7 +24,7 @@
 | Компонент | Состояние |
 | --- | --- |
 | Architecture | **Frozen** (ADR-002, 003, 004, 009, 014, 015 приняты) |
-| Domain | Contracts ready; логика Not Started (EPIC-003) |
+| Domain | Contracts ready; спецификации в работе (EPIC-003, этап 1); логика — Not Started, ждёт утверждения спецификаций |
 | Application | Not Started |
 | Platform (контракты) | Contracts ready |
 | Infrastructure | Not Started |
