@@ -1,0 +1,25 @@
+name: Task
+description: Задача на реализацию (создаётся вместе с файлом в tasks/backlog/ или tasks/ready/)
+labels: ["type: task"]
+body:
+  - type: input
+    id: task-file
+    attributes:
+      label: Файл задачи
+      description: Путь к файлу по шаблону .claude/templates/Task.md
+      placeholder: tasks/ready/TASK-NNN-short-name.md
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Цель
+      description: Кратко — см. полное описание в файле задачи
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Критерии приёмки
+    validations:
+      required: true
