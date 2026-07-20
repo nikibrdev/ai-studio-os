@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Обязательные три независимых прохода проверки для каждой спецификации `docs/specifications/domain/<module>.md` ([Specification-Domain.md](../templates/Specification-Domain.md)) перед переводом статуса в «Утверждена» и запросом ревью. Решение архитектора 2026-07-20 ([engineering/decisions/2026-07-20-domain-specification-three-pass-review.md](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md)). Не заменяет [PR.md](PR.md) — проходится дополнительно, до него.
+Обязательные три независимых прохода проверки для каждой спецификации `docs/specifications/domain/<module>.md` ([Specification-Domain.md](../templates/Specification-Domain.md)) перед переводом статуса в «Утверждена» и запросом ревью. Решения архитектора 2026-07-20: [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md). Не заменяет [PR.md](PR.md) — проходится дополнительно, до него.
 
 ## Содержание
 
@@ -10,11 +10,17 @@
 
 Проверяется только сам документ, изолированно.
 
+- [ ] One Sentence — действительно одно предложение и не расплывчато (если распадается на «и» / «а также» — сущность ещё не понята).
+- [ ] Identity отвечает именно на вопрос идентичности, а не пересказывает Responsibilities или перечисляет поля/ID.
+- [ ] Relationships не используется для определения сущности («существует, потому что его создаёт X» — недопустимая формулировка); определение полностью самодостаточно в One Sentence/Identity/Purpose.
+- [ ] Ни одного упоминания Go, структур, JSON или иных деталей реализации — во всём документе, не только в Examples.
 - [ ] Нет противоречий между разделами (например, Invariants не противоречат Lifecycle).
+- [ ] Structural и Behavioral инварианты не перепутаны местами (Structural — форма/строение, Behavioral — выполняется во времени).
 - [ ] Нет циклов в Relationships (сущность не оказывается владельцем самой себя через цепочку связей).
 - [ ] Все Invariants совместимы друг с другом (одновременно выполнимы в любом допустимом состоянии).
 - [ ] Все Commands допустимы: каждая команда соответствует хотя бы одному разрешённому переходу в Lifecycle.
 - [ ] Examples не противоречат Invariants и Non-Goals (пример не описывает то, что спецификация явно исключает).
+- [ ] Alternative Interpretations Considered называет реальные отвергнутые альтернативы с причиной отказа, а не формальность для галочки.
 
 ### Pass 2 — Cross-domain Consistency
 
