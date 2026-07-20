@@ -19,7 +19,7 @@ flowchart TB
         PRJ["project"]
         TSK["task"]
         WF["workflow"]
-        AGM["agent"]
+        AGM["executor"]
         EXE["execution"]
         TLM["tool"]
         EVT["event"]
@@ -60,7 +60,7 @@ flowchart TB
 
 #### Ядро (`internal/`)
 
-Структура по слоям ([ADR-015](../adr/ADR-015-internal-layering.md)): `internal/domain/` — предметная область (`shared` — язык домена; модули, концептуальный набор — десять: `project`, `task`, `workflow`, `agent`, `execution`, `tool`, `event`, `memory`, `git`, `identity`), `internal/application`, `internal/platform` (абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider), `internal/infrastructure`. Ответственность и владение сущностями — [core.md](core.md) и [domain-model.md](domain-model.md); границы — [module-boundaries.md](module-boundaries.md).
+Структура по слоям ([ADR-015](../adr/ADR-015-internal-layering.md)): `internal/domain/` — предметная область (`shared` — язык домена; модули, концептуальный набор — десять: `project`, `task`, `workflow`, `executor`, `execution`, `tool`, `event`, `memory`, `git`, `identity`), `internal/application`, `internal/platform` (абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider), `internal/infrastructure`. Ответственность и владение сущностями — [core.md](core.md) и [domain-model.md](domain-model.md); границы — [module-boundaries.md](module-boundaries.md).
 
 #### Публичные пакеты (`pkg/`)
 

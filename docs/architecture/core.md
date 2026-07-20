@@ -21,14 +21,14 @@ flowchart TB
         INFRA["адаптеры инфраструктуры:<br/>PostgreSQL, Redis, Qdrant, GitHub"]
     end
     subgraph CORE["Core — internal/"]
-        MODS["Доменные модули:<br/>project, task, workflow, agent,<br/>execution, tool, event, memory,<br/>git, identity"]
+        MODS["Доменные модули:<br/>project, task, workflow, executor,<br/>execution, tool, event, memory,<br/>git, identity"]
         PORTS["Порты — интерфейсы,<br/>которые Core требует от внешнего слоя"]
     end
     DASH --> APIAPP
     APIAPP --> MODS
     ORCH --> MODS
     INFRA -. реализуют .-> PORTS
-    AG -. реализуют контракт Agent .-> PORTS
+    AG -. реализуют контракт Executor .-> PORTS
     TL -. реализуют контракт Tool .-> PORTS
     MODS --> PORTS
 ```
@@ -42,7 +42,7 @@ flowchart TB
 | `project` | Проекты, подключение репозиториев, назначения исполнителей ролей |
 | `task` | Эпики и задачи, их состояние по канонической state machine |
 | `workflow` | Определения процессов, шаги, роли, правила переходов |
-| `agent` | Реестр агентов, их возможности и статус |
+| `executor` | Реестр исполнителей (Executor), их возможности и статус |
 | `execution` | Исполнения, результаты, артефакты |
 | `tool` | Реестр инструментов, сопоставление ролям |
 | `event` | Шина событий (контракт) и журнал событий |
@@ -56,7 +56,7 @@ flowchart TB
 
 - **Приложения** (`apps/api`, `apps/dashboard`, `apps/orchestrator`) — доставка и координация, без бизнес-правил.
 - **Адаптеры инфраструктуры** — реализации портов для PostgreSQL, Redis, Qdrant, GitHub.
-- **Адаптеры агентов** (`agents/`) — привязка AI-провайдеров к контракту Agent.
+- **Адаптеры агентов** (`agents/`) — привязка технических бэкендов к контракту Executor.
 - **Реализации инструментов** (`tools/`) — действия во внешней среде.
 - **Переиспользуемые утилиты** (`pkg/`) — вспомогательный код без доменного знания.
 - **Схемы БД, миграции, конфигурация** — принадлежность инфраструктуре.
@@ -85,11 +85,11 @@ flowchart TB
 
 ### Статус решений
 
-- [ADR-014](../adr/ADR-014-module-interaction.md) — **принято**: все проходят через Core (Core → Events → Workflow → Agent Runtime → Tools); междоменное чтение — только через события и собственные проекции; запрещены Tool → Core, Agent → Database, Workflow → SQL.
+- [ADR-014](../adr/ADR-014-module-interaction.md) — **принято**: все проходят через Core (Core → Events → Workflow → Executor Runtime → Tools; дословная формулировка ADR-014 — «Agent Runtime», терминология обновлена после [ADR-005](../adr/ADR-005-executor-contract.md), суть не менялась); междоменное чтение — только через события и собственные проекции; запрещены Tool → Core, Executor → Database, Workflow → SQL.
 - [ADR-002](../adr/ADR-002-event-delivery.md) — **принято**: In-Memory Event Bus; интерфейс неизменен при смене реализации.
 - [ADR-012](../adr/ADR-012-identity-and-auth.md) — **Decision Required**: входит ли `identity` в MVP.
 
-Физическая структура ([ADR-015](../adr/ADR-015-internal-layering.md)): язык домена — `internal/domain/shared`; доменные модули — `internal/domain/<module>`; платформенные абстракции (EventBus, Agent, Tool, MemoryProvider, RepositoryProvider) — `internal/platform`; слои `internal/application` и `internal/infrastructure` заполняются последующими эпиками. Правила — [module-boundaries.md](module-boundaries.md).
+Физическая структура ([ADR-015](../adr/ADR-015-internal-layering.md)): язык домена — `internal/domain/shared`; доменные модули — `internal/domain/<module>`; платформенные абстракции (EventBus, Executor, Tool, MemoryProvider, RepositoryProvider) — `internal/platform`; слои `internal/application` и `internal/infrastructure` заполняются последующими эпиками. Правила — [module-boundaries.md](module-boundaries.md).
 
 ## Статус
 
@@ -97,4 +97,4 @@ flowchart TB
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
