@@ -37,7 +37,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| **Last ADR** | [ADR-005](docs/adr/ADR-005-executor-contract.md) (Executor Contract — Accept/Artifacts/Status/Finish; `platform.Agent` → `platform.Executor` в коде) |
+| **Last ADR** | [ADR-016](docs/adr/ADR-016-artifact-aggregate-root.md) (Artifact — самостоятельный Aggregate Root, не часть Execution/Task/Project) |
 | **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 7 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |

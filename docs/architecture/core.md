@@ -21,7 +21,7 @@ flowchart TB
         INFRA["адаптеры инфраструктуры:<br/>PostgreSQL, Redis, Qdrant, GitHub"]
     end
     subgraph CORE["Core — internal/"]
-        MODS["Доменные модули:<br/>project, task, workflow, executor,<br/>execution, tool, event, memory,<br/>git, identity"]
+        MODS["Доменные модули:<br/>project, task, workflow, executor,<br/>execution, artifact, tool, event,<br/>memory, git, identity"]
         PORTS["Порты — интерфейсы,<br/>которые Core требует от внешнего слоя"]
     end
     DASH --> APIAPP
@@ -43,7 +43,8 @@ flowchart TB
 | `task` | Эпики и задачи, их состояние по канонической state machine |
 | `workflow` | Определения процессов, шаги, роли, правила переходов |
 | `executor` | Реестр исполнителей (Executor), их возможности и статус |
-| `execution` | Исполнения, результаты, артефакты |
+| `execution` | Исполнения — процесс и статус (без владения артефактами) |
+| `artifact` | Артефакты — самостоятельный Aggregate Root, не часть execution ([ADR-016](../adr/ADR-016-artifact-aggregate-root.md)) |
 | `tool` | Реестр инструментов, сопоставление ролям |
 | `event` | Шина событий (контракт) и журнал событий |
 | `memory` | Знания проектов, контракт поиска |

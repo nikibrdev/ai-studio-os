@@ -42,7 +42,7 @@ flowchart TD
 | Каталог | Слой | Содержание |
 | --- | --- | --- |
 | `internal/domain/shared/` | Domain | Язык домена: Role, TaskState (позже ID, ошибки, value objects) |
-| `internal/domain/<module>/` | Domain | Доменные модули; концептуальный набор — 10 модулей ([core.md](core.md)); созданы: task, project, event, workflow |
+| `internal/domain/<module>/` | Domain | Доменные модули; концептуальный набор — 11 модулей ([core.md](core.md)); созданы: task, project, event, workflow |
 | `internal/application/` | Application | Сценарии использования и проекции (заполняется эпиком Application Layer) |
 | `internal/platform/` | Platform | Абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider; домен-агностичен |
 | `internal/infrastructure/` | Infrastructure | Адаптеры контрактов platform и портов domain: PostgreSQL, In-Memory Event Bus, GitHub, память |

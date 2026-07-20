@@ -21,6 +21,7 @@ flowchart TB
         WF["workflow"]
         AGM["executor"]
         EXE["execution"]
+        ART["artifact"]
         TLM["tool"]
         EVT["event"]
         MEM["memory"]
@@ -60,7 +61,7 @@ flowchart TB
 
 #### Ядро (`internal/`)
 
-Структура по слоям ([ADR-015](../adr/ADR-015-internal-layering.md)): `internal/domain/` — предметная область (`shared` — язык домена; модули, концептуальный набор — десять: `project`, `task`, `workflow`, `executor`, `execution`, `tool`, `event`, `memory`, `git`, `identity`), `internal/application`, `internal/platform` (абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider), `internal/infrastructure`. Ответственность и владение сущностями — [core.md](core.md) и [domain-model.md](domain-model.md); границы — [module-boundaries.md](module-boundaries.md).
+Структура по слоям ([ADR-015](../adr/ADR-015-internal-layering.md)): `internal/domain/` — предметная область (`shared` — язык домена; модули, концептуальный набор — одиннадцать: `project`, `task`, `workflow`, `executor`, `execution`, `artifact`, `tool`, `event`, `memory`, `git`, `identity`; `artifact` — самостоятельный Aggregate Root, не часть `execution`, [ADR-016](../adr/ADR-016-artifact-aggregate-root.md)), `internal/application`, `internal/platform` (абстракции платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider), `internal/infrastructure`. Ответственность и владение сущностями — [core.md](core.md) и [domain-model.md](domain-model.md); границы — [module-boundaries.md](module-boundaries.md).
 
 #### Публичные пакеты (`pkg/`)
 
