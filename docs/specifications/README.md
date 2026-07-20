@@ -40,7 +40,7 @@ docs/specifications/
 
 ### Усиленное требование для Domain Layer
 
-Начиная с v0.3 (Domain Layer, EPIC-003) спецификация доменного пакета обязательно содержит: назначение, инварианты, **допустимые состояния** (для пакетов с жизненным циклом), входные/выходные события, Acceptance Criteria — и должна быть **утверждена** до начала реализации. Цикл: Architecture → Specification → Implementation → Review → Merge. Решение: [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md).
+Начиная с v0.3 (Domain Layer, EPIC-003) спецификация доменного пакета оформляется по отдельному, более строгому шаблону — [Specification-Domain.md](../../.claude/templates/Specification-Domain.md): двенадцать обязательных разделов (Purpose, Responsibilities, Invariants, Lifecycle, Relationships, Domain Events, Commands, Queries, Acceptance Criteria, Future Extensions, Anti-Responsibilities, Decision Log — не «по возможности», а всегда) — и должна быть **утверждена** до начала реализации. Цикл: Architecture → Specification → Implementation → Review → Merge. Решения: [2026-07-20-domain-layer-specification-requirement.md](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md) (минимальная база), [2026-07-20-domain-specification-review.md](../../engineering/decisions/2026-07-20-domain-specification-review.md) (полный шаблон — Domain Specification Review).
 
 ## Статус
 
@@ -48,4 +48,4 @@ docs/specifications/
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

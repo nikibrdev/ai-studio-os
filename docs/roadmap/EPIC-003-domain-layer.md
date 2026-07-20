@@ -12,7 +12,7 @@
 
 ### Этап 1 — Domain Specifications (текущий; без кода)
 
-Написать и утвердить полные спецификации ([Specification.md](../../.claude/templates/Specification.md), требование — [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)) для пяти модулей, каждая — с ответственностью, инвариантами, жизненным циклом, связями, событиями, ограничениями, критериями приёмки. Порядок написания — по порядку проектирования из ADR-016/domain-model.md:
+Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — Domain Specification Review, 12 обязательных разделов ([решение](../../engineering/decisions/2026-07-20-domain-specification-review.md), расширяет [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)): Purpose, Responsibilities, Invariants, Lifecycle, Relationships, Domain Events, Commands, Queries, Acceptance Criteria, Future Extensions, Anti-Responsibilities, Decision Log. Порядок написания — по порядку проектирования из ADR-016/domain-model.md:
 
 1. `Artifact` (`docs/specifications/domain/artifact.md`)
 2. `Execution` (`docs/specifications/domain/execution.md`)
@@ -32,7 +32,7 @@
 
 ## Критерии завершения (этап 1)
 
-- [ ] Пять спецификаций написаны по шаблону, с обязательными разделами (включая «Допустимые состояния» для модулей с жизненным циклом — Artifact, Execution, Task).
+- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 12 разделов Domain Specification Review в каждой.
 - [ ] Каждая спецификация непротиворечива с уже принятыми ADR-005/ADR-016/domain-model.md и друг с другом (например: `ExecutorTask`/`Artifact`/`ExecutionStatus` в спецификации Execution/Executor не противоречат абстрактным типам `internal/platform`).
 - [ ] Все пять спецификаций явно утверждены архитектором (статус «Утверждена», не «Черновик»).
 - [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.

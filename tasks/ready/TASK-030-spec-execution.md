@@ -10,7 +10,7 @@ docs
 
 ## Цель
 
-Полная, утверждённая спецификация `docs/specifications/domain/execution.md` по шаблону [Specification.md](../../.claude/templates/Specification.md) — техническое задание для будущей реализации `internal/domain/execution` (этап 2, не начинается без утверждения).
+Полная, утверждённая спецификация `docs/specifications/domain/execution.md` по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) (Domain Specification Review — 12 обязательных разделов, [решение](../../engineering/decisions/2026-07-20-domain-specification-review.md)) — техническое задание для будущей реализации `internal/domain/execution` (этап 2, не начинается без утверждения).
 
 ## Контекст
 
@@ -20,7 +20,8 @@ Execution — второй модуль в порядке проектирова
 
 ### Входит
 
-- `docs/specifications/domain/execution.md`: назначение; требования; чего модуль НЕ делает; сценарии использования (запуск, продвижение статуса, производство Artifact, завершение — успех/неуспех); инварианты; допустимые состояния (Queued → Running → Succeeded | Failed | Aborted); события; ограничения (согласованность с [ADR-005](../../docs/adr/ADR-005-executor-contract.md) — `Accept`/`Artifacts`/`Status`/`Finish`); будущие расширения; Acceptance Criteria.
+- `docs/specifications/domain/execution.md`, все 12 обязательных разделов: Purpose, Responsibilities, Invariants, Lifecycle (Queued → Running → Succeeded | Failed | Aborted и правила переходов), Relationships (Task создаёт, Executor используется, Artifact — ссылка без владения), Domain Events, Commands, Queries, Acceptance Criteria, Future Extensions, Anti-Responsibilities, Decision Log (ADR-005, ADR-016).
+- Согласованность с [ADR-005](../../docs/adr/ADR-005-executor-contract.md) (`Accept`/`Artifacts`/`Status`/`Finish`) в разделах Commands/Domain Events.
 
 ### Не входит
 
@@ -29,7 +30,7 @@ Execution — второй модуль в порядке проектирова
 
 ## Критерии приёмки
 
-- [ ] Спецификация содержит все обязательные разделы шаблона, включая «Допустимые состояния».
+- [ ] Спецификация содержит все 12 обязательных разделов Specification-Domain.md.
 - [ ] Непротиворечива с ADR-005, ADR-016, domain-model.md и утверждённой спецификацией Artifact (TASK-029).
 - [ ] Статус спецификации — «Утверждена».
 - [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
@@ -52,3 +53,4 @@ Execution — второй модуль в порядке проектирова
 ## История
 
 2026-07-20 — Architect — EPIC-003 открыт в режиме Domain Specifications First; задача поставлена в очередь (вторая по порядку проектирования).
+2026-07-20 — Architect — введён Domain Specification Review (12 обязательных разделов, Specification-Domain.md); задача синхронизирована с новым шаблоном перед стартом.

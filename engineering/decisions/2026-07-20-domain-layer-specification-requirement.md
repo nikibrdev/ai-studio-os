@@ -18,6 +18,8 @@
 
 Цикл: **Architecture → Specification → Implementation → Review → Merge**. Задача на реализацию доменного пакета без утверждённой спецификации не соответствует Definition of Ready ([CLAUDE.md](../../CLAUDE.md)).
 
+Этот минимум конкретизирован и расширен до двенадцати обязательных разделов решением [Domain Specification Review](2026-07-20-domain-specification-review.md) (2026-07-20, перед TASK-029) — актуальный шаблон для `docs/specifications/domain/` см. там.
+
 ### Последствия
 
 - [Specification.md](../../.claude/templates/Specification.md) дополнен разделом «Допустимые состояния».

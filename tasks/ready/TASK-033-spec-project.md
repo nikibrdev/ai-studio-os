@@ -10,7 +10,7 @@ docs
 
 ## Цель
 
-Полная, утверждённая спецификация `docs/specifications/domain/project.md` по шаблону [Specification.md](../../.claude/templates/Specification.md) — техническое задание для реализации `internal/domain/project`, чьи контракты уже частично существуют ([internal/domain/project/registry.go](../../internal/domain/project/registry.go), EPIC-002) без полной спецификации.
+Полная, утверждённая спецификация `docs/specifications/domain/project.md` по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) (Domain Specification Review — 12 обязательных разделов, [решение](../../engineering/decisions/2026-07-20-domain-specification-review.md)) — техническое задание для реализации `internal/domain/project`, чьи контракты уже частично существуют ([internal/domain/project/registry.go](../../internal/domain/project/registry.go), EPIC-002) без полной спецификации.
 
 ## Контекст
 
@@ -20,7 +20,7 @@ Project — пятый, последний модуль в порядке про
 
 ### Входит
 
-- `docs/specifications/domain/project.md`: назначение; требования (согласованные с уже принятым `Registry`); чего модуль НЕ делает; сценарии использования (создание, подключение репозитория, архивирование); инварианты (минимум один Repository, архив неизменяем); допустимые состояния (Created → Active → Archived); события; ограничения (формат подключения репозиториев — [ADR-013](../../docs/adr/ADR-013-managed-projects.md), Decision Required — зафиксировать как ограничение, не решать здесь); будущие расширения; Acceptance Criteria.
+- `docs/specifications/domain/project.md`, все 12 обязательных разделов: Purpose, Responsibilities, Invariants (минимум один Repository, архив неизменяем), Lifecycle (Created → Active → Archived), Relationships (владение Task и Artifact — `Project ├── Task └── Artifact`, ADR-016), Domain Events, Commands/Queries (согласованные с уже принятым `Registry`), Acceptance Criteria, Future Extensions, Anti-Responsibilities, Decision Log (ADR-013 — формат подключения репозиториев, Decision Required, зафиксировать как ограничение, не решать здесь).
 - Сверка с текущим кодом `internal/domain/project/registry.go` — расхождения фиксируются как Open Questions, код не меняется в рамках этой задачи.
 
 ### Не входит
@@ -30,7 +30,7 @@ Project — пятый, последний модуль в порядке про
 
 ## Критерии приёмки
 
-- [ ] Спецификация содержит все обязательные разделы шаблона.
+- [ ] Спецификация содержит все 12 обязательных разделов Specification-Domain.md.
 - [ ] Согласована с уже принятым кодом `internal/domain/project` — расхождения (если есть) зафиксированы как Open Questions.
 - [ ] Непротиворечива с ADR-013, domain-model.md, утверждёнными спецификациями Artifact (TASK-029) и Task (TASK-032).
 - [ ] Статус спецификации — «Утверждена».
@@ -54,3 +54,4 @@ Project — пятый, последний модуль в порядке про
 ## История
 
 2026-07-20 — Architect — EPIC-003 открыт в режиме Domain Specifications First; задача поставлена в очередь (пятая по порядку проектирования).
+2026-07-20 — Architect — введён Domain Specification Review (12 обязательных разделов, Specification-Domain.md); задача синхронизирована с новым шаблоном перед стартом.
