@@ -48,7 +48,7 @@
 
 | Задача | Содержание | Статус |
 | --- | --- | --- |
-| TASK-029 | Спецификация `Artifact` | ready |
+| TASK-029 | Спецификация `Artifact` | in progress (PR 1 из 3) |
 | TASK-030 | Спецификация `Execution` | ready |
 | TASK-031 | Спецификация `Executor` | ready |
 | TASK-032 | Спецификация `Task` | ready |
