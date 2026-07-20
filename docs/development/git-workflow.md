@@ -53,7 +53,7 @@ refactor/<task-id>-<short-name>  # рефакторинг
 3. PR ссылается на файл задачи и содержит описание изменений и проверок.
 4. PR помечается GitHub-меткой, соответствующей основному типу Conventional Commits (`feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`ci`) — метка используется категоризацией release notes ([release.yml](../../.github/release.yml)).
 5. Перед запросом ревью автор проходит чек-лист [.claude/checklists/PR.md](../../.claude/checklists/PR.md).
-6. Обязательный статус-чек `verify` и проверка Conventional Commits — в CI ([verify.yml](../../.github/workflows/verify.yml)); `main` защищена (прямой push, force-push и удаление ветки запрещены — [TASK-016](../../tasks/review/TASK-016-branch-protection.md)).
+6. Обязательный статус-чек `verify` и проверка Conventional Commits — в CI ([verify.yml](../../.github/workflows/verify.yml)); `main` защищена (прямой push, force-push и удаление ветки запрещены — [TASK-016](../../tasks/done/TASK-016-branch-protection.md)).
 7. Слияние — после ревью и зелёного `verify`; текущая практика — merge commit (единообразная история PR); окончательный способ слияния и обязательное число формальных approve — [ADR-008](../adr/ADR-008-git-policies.md), Decision Required.
 
 ### Релизный процесс
@@ -65,7 +65,7 @@ refactor/<task-id>-<short-name>  # рефакторинг
 
 ### Decision Required
 
-Способ слияния PR (см. текущую практику выше), правила защиты `main` (базово настроены — [TASK-016](../../tasks/review/TASK-016-branch-protection.md); обязательное число approve не зафиксировано), момент слияния относительно стадии Testing и политика подписи коммитов — [ADR-008](../adr/ADR-008-git-policies.md).
+Способ слияния PR (см. текущую практику выше), правила защиты `main` (базово настроены — [TASK-016](../../tasks/done/TASK-016-branch-protection.md); обязательное число approve не зафиксировано), момент слияния относительно стадии Testing и политика подписи коммитов — [ADR-008](../adr/ADR-008-git-policies.md).
 
 ## Статус
 
