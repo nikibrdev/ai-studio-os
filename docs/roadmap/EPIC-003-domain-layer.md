@@ -12,7 +12,13 @@
 
 ### Этап 1 — Domain Specifications (текущий; без кода)
 
-Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — 16 обязательных разделов ([решение 1](../../engineering/decisions/2026-07-20-domain-specification-review.md), [решение 2](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), расширяют [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)): Purpose, Responsibilities, Invariants, Lifecycle, Relationships, Domain Events, Commands, Queries, Examples, Acceptance Criteria, Future Extensions, Anti-Responsibilities, Non-Goals, Removal Test, Decision Log, Open Questions. Перед утверждением каждая спецификация проходит [три независимых прохода проверки](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency, Future-proof Review). Ожидаемый темп — сознательно небольшой: одна спецификация может занять несколько PR, если по ходу работы возникают вопросы о жизненном цикле, инвариантах или связях — это признак процесса, а не задержка. Порядок написания — по порядку проектирования из ADR-016/domain-model.md:
+Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — 19 обязательных разделов ([Domain Specification Review](../../engineering/decisions/2026-07-20-domain-specification-review.md), [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md), расширяют [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)), написанные тремя отдельными PR на модуль:
+
+- **PR 1 — фундамент** (One Sentence, Identity, Purpose, Responsibilities, Invariants [Structural/Behavioral], Lifecycle, Relationships, Alternative Interpretations Considered) — ни одного упоминания Go; сущность определяется сама по себе, до того как названо, кто на неё ссылается.
+- **PR 2 — поведение** (Domain Events, Commands, Queries, Examples).
+- **PR 3 — завершение и ревью** (Acceptance Criteria, Future Extensions, Anti-Responsibilities, Non-Goals, Removal Test, Decision Log, Open Questions), завершается [тремя проходами проверки](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency, Future-proof Review).
+
+Главный принцип: не стремиться закончить спецификацию — стремиться исключить неправильные трактовки сущности. Ожидаемый темп — сознательно небольшой: одна спецификация законно занимает несколько PR, если по ходу работы возникают вопросы о жизненном цикле, инвариантах или связях — это признак процесса, а не задержка. Порядок написания — по порядку проектирования из ADR-016/domain-model.md:
 
 1. `Artifact` (`docs/specifications/domain/artifact.md`)
 2. `Execution` (`docs/specifications/domain/execution.md`)
@@ -32,7 +38,7 @@
 
 ## Критерии завершения (этап 1)
 
-- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 16 разделов в каждой.
+- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 19 разделов в каждой, тремя PR (фундамент → поведение → завершение).
 - [ ] Каждая спецификация прошла три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency, Future-proof Review).
 - [ ] Каждая спецификация непротиворечива с уже принятыми ADR-005/ADR-016/domain-model.md и друг с другом (например: `ExecutorTask`/`Artifact`/`ExecutionStatus` в спецификации Execution/Executor не противоречат абстрактным типам `internal/platform`).
 - [ ] Все пять спецификаций явно утверждены архитектором (статус «Утверждена», не «Черновик»).
