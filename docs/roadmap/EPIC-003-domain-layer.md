@@ -12,7 +12,7 @@
 
 ### Этап 1 — Domain Specifications (текущий; без кода)
 
-Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — 19 обязательных разделов ([Domain Specification Review](../../engineering/decisions/2026-07-20-domain-specification-review.md), [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md), расширяют [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)), написанные тремя отдельными PR на модуль:
+Написать и утвердить полные спецификации по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) — 20 обязательных разделов ([Domain Specification Review](../../engineering/decisions/2026-07-20-domain-specification-review.md), [Three-Pass Review](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md), [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md), [Reference Status](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md), расширяют [базовое требование](../../engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)), написанные тремя отдельными PR на модуль:
 
 - **PR 1 — фундамент** (One Sentence, Identity, Purpose, Responsibilities, Invariants [Structural/Behavioral], Lifecycle, Relationships, Alternative Interpretations Considered) — ни одного упоминания Go; сущность определяется сама по себе, до того как названо, кто на неё ссылается.
 - **PR 2 — поведение** (Domain Events, Commands, Queries, Examples).
@@ -38,8 +38,8 @@
 
 ## Критерии завершения (этап 1)
 
-- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 19 разделов в каждой, тремя PR (фундамент → поведение → завершение).
-- [ ] Каждая спецификация прошла три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency, Future-proof Review).
+- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 20 разделов в каждой, тремя PR (фундамент → поведение → завершение). ([Artifact](../specifications/domain/artifact.md) — done, статус Reference.)
+- [ ] Каждая спецификация прошла три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency с Delta Review начиная с TASK-030, Future-proof Review).
 - [ ] Каждая спецификация непротиворечива с уже принятыми ADR-005/ADR-016/domain-model.md и друг с другом (например: `ExecutorTask`/`Artifact`/`ExecutionStatus` в спецификации Execution/Executor не противоречат абстрактным типам `internal/platform`).
 - [ ] Все пять спецификаций явно утверждены архитектором (статус «Утверждена», не «Черновик»).
 - [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
@@ -48,7 +48,7 @@
 
 | Задача | Содержание | Статус |
 | --- | --- | --- |
-| TASK-029 | Спецификация `Artifact` | in progress (PR 1 из 3) |
+| TASK-029 | Спецификация `Artifact` | done — статус **Reference** (первая доменная спецификация проекта, [решение](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md)) |
 | TASK-030 | Спецификация `Execution` | ready |
 | TASK-031 | Спецификация `Executor` | ready |
 | TASK-032 | Спецификация `Task` | ready |
@@ -59,6 +59,7 @@
 - Спецификации Task/Project пишутся поверх уже существующего кода ([internal/domain/task](../../internal/domain/task/), [internal/domain/project](../../internal/domain/project/)) — риск обнаружить расхождение между кодом и новым порядком/решениями (ADR-016 и т.д.); если найдено — фиксируется как Open Question, код в рамках этапа 1 не трогается.
 - Спецификации Artifact/Execution/Executor взаимозависимы (Execution ссылается на Artifact и использует Executor) — утверждаются по отдельности, но проверяются на согласованность друг с другом перед утверждением каждой следующей.
 - Одна задача (например, TASK-029) может закрываться несколькими PR, если по ходу работы возникают вопросы, требующие решения архитектора, — сознательно принятый риск против скорости ([решение](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md)).
+- Начиная с TASK-030, каждая спецификация обязана пройти **Delta Review** относительно уже утверждённых/Reference спецификаций (сейчас — только Artifact): не требует ли пересмотра уже принятого, использует ли принятые понятия единообразно, не вводит ли дублирующее понятие под другим именем ([решение](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md)). Утверждённые/Reference спецификации после этого изменяются только через новый ADR, отдельный Domain Revision PR либо обоснованное изменение с тем же Delta Review — не напрямую.
 
 ## Статус
 
