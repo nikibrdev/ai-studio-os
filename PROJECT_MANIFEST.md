@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.2 (архитектура; кодовая база — pre-release, только контракты) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-002.5 Engineering Platform](docs/roadmap/EPIC-002.5-engineering-platform.md) |
+| **Current Epic** | [EPIC-002.5 Engineering Platform](docs/roadmap/EPIC-002.5-engineering-platform.md) (TASK-012…016 done; 017…020 next) |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -39,7 +39,7 @@
 |---|---|
 | **Last ADR** | [ADR-015](docs/adr/ADR-015-internal-layering.md) (internal layering) |
 | **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
-| **Quality** | All checks passed; CI: GitHub Actions `verify` — green (полный `make verify` на каждый PR и push в main) |
+| **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена (прямой push отклонён, force-push/удаление запрещены) |
 | **Открытые решения** | 8 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
 
