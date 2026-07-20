@@ -10,6 +10,8 @@
 
 AI Studio OS — платформа управления разработкой ПО, в которой роли команды (Project Manager, Developer, QA Engineer) исполняются людьми или AI-агентами. Платформа задаёт единый процесс: постановка задачи → реализация → контроль качества, — и обеспечивает наблюдаемость этого процесса для человека.
 
+Архитектура обслуживает видение продукта, а не наоборот — см. [VISION.md](../../VISION.md) (горизонты 1/2/5 лет) и эталонный сценарий [golden-path.md](golden-path.md). Единый язык предметной области и границы контекстов — [docs/domain/](../domain/README.md).
+
 ### Context Diagram
 
 ```mermaid
@@ -58,6 +60,7 @@ flowchart TB
 | [events.md](events.md) | Каталог событий (+ Sequence Diagram) |
 | [workflow.md](workflow.md) | Организация процесса: роли и правила |
 | [data-flow.md](data-flow.md) | Движение информации (+ Data Flow Diagram) |
+| [golden-path.md](golden-path.md) | Эталонный сквозной сценарий (+ Sequence Diagram) |
 | [engineering-principles.md](engineering-principles.md) | Инженерные принципы в практике |
 | [project-structure.md](project-structure.md) | Структура репозитория |
 | [memory.md](memory.md) | Память агентов (концепция, v0.7) |
@@ -88,4 +91,4 @@ flowchart TB
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

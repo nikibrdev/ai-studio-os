@@ -41,6 +41,13 @@
 - **Как применяем:** правила — [event-model.md](event-model.md), каталог — [events.md](events.md); версионирование схем — [ADR-002](../adr/ADR-002-event-delivery.md).
 - **Признаки нарушения:** «поправить событие задним числом»; подписчик получает разные данные при повторном чтении.
 
+### Commands, Events, Queries
+
+- **Суть:** запись, факт и чтение — три разных типа операций, разделённые явно на уровне контрактов модуля: **Command** («сделай Х», может быть отклонена) → **Event** («Х случилось», неизменяемый факт) → **Query** («покажи текущее состояние», не меняет данные). Даже без полноценного Event Sourcing разделение вводится сразу.
+- **Зачем:** явное разделение делает контракт модуля читаемым (сразу видно, что меняет состояние, а что только сообщает или читает) и не создаёт архитектурного долга при будущем переходе к более event-driven реализации ([ADR-002](../adr/ADR-002-event-delivery.md), [ADR-014](../adr/ADR-014-module-interaction.md)) — рефакторинг не понадобится, изменится только внутреннее устройство, не контракт.
+- **Как применяем:** каждый доменный модуль объявляет `Commands` (методы записи, валидируют и меняют состояние), `Queries` (методы чтения для слоя доставки — не межмодульный контракт, [ADR-014](../adr/ADR-014-module-interaction.md)) и публикует `Event`ы через платформенный `EventBus`. Уже применено: `internal/domain/task` (`Commands`, `Queries`, [events.md](events.md)) — образец для остальных доменных модулей.
+- **Признаки нарушения:** метод одновременно меняет состояние и возвращает данные для отображения (смешение Command/Query — нарушение [CQS](https://en.wikipedia.org/wiki/Command%E2%80%93query_separation)); Query-метод используется как способ изменить состояние «между делом».
+
 ### Backward Compatibility
 
 - **Суть:** опубликованные контракты (интерфейсы, события, API) эволюционируют без слома потребителей; ломающее изменение — осознанное решение через ADR.
@@ -63,7 +70,7 @@
 | SOLID | Small Modules, Explicit Dependencies, Interface First |
 | KISS | Simplicity over Cleverness |
 | DRY | [documentation.md](../development/documentation.md): один факт — один источник |
-| Event-Driven | Immutable Events, [event-model.md](event-model.md) |
+| Event-Driven | Immutable Events, Commands/Events/Queries, [event-model.md](event-model.md) |
 | Расширяемость без изменения ядра | Interface First, Backward Compatibility |
 | Минимум магии | Explicit Dependencies, Simplicity over Cleverness |
 
@@ -75,4 +82,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
