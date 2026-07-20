@@ -1,0 +1,29 @@
+{
+  "name": "AI Studio OS",
+  // Docker Hub, а не mcr.microsoft.com/devcontainers/go: последний оказался
+  // недоступен из-за проблем маршрутизации до Azure CDN при реальном
+  // тестировании (devcontainer up). Официальный образ golang — тот же Go
+  // 1.24 на Debian bookworm, надёжно доступен.
+  "image": "golang:1.24-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+  "containerEnv": {
+    // Тот же жёсткий пин тулчейна, что и в CI (BUGFIX-002) — версия Go в
+    // контейнере не должна незаметно плыть от ADR-009.
+    "GOTOOLCHAIN": "local"
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "editorconfig.editorconfig",
+        "davidanson.vscode-markdownlint",
+        "bierner.markdown-mermaid"
+      ]
+    }
+  }
+}
