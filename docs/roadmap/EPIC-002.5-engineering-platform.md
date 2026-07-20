@@ -27,17 +27,21 @@
 
 ## Декомпозиция
 
-| Задача | Содержание | Зависимости |
+| Задача | Содержание | Статус |
 | --- | --- | --- |
-| TASK-012 | `git init`, первый коммит (Conventional Commits), ветка `main`, создание GitHub-репозитория, push | решения по вопросам 1–3 ниже |
-| TASK-013 | `.github/workflows/verify.yml`: make verify (Go 1.24, golangci-lint, gofumpt, node для markdownlint) на PR и push | TASK-012 |
-| TASK-014 | CODEOWNERS (владелец — мейнтейнер; на `docs/adr/` и `CONSTITUTION.md` — только мейнтейнер) | вопрос 3 |
-| TASK-015 | `.github/ISSUE_TEMPLATE/`: bug_report, feature_request, task; сверка PR-шаблона | — |
-| TASK-016 | Защита `main`: обязательный статус verify, обязательное ревью, запрет прямых пушей и force-push | TASK-013, вопрос 2 |
-| TASK-017 | CI-проверка документации: markdownlint-cli2 (+ конфиг `.markdownlint.jsonc`), `scripts/verify-docs.sh`; при возможности — mermaid-cli для полной валидации диаграмм | TASK-013 |
-| TASK-018 | Проверка Conventional Commits: скрипт `scripts/check-commits.sh` + шаг в CI (диапазон коммитов PR) | TASK-013 |
-| TASK-019 | Dependabot: `gomod`, `github-actions` (npm — при появлении dashboard) | TASK-012 |
-| TASK-020 | Релизные заметки: `.github/release.yml` (категории по типам Conventional Commits) + процесс тегирования в docs/development/git-workflow.md | TASK-012 |
+| TASK-012 | `git init`, первый коммит, репозиторий на GitHub, push | Done (PR #1) |
+| TASK-013 | `.github/workflows/verify.yml` | Done (PR #2) |
+| TASK-014 | CODEOWNERS | Done (PR #3) |
+| TASK-015 | Шаблоны Issue, тип коммита `ci` | Done (PR #4) |
+| TASK-016 | Защита `main` | Done (PR #5) |
+| TASK-017 | Детальный markdownlint (MD060), оценка mermaid-cli | Done (PR #6) |
+| TASK-018 | Проверка Conventional Commits в CI | Done (PR #7) |
+| TASK-019 | Dependabot (gomod, github-actions) | Done (PR #8) |
+| TASK-020 | release.yml, метки, релизный процесс, CHANGELOG-бэкфилл | Done (PR #12) |
+| BUGFIX-001 | Закрепить gofumpt (v0.9.2) | Done (PR #13) |
+| BUGFIX-002 | Закрепить golangci-lint (v2.8.0) + `GOTOOLCHAIN: local` | Done (PR #14) |
+
+Дополнительно (не в исходной декомпозиции, обнаружено в процессе): Dependabot самостоятельно открыл PR #9–11 (bump `actions/setup-node`, `actions/checkout`, `actions/setup-go`) — все три обработаны и смержены; PR #11 стал живым триггером, вскрывшим маскировку тулчейна (см. BUGFIX-001/002 и [engineering/decisions/2026-07-20-pin-ci-tool-versions.md](../../engineering/decisions/2026-07-20-pin-ci-tool-versions.md)).
 
 ## План реализации (на утверждение)
 
@@ -57,27 +61,29 @@
 
 ## Проверка после первого push (обязательна до EPIC-003)
 
-По указанию архитектора, до перехода к Domain Layer проверить:
+Честная оценка на момент закрытия эпика (2026-07-20):
 
-- [ ] GitHub Actions проходит (полный `make verify` зелёный).
-- [ ] Все проверки работают (fmt, lint, vet, test, markdownlint, docs).
-- [ ] Mermaid-диаграммы корректно отображаются на GitHub.
-- [ ] README отображается корректно.
-- [ ] Предупреждений линтера нет.
-- [ ] Шаблон PR работает правильно.
+- [x] GitHub Actions проходит (полный `make verify` зелёный) — подтверждено на 14+ прогонах PR.
+- [x] Все проверки работают (fmt, lint, vet, test, markdownlint, docs) — подтверждено индивидуально (TASK-013/017/018) и в составе `make verify`.
+- [ ] **Mermaid-диаграммы корректно отображаются на GitHub** — НЕ подтверждено визуально агентом (нет надёжного способа отрендерить GitHub-страницу из текущего окружения); GitHub нативно поддерживает синтаксис ```mermaid с 2022 года, диаграммы прошли структурную проверку (`scripts/verify-docs.sh`), но фактическое отображение требует взгляда человека.
+- [ ] **README отображается корректно** — аналогично, не проверено визуально агентом.
+- [x] Предупреждений линтера нет — golangci-lint 0 issues, markdownlint 0 issues (подтверждено многократно).
+- [ ] **Шаблон PR работает правильно** — частично: файл `.github/PULL_REQUEST_TEMPLATE.md` синтаксически корректен и на месте, но все PR в этом эпике открывались через API с явным `body`, поэтому автозаполнение шаблона в веб-интерфейсе GitHub при создании PR человеком ни разу не проверялось агентом.
+
+**Два пункта требуют взгляда мейнтейнера** — откройте любой PR через веб-интерфейс, чтобы увидеть, что шаблон подставляется, и загляните на страницу репозитория/любого md-файла с диаграммой.
 
 ## Критерии завершения
 
-- [ ] Репозиторий на GitHub; `main` защищена; прямой push невозможен.
-- [ ] PR без зелёного `verify` не сливается; ревью обязательно.
-- [ ] Шаблоны Issue/PR, CODEOWNERS, Dependabot, release.yml действуют.
-- [ ] Чек-лист «Проверка после первого push» закрыт.
-- [ ] CHANGELOG и git-workflow.md обновлены.
+- [x] Репозиторий на GitHub; `main` защищена; прямой push невозможен (проверено тестовым push, отклонён GH006).
+- [x] PR без зелёного `verify` не сливается; ревью обязательно (структурно — required status check + required_pull_request_reviews; формальный approve — ограничен self-approval, см. TASK-016 Open Questions и ADR-008).
+- [x] Шаблоны Issue/PR, CODEOWNERS, Dependabot, release.yml действуют (Dependabot подтверждён живьём — открыл и мы обработали PR #9–11).
+- [ ] Чек-лист «Проверка после первого push» закрыт — 4 из 6 пунктов подтверждены, 2 ждут мейнтейнера (см. выше).
+- [x] CHANGELOG и git-workflow.md обновлены.
 
 ## Статус
 
-Утверждён; выполняется (TASK-012 начат: локальная часть готова, push ожидает URL репозитория от мейнтейнера)
+Завершён (2026-07-20) — с оговоркой: 2 пункта чек-листа «после push» требуют визуальной проверки мейнтейнером (см. выше)
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
