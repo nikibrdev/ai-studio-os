@@ -39,7 +39,7 @@
 |---|---|
 | **Last ADR** | [ADR-015](docs/adr/ADR-015-internal-layering.md) (internal layering) |
 | **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
-| **Quality** | All checks passed: gofumpt, golangci-lint (0 issues), go vet, go build, docs (0 битых ссылок) |
+| **Quality** | All checks passed; CI: GitHub Actions `verify` — green (полный `make verify` на каждый PR и push в main) |
 | **Открытые решения** | 8 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
 
