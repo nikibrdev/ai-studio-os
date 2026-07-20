@@ -38,6 +38,7 @@
 - Паспорт проекта PROJECT_MANIFEST.md, прогресс PROJECT_HEALTH.md, индекс решений docs/adr/DECISIONS_INDEX.md.
 - Запрет прямых коммитов в `main` без исключений (feature branch → PR → Review → Merge, даже соло; ревью может выполнять Claude).
 - Метрики: `make metrics` (scripts/metrics.sh) — снимки в engineering/metrics/; первый снимок 2026-07-20.
+- EPIC-002.5 Engineering Platform: репозиторий опубликован на GitHub ([nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os), public, Apache-2.0); GitHub Actions `verify` — обязательный статус-чек на каждый PR и push в main (Go 1.24, gofumpt, golangci-lint, markdownlint, docs-check); CODEOWNERS; шаблоны Issue (bug/feature/task) и тип коммита `ci`; защита ветки `main` (обязательный чек, запрет прямого push/force-push/удаления, `enforce_admins`); детальный конфиг markdownlint (MD060 включён, таблицы нормализованы); проверка Conventional Commits в CI (`scripts/check-commits.sh`); Dependabot (gomod, github-actions); релизный процесс — категоризация release notes по типам коммитов (`.github/release.yml`), метки типов в репозитории, раздел «Релизный процесс» в git-workflow.md (TASK-012…020).
 
 #### Changed
 
@@ -51,4 +52,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

@@ -51,12 +51,21 @@ refactor/<task-id>-<short-name>  # рефакторинг
 1. Один PR — одна задача из `tasks/`; scope PR не расширяется.
 2. PR оформляется по шаблону [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md).
 3. PR ссылается на файл задачи и содержит описание изменений и проверок.
-4. Перед запросом ревью автор проходит чек-лист [.claude/checklists/PR.md](../../.claude/checklists/PR.md).
-5. Слияние — после одобрения ревью; способ слияния (merge / squash / rebase) не зафиксирован — открытый вопрос.
+4. PR помечается GitHub-меткой, соответствующей основному типу Conventional Commits (`feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`ci`) — метка используется категоризацией release notes ([release.yml](../../.github/release.yml)).
+5. Перед запросом ревью автор проходит чек-лист [.claude/checklists/PR.md](../../.claude/checklists/PR.md).
+6. Обязательный статус-чек `verify` и проверка Conventional Commits — в CI ([verify.yml](../../.github/workflows/verify.yml)); `main` защищена (прямой push, force-push и удаление ветки запрещены — [TASK-016](../../tasks/review/TASK-016-branch-protection.md)).
+7. Слияние — после ревью и зелёного `verify`; текущая практика — merge commit (единообразная история PR); окончательный способ слияния и обязательное число формальных approve — [ADR-008](../adr/ADR-008-git-policies.md), Decision Required.
+
+### Релизный процесс
+
+1. **Версионирование** — [Semantic Versioning](https://semver.org/lang/ru/): `vMAJOR.MINOR.PATCH` как git-тег на `main` после слияния соответствующих PR.
+2. **CHANGELOG.md** — куратируемый источник истины (формат Keep a Changelog): при релизе раздел `[Unreleased]` переименовывается в версию с датой, начинается новый `[Unreleased]`.
+3. **GitHub Release notes** — вспомогательный, полуавтоматический артефакт: кнопка «Generate release notes» на странице релиза группирует PR по меткам согласно [.github/release.yml](../../.github/release.yml). Не заменяет CHANGELOG.md — при необходимости содержимое сверяется/переносится в него.
+4. Категоризация release notes работает только если у PR проставлена метка типа (см. правило Pull Request, п. 4); PR без метки попадают в категорию «Other Changes».
 
 ### Decision Required
 
-Способ слияния PR, правила защиты `main`, момент слияния относительно стадии Testing и политика подписи коммитов — [ADR-008](../adr/ADR-008-git-policies.md).
+Способ слияния PR (см. текущую практику выше), правила защиты `main` (базово настроены — [TASK-016](../../tasks/review/TASK-016-branch-protection.md); обязательное число approve не зафиксировано), момент слияния относительно стадии Testing и политика подписи коммитов — [ADR-008](../adr/ADR-008-git-policies.md).
 
 ## Статус
 
@@ -64,4 +73,4 @@ refactor/<task-id>-<short-name>  # рефакторинг
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
