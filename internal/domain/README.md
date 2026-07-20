@@ -16,7 +16,7 @@
 | `event/` | Словарь типов событий | [event/README.md](event/README.md) |
 | `workflow/` | Правила state machine (Rules) и определения процессов (Definition, Step) | [workflow/README.md](workflow/README.md) |
 
-Остальные модули доменной модели (`agent`, `execution`, `tool`, `memory`, `git`, `identity`) добавляются последующими эпиками по мере принятия связанных ADR.
+Остальные модули доменной модели (`artifact`, `execution`, `executor`, `tool`, `memory`, `git`, `identity`) добавляются в EPIC-003 и последующих эпиках; порядок и текущий статус спецификаций — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md). Спецификация `artifact` — в работе, [docs/specifications/domain/artifact.md](../../docs/specifications/domain/artifact.md) (черновик, PR 1 из 3).
 
 ### Зависимости
 
@@ -37,4 +37,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20
