@@ -15,7 +15,7 @@
 | [002](ADR-002-event-delivery.md) | **Accepted** | Event Bus — In-Memory (интерфейс стабилен; позже Redis Streams/NATS) | Нет |
 | [003](ADR-003-api-protocol.md) | **Accepted** | Протокол API — REST | Нет |
 | [004](ADR-004-task-storage.md) | **Accepted** | Задачи — PostgreSQL source of truth; `tasks/` — экспорт | Нет |
-| [005](ADR-005-agent-adapter-contract.md) | Decision Required | Контракт адаптера агента (формат обмена) | v0.3 Developer Engine; форму Request/Response |
+| [005](ADR-005-executor-contract.md) | **Accepted** | Executor Contract — четыре возможности (Accept/Artifacts/Status/Finish) | Нет |
 | [006](ADR-006-agent-execution-environment.md) | Decision Required | Среда выполнения и изоляция агентов | v0.3 Developer Engine |
 | [007](ADR-007-pm-qa-executors.md) | Decision Required | Исполнители ролей PM и QA в MVP | Объём v0.2 (PM) и v0.4 (QA) |
 | [008](ADR-008-git-policies.md) | Decision Required | Git-политики: слияние, ревью, момент merge относительно Testing | Условие Testing → Done; число обязательных approve в защите main (сейчас 0 — self-approval не засчитывается, TASK-016) |
@@ -29,9 +29,9 @@
 
 ### Сводка
 
-- **Принято:** 7 (001, 002, 003, 004, 009, 014, 015)
-- **Decision Required:** 8 (005, 006, 007, 008, 010, 011, 012, 013)
-- Ближайшие к принятию по roadmap: ADR-011 (нужен Task Engine, EPIC-003+), ADR-005/006 (v0.3).
+- **Принято:** 8 (001, 002, 003, 004, 005, 009, 014, 015)
+- **Decision Required:** 7 (006, 007, 008, 010, 011, 012, 013)
+- Ближайшие к принятию по roadmap: ADR-011 (нужен Task Engine, EPIC-003+), ADR-006 (среда выполнения Executor, v0.3).
 
 ## Статус
 
@@ -39,4 +39,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

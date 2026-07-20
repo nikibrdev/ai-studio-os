@@ -2,13 +2,13 @@
 
 ## Назначение
 
-Контракты инфраструктурных абстракций платформы: EventBus, Agent, Tool, MemoryProvider, RepositoryProvider ([ADR-015](../../docs/adr/ADR-015-internal-layering.md)). Это не язык предметной области (он в [domain/shared](../domain/shared/README.md)) — это то, на чём платформа работает. Только интерфейсы; реализации — в `internal/infrastructure`, `agents/`, `tools/`.
+Контракты инфраструктурных абстракций платформы: EventBus, Executor, Tool, MemoryProvider, RepositoryProvider ([ADR-015](../../docs/adr/ADR-015-internal-layering.md)). Это не язык предметной области (он в [domain/shared](../domain/shared/README.md)) — это то, на чём платформа работает. Только интерфейсы; реализации — в `internal/infrastructure`, `agents/`, `tools/`.
 
 ## Содержание
 
 ### Ответственность
 
-- Контракты: EventBus (Event, EventHandler, Subscription), Agent (Request/Response — абстрактны до ADR-005), Tool (ToolDescriptor), MemoryProvider (MemoryEntry), RepositoryProvider (PullRequestState).
+- Контракты: EventBus (Event, EventHandler, Subscription), **Executor** (не Agent — платформа запускает исполнителей, не агентов; [ADR-005](../../docs/adr/ADR-005-executor-contract.md): `Accept`/`Artifacts`/`Status`/`Finish`, `ExecutorTask`/`Artifact`/`ExecutionStatus` абстрактны до Domain Layer), Tool (ToolDescriptor), MemoryProvider (MemoryEntry), RepositoryProvider (PullRequestState).
 - Концептуальный источник истины — [docs/architecture/interfaces.md](../../docs/architecture/interfaces.md).
 
 ### Зависимости
@@ -30,4 +30,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

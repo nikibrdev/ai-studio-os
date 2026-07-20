@@ -10,7 +10,7 @@ EPIC-002 ([docs/roadmap/EPIC-002-foundation.md](../../docs/roadmap/EPIC-002-foun
 
 ## Цель
 
-Контракт агента в `internal/core`: Agent, Assignment, Result — минимальный состав по [interfaces.md](../../docs/architecture/interfaces.md), не предвосхищающий нерешённые [ADR-005](../../docs/adr/ADR-005-agent-adapter-contract.md)/[ADR-006](../../docs/adr/ADR-006-agent-execution-environment.md).
+Контракт агента в `internal/core`: Agent, Assignment, Result — минимальный состав по [interfaces.md](../../docs/architecture/interfaces.md), не предвосхищающий нерешённые [ADR-005](../../docs/adr/ADR-005-executor-contract.md)/[ADR-006](../../docs/adr/ADR-006-agent-execution-environment.md).
 
 ## Контекст
 

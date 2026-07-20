@@ -14,14 +14,14 @@
 
 ---
 
-### Agent (адаптер агента)
+### Executor (исполнитель)
 
-- **Ответственность:** подключение конкретного AI-провайдера (Claude Code, OpenAI Codex, OpenHands, Gemini и др.) к платформе; выполнение назначенной работы в рамках роли.
-- **Входные данные:** назначение на исполнение — задача (цель, scope, критерии приёмки), роль, контекст (документы, память, ограничения), перечень доступных инструментов.
-- **Выходные данные:** поток событий о ходе работы; по завершении — Result: статус, отчёт по структуре из [CLAUDE.md](../../CLAUDE.md), артефакты, Open Questions.
-- **Ограничения:** агент не выходит за scope назначения; внешние действия — только через доступные инструменты (целевое состояние, v0.8); адаптер не содержит доменной логики платформы; один адаптер — один провайдер.
-- **Жизненный цикл:** Registered (адаптер зарегистрирован) → Assigned (получено назначение) → Running (выполняет, публикует события) → Completed | Failed (возвращён Result) → Released.
-- **Decision Required:** формат обмена и способ вызова — [ADR-005](../adr/ADR-005-agent-adapter-contract.md); среда выполнения и изоляция — [ADR-006](../adr/ADR-006-agent-execution-environment.md).
+- **Ответственность:** подключение конкретного технического бэкенда (Claude Code, OpenAI Codex, OpenHands, Aider, Cline, человек и др.) к платформе; выполнение назначенной работы в рамках роли. Не путать с Agent — логической ролью-исполнителем («Developer Agent»); Executor — реальный бэкенд, который эту роль исполняет ([ubiquitous-language.md](../domain/ubiquitous-language.md)).
+- **Входные данные:** `ExecutorTask` — задача (цель, scope, критерии приёмки), роль, контекст (документы, память, ограничения), перечень доступных инструментов; форма намеренно абстрактна до Domain Layer.
+- **Выходные данные:** `Artifact` (множественно — коммит, PR, документ, тестовый прогон и т.п.) и `ExecutionStatus`, возвращаемые отдельно, а не одним непрозрачным результатом.
+- **Ограничения:** Executor не выходит за scope принятой задачи; внешние действия — только через доступные инструменты (целевое состояние, v0.8); адаптер не содержит доменной логики платформы; один адаптер — один бэкенд.
+- **Жизненный цикл:** Registered (адаптер зарегистрирован) → Accepted (задача принята) → Running (производит артефакты, отчитывается о статусе) → Finished → Released.
+- **Принято ([ADR-005](../adr/ADR-005-executor-contract.md)):** контракт — ровно четыре возможности (`Accept`, `Artifacts`, `Status`, `Finish`); форма `ExecutorTask`/`Artifact`/`ExecutionStatus` остаётся абстрактной до Domain Layer. Среда выполнения и изоляция — по-прежнему Decision Required, [ADR-006](../adr/ADR-006-agent-execution-environment.md).
 
 ---
 
@@ -83,14 +83,14 @@
 
 | Интерфейс | Кто реализует | Кто использует | Статус решений |
 | --- | --- | --- | --- |
-| Agent | Адаптеры в `agents/` | Orchestrator, модуль `execution` | ADR-005, ADR-006 — Decision Required |
+| Executor | Адаптеры в `agents/` | Orchestrator, модуль `execution` | ADR-005 — принято; ADR-006 — Decision Required |
 | Tool | Реализации в `tools/` | Агенты (через Tool Layer) | детали — v0.8 |
 | Event Bus | In-Memory (MVP); позже Redis Streams / NATS | Все модули Core, Orchestrator | ADR-002 — принято |
 | Workflow | Модуль `workflow` | Модуль `task`, Orchestrator | ADR-014 — принято |
 | Memory Provider | Файловый адаптер / Qdrant-адаптер | Модуль `memory` | детали — v0.7 |
 | Repository Provider | GitHub-адаптер | Модуль `git`, инструменты | ADR-008, ADR-013 — Decision Required |
 
-Go-контракты зафиксированы строго по этому документу: платформенные (EventBus, Agent, Tool, MemoryProvider, RepositoryProvider) — в `internal/platform`; контракт Workflow — тип `Rules` в `internal/domain/workflow`; словари Role/TaskState — в `internal/domain/shared` ([ADR-015](../adr/ADR-015-internal-layering.md)).
+Go-контракты зафиксированы строго по этому документу: платформенные (EventBus, Executor, Tool, MemoryProvider, RepositoryProvider) — в `internal/platform`; контракт Workflow — тип `Rules` в `internal/domain/workflow`; словари Role/TaskState — в `internal/domain/shared` ([ADR-015](../adr/ADR-015-internal-layering.md)).
 
 ## Статус
 
@@ -98,4 +98,4 @@ Go-контракты зафиксированы строго по этому д
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-20

@@ -36,7 +36,9 @@
 
 ### Agent / Executor (Агент / Исполнитель)
 
-Тот, кто выполняет работу в рамках роли. **Executor** — общее понятие: AI-агент (Claude Code, Codex, OpenHands, Aider, Cline, в будущем — собственные модели) или человек. **Agent** — исторически сложившееся более узкое имя для AI-исполнителя; по видению проекта ([VISION.md](../../VISION.md)) платформа не делает различия между видами исполнителей на уровне ядра — она знает только, что Executor принимает Context и возвращает Result. Смена терминологии в коде (`platform.Agent` → более общее имя) — открытый вопрос, не выполнялась (см. «Открытые вопросы»).
+Два разных понятия, различаемые по [ADR-005](../adr/ADR-005-executor-contract.md) (принято): **Agent** — логическая роль-исполнитель (например, Developer Agent — «роль Developer, которую кто-то исполняет»); **Executor** — конкретный технический бэкенд, реально исполняющий эту роль (Claude Code, Codex, OpenHands, Aider, Cline, человек, в будущем — собственные модели). Цепочка: Role (Developer) → Agent (Developer Agent) → Executor (Claude Code).
+
+Платформа не делает различия между видами Executor'ов на уровне ядра — она знает только, что Executor принимает задачу и возвращает Artifact, Status ([ADR-005](../adr/ADR-005-executor-contract.md)). В коде платформы (`internal/platform`) используется только термин **Executor**; «Agent»/«агент» остаётся допустимым термином документации о ролях ([agents.md](../architecture/agents.md), [.claude/agents/](../../.claude/agents/)).
 
 ### Context (Контекст)
 
@@ -50,7 +52,7 @@
 
 ### Открытые вопросы
 
-- Переименование `platform.Agent` в более общий термин (например, `Executor`) в коде — терминологическое решение с реальным влиянием на контракт; не выполнено сейчас, рассмотреть при принятии [ADR-005](../adr/ADR-005-agent-adapter-contract.md) (v0.6 AI Agent Runtime).
+Нет: терминологическое разделение Agent/Executor и переименование `platform.Agent` → `platform.Executor` решены [ADR-005](../adr/ADR-005-executor-contract.md) (принято, 2026-07-20).
 
 ## Статус
 
