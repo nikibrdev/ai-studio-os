@@ -1,0 +1,21 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Features
+      labels: [feat]
+    - title: Fixes
+      labels: [fix]
+    - title: Documentation
+      labels: [docs]
+    - title: Refactoring
+      labels: [refactor]
+    - title: Tests
+      labels: [test]
+    - title: CI/CD
+      labels: [ci]
+    - title: Chores
+      labels: [chore]
+    - title: Other Changes
+      labels: ["*"]
