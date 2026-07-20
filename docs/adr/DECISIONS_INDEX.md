@@ -18,7 +18,7 @@
 | [005](ADR-005-agent-adapter-contract.md) | Decision Required | Контракт адаптера агента (формат обмена) | v0.3 Developer Engine; форму Request/Response |
 | [006](ADR-006-agent-execution-environment.md) | Decision Required | Среда выполнения и изоляция агентов | v0.3 Developer Engine |
 | [007](ADR-007-pm-qa-executors.md) | Decision Required | Исполнители ролей PM и QA в MVP | Объём v0.2 (PM) и v0.4 (QA) |
-| [008](ADR-008-git-policies.md) | Decision Required | Git-политики: слияние, ревью, момент merge относительно Testing | Условие Testing → Done; настройки защиты main |
+| [008](ADR-008-git-policies.md) | Decision Required | Git-политики: слияние, ревью, момент merge относительно Testing | Условие Testing → Done; число обязательных approve в защите main (сейчас 0 — self-approval не засчитывается, TASK-016) |
 | [009](ADR-009-toolchain.md) | **Accepted** | Toolchain — Go 1.24, Next.js 15, pnpm, golangci-lint, gofumpt | Нет |
 | [010](ADR-010-documentation-language.md) | Decision Required | Язык документации (EN-версия) | Публичный релиз v1.0 |
 | [011](ADR-011-task-identifiers.md) | Decision Required | Формат идентификаторов задач/эпиков | Модель данных Task Engine |
