@@ -58,7 +58,7 @@
 ### Связь с Конституцией
 
 | Принцип Конституции | Детализация |
-|---|---|
+| --- | --- |
 | Clean Architecture | [core.md](core.md), [module-boundaries.md](module-boundaries.md) |
 | SOLID | Small Modules, Explicit Dependencies, Interface First |
 | KISS | Simplicity over Cleverness |

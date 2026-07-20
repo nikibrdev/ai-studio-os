@@ -13,7 +13,7 @@
 ### Замечания и решения
 
 | № | Замечание | Решение | Статус |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | Контракт Agent (Assignment/Result с полями) предвосхищает непринятый ADR-005 | `Agent.Execute(ctx, Request) (Response, error)`; Request/Response — абстрактные типы (`any`) до утверждения ADR-005; Assignment, Result, ExecutionStatus, ID/Provider/Roles удалены из контракта | Исправлено |
 | 2 | Имя компонента «Engine» преждевременно: устройство пути записи (возможен Command → Event → Projection) не решено | Интерфейсы переименованы: Engine → `Commands`, Reader → `Queries`; в документации пакета зафиксировано, что механизм записи контрактами не фиксируется | Исправлено |
 | 3 | Нет доменного слоя: `internal/tasks` создан раньше `internal/domain`; всё должно строиться вокруг домена | Введена структура `internal/domain/` (task, project, event, workflow), `internal/application/`, `internal/infrastructure/`; старые пакеты `internal/{events,workflow,tasks,project}` удалены | Исправлено |

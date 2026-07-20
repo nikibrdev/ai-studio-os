@@ -40,7 +40,7 @@ flowchart TD
 #### Физическая структура `internal/` (слои, [ADR-015](../adr/ADR-015-internal-layering.md))
 
 | Каталог | Слой | Содержание |
-|---|---|---|
+| --- | --- | --- |
 | `internal/domain/shared/` | Domain | Язык домена: Role, TaskState (позже ID, ошибки, value objects) |
 | `internal/domain/<module>/` | Domain | Доменные модули; концептуальный набор — 10 модулей ([core.md](core.md)); созданы: task, project, event, workflow |
 | `internal/application/` | Application | Сценарии использования и проекции (заполняется эпиком Application Layer) |
@@ -97,7 +97,7 @@ flowchart TD
 ### Сводная матрица
 
 | Кто ↓ зависит от → | Core (контракты) | Core (внутренности) | pkg | apps/api | orchestrator | agents/ | tools/ | Инфраструктура |
-|---|---|---|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Модуль Core | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ (только порты) |
 | apps/api | ✅ | ❌ | ✅ | — | ❌ | ❌ | ❌ | ✅ слой доставки |
 | apps/dashboard | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |

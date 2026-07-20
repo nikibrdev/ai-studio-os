@@ -13,7 +13,7 @@
 **Принято ([ADR-004](../docs/adr/ADR-004-task-storage.md)):** источник истины — PostgreSQL (Task Engine); этот каталог станет markdown-экспортом. До ввода Task Engine действует файловый процесс с отображением состояний на каталоги (переходный период):
 
 | Состояние | Каталог |
-|---|---|
+| --- | --- |
 | Backlog, Ready, In Progress, Review, Blocked, Done | одноимённые каталоги |
 | Testing | `review/` (переход фиксируется в «Истории» задачи) |
 | Cancelled, Archived | `archive/` (для Cancelled — причина в «Истории») |

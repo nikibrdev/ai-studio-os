@@ -44,7 +44,7 @@ internal/
 Правила зависимостей:
 
 | Слой | Может импортировать |
-|---|---|
+| --- | --- |
 | `domain/shared` | только stdlib |
 | `domain/<module>` | stdlib, `domain/shared`, публичные контракты соседних доменных модулей |
 | `application` | domain, platform, `pkg/` |

@@ -9,7 +9,7 @@
 ### Состав
 
 | Пакет | Ответственность | README |
-|---|---|---|
+| --- | --- | --- |
 | `shared/` | Язык домена: Role, TaskState (позже ID, ошибки, value objects) | [shared/README.md](shared/README.md) |
 | `task/` | Контракты записи/чтения/экспорта задач | [task/README.md](task/README.md) |
 | `project/` | Реестр управляемых проектов | [project/README.md](project/README.md) |

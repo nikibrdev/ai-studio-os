@@ -9,7 +9,7 @@
 ### Индекс
 
 | ADR | Статус | Тема | Блокирует |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | [000](ADR-000-template.md) | Template | Шаблон ADR | — |
 | [001](ADR-001-license.md) | **Accepted** | Лицензия — Apache License 2.0 | Нет |
 | [002](ADR-002-event-delivery.md) | **Accepted** | Event Bus — In-Memory (интерфейс стабилен; позже Redis Streams/NATS) | Нет |
