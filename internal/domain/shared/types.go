@@ -4,7 +4,7 @@
 // Identifier types, domain errors and further value objects are added here
 // as the corresponding decisions are made (identifiers — ADR-011).
 // The package contains types and constants only — no logic.
-package shared
+package shared //nolint:revive // "shared" is the deliberate name of the domain's ubiquitous-language package (ADR-015), not a generic placeholder
 
 // Role is a set of responsibilities in the development process, deliberately
 // separated from its executor: any role can be performed by a human or by an
