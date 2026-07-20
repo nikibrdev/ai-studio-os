@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.2 Architecture & Engineering Platform — Завершено; следующая — v0.3 Domain Layer ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-002.6 Developer Experience](docs/roadmap/EPIC-002.6-developer-experience.md) — Утверждён, выполняется |
+| **Current Epic** | [EPIC-002.6 Developer Experience](docs/roadmap/EPIC-002.6-developer-experience.md) — Завершён (мини-аудит пройден); следующий шаг — EPIC-003 Domain Layer, ждёт сигнала на старт |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -39,7 +39,7 @@
 | --- | --- |
 | **Last ADR** | [ADR-015](docs/adr/ADR-015-internal-layering.md) (internal layering) |
 | **Last Review** | 2026-07-19 — [EPIC-002 code review](engineering/reviews/2026-07-19-epic-002-code-review.md) |
-| **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена (прямой push отклонён, force-push/удаление запрещены); toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)) |
+| **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 8 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
 

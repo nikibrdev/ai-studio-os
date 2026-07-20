@@ -38,6 +38,12 @@
    make verify
    ```
 
+### Редактор
+
+- `.editorconfig` — базовые отступы/кодировка/конец строки, единые для всех редакторов.
+- `.vscode/extensions.json` — рекомендуемые расширения VS Code (Go, EditorConfig, markdownlint, Mermaid); VS Code предложит установить их автоматически при открытии проекта.
+- `.vscode/settings.json` — форматирование и линтинг Go в редакторе используют те же инструменты, что CI и git-хуки (`gofumpt`, `golangci-lint`) — расхождений «в редакторе одно, при коммите другое» нет.
+
 ### Инструменты и их версии
 
 Точные версии зафиксированы в [ADR-009](docs/adr/ADR-009-toolchain.md) и `.github/workflows/verify.yml` — тот же `golangci-lint`/`gofumpt`, что в CI и Dev Container, во избежание расхождений ([engineering/decisions/2026-07-20-pin-ci-tool-versions.md](engineering/decisions/2026-07-20-pin-ci-tool-versions.md)).
