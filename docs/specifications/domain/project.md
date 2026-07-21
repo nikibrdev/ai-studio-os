@@ -79,19 +79,37 @@ Project уже полностью определён разделами One Sent
 
 ## Domain Events
 
-(Раздел — PR 2, не входит в этот PR.)
+Переходы Lifecycle порождают обязательные публичные события; дополнительно — событие о подключении Repository, поскольку это операционный факт, значимый за пределами Project (уже анонсировано README модуля: «события проекта (создание, подключение репозитория, архивирование)»).
+
+- **ProjectCreated** — публикуется при создании Project (вход в Created). Данные: Identifier, название, момент создания.
+- **RepositoryConnected** — публикуется при каждом подключении Repository (не только первом). Данные: Identifier Project, ссылка на Repository, момент.
+- **ProjectActivated** — публикуется при переходе Created → Active. Данные: Identifier, момент перехода. Если гипотеза Lifecycle (Open Questions PR 1) подтвердится, это событие сопровождает первый `RepositoryConnected`, а не заменяет его.
+- **ProjectArchived** — публикуется при переходе Active → Archived. Данные: Identifier, момент перехода.
 
 ## Commands
 
-(Раздел — PR 2, не входит в этот PR.)
+Согласовано с уже принятым `Registry` ([internal/domain/project/registry.go](../../../internal/domain/project/registry.go)) — эта спецификация не вводит команд сверх того, что уже принято.
+
+1. **Create** — регистрирует Project в состоянии Created. Обязательный параметр: название.
+2. **ConnectRepository** — подключает Repository к Project; допустима в Created и в Active (не в Archived — Behavioral Invariant 1). Если это первый подключаемый Repository и Project был в Created, результатом также является переход в Active (гипотеза, Open Questions).
+3. **Archive** — переводит Active → Archived; после выполнения дальнейшие изменения самого Project недопустимы (Behavioral Invariant 1).
 
 ## Queries
 
-(Раздел — PR 2, не входит в этот PR.)
+Уже принятый код (`registry.go`) не содержит отдельного контракта Queries — эта спецификация фиксирует концептуальный минимум, ожидаемый от будущей реализации (этап 2), не переопределяет ничего уже принятого.
+
+- **Получить по Identifier** — вернуть конкретный Project.
+- **Найти по статусу** — например, все Active (действующие инициативы) или все Archived.
+- **Получить подключённые Repository** — список Repository, подключённых к Project.
 
 ## Examples
 
-(Раздел — PR 2, не входит в этот PR.)
+Ни кода, ни JSON — только содержательные примеры, показывающие, что модель выдерживает разнородные реальные случаи.
+
+- **Обычный действующий проект** — Create (Created) → ConnectRepository (первый репозиторий, переход в Active) → внутри создаются Epic, Task, Artifact.
+- **Проект с несколькими репозиториями** — например, монорепозиторий приложения и отдельный репозиторий инфраструктуры, оба подключены к одному Project (Structural Invariant 1 допускает `1..*`).
+- **Только что созданный, ещё не активный проект** — Created, ни один Repository ещё не подключён; ни один Task или Artifact не может быть создан в его границах (Behavioral Invariant 4).
+- **Архивированный проект** — инициатива завершена, вызван Archive; уже существовавшие внутри Task и Artifact сохраняют собственные, ранее достигнутые статусы (часть — Done, часть — Cancelled) — архивирование Project не переписывает их (Behavioral Invariant 2).
 
 ## Acceptance Criteria
 
@@ -130,7 +148,7 @@ Project уже полностью определён разделами One Sent
 
 ## Статус
 
-Черновик — PR 1 из 3 (фундамент). Разделы Domain Events/Commands/Queries/Examples — PR 2; Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
+Черновик — PR 2 из 3 (поведение). Разделы Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
 
 ## Последнее обновление
 
