@@ -43,7 +43,9 @@ func (s *CompletionService) RequestReview(ctx context.Context, taskID, actor str
 // back to In Progress if changes were requested. Publishes ReviewCompleted
 // (source: git, per docs/architecture/events.md — the verdict originates
 // from the pull request review, even though the task module performs the
-// transition).
+// transition) with the target state attached via Envelope.WithData, so a
+// subscriber (internal/application/projection.go) can tell the two
+// outcomes apart without re-deriving them from anywhere else.
 func (s *CompletionService) CompleteReview(ctx context.Context, taskID string, approved bool, actor string) error {
 	t, err := s.Tasks.Get(ctx, taskID)
 	if err != nil {
@@ -60,7 +62,9 @@ func (s *CompletionService) CompleteReview(ctx context.Context, taskID string, a
 	if err := s.Tasks.Save(ctx, t); err != nil {
 		return err
 	}
-	return s.publish(ctx, event.ReviewCompleted, "git", actor, t.ProjectID(), t.ID(), transitioned.At)
+	e := NewEvent(event.ReviewCompleted, "git", actor, t.ProjectID(), t.ID(), transitioned.At).
+		WithData(map[string]string{"to": string(to)})
+	return s.Events.Publish(ctx, e)
 }
 
 // CompleteTestingParams are the inputs to CompleteTesting. Repository and

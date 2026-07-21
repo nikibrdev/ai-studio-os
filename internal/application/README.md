@@ -17,9 +17,15 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 | `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution) |
 | `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` |
 | `completion.go` | `CompletionService` (TASK-044) — «Завершение задачи»: `RequestReview`, `CompleteReview`, `CompleteTesting` — реализует ADR-008 (merge — код-гейт перед Done, порядок TestsPassed → MergeCompleted → TaskCompleted) |
+| `projection.go` | `TaskProjection` (TASK-045) — read-модель статуса задачи, построенная только из событий (ADR-014); `Rebuild` доказывает пересобираемость с нуля из журнала |
 | `id.go` | `NewID()` — общий генератор идентификаторов (`crypto/rand`, без внешней UUID-зависимости) для сущностей, порождаемых как побочный эффект use-case (Execution, здесь же переиспользуется), а не именованных явной командой |
+| `e2e_test.go` | Сквозной тест golden path целиком (`docs/architecture/golden-path.md`) через все четыре сервиса, включая ветки «changes requested» и «tests failed» — состояние проверяется только через `TaskProjection` |
 
-Остальной use-case (TASK-045: проекция чтения) добавляется отдельным файлом по мере реализации — этим завершается декомпозиция EPIC-004.
+Декомпозиция EPIC-004 завершена всеми шестью задачами (TASK-040…045).
+
+### Envelope.WithData — данные, специфичные для события
+
+`platform.Event` (ADR-002) несёт только общие поля. Когда одному имени события соответствуют разные исходы (`ReviewCompleted` → Testing или обратно в In Progress), `CompletionService` прикрепляет исход через `Envelope.WithData(map[string]string{"to": ...})` — метод сверх контракта `platform.Event`, не изменение самого контракта; читается обратно только через type assertion на конкретный тип `Envelope` (см. `projection.go`, `targetState`).
 
 ### ADR-008 в коде
 

@@ -10,12 +10,12 @@
 
 | Направление | Готовность | Комментарий |
 | --- | --- | --- |
-| Architecture | **97%** | Заморожена; 3% — 4 ADR в Decision Required, ни один не блокирует v0.4–v0.6 ([индекс](docs/adr/DECISIONS_INDEX.md)) |
+| Architecture | **97%** | Заморожена; 3% — 4 ADR в Decision Required, ни один не блокирует v0.5–v0.6 ([индекс](docs/adr/DECISIONS_INDEX.md)) |
 | Documentation | **100%** | Для текущего этапа: 17 архитектурных документов, процессы, спецификационная структура |
-| Workflow | **60%** | Каноническая state machine реализована (`workflow.Machine`, 100% покрытия); Definition/Step и оркестрация — v0.4+ |
-| Implementation | **30%** | Domain Layer завершён (EPIC-003 закрыт): 5 сущностей + Machine, инварианты — проверяемый код; Application/Infrastructure не начаты |
-| Testing | **20%** | 82 unit-теста Domain Layer (покрытие пакетов 81.8–100%), включая сквозной сценарий слоя; интеграционные/e2e — с v0.4–v0.5 (QA Engine) |
-| API | **0%** | REST принят (ADR-003); реализация после Application Layer |
+| Workflow | **60%** | Каноническая state machine реализована (`workflow.Machine`, 100% покрытия) и используется всеми use-case'ами Application Layer; Definition/Step — v0.5+ |
+| Implementation | **45%** | Domain Layer (EPIC-003) и Application Layer (EPIC-004) завершены: 5 сущностей + Machine + 4 use-case-сервиса + проекция чтения, поверх портов на in-memory фейках; Infrastructure не начата |
+| Testing | **30%** | 136 unit-теста (Domain 81.8–100%, Application 83.1%/86.8%), включая сквозной сценарий слоя и сквозной golden-path тест приложения; интеграционные/e2e — с v0.5–v0.6 (реальные адаптеры, QA Engine) |
+| API | **0%** | REST принят (ADR-003); реализация после Infrastructure Layer |
 | Dashboard | **0%** | v0.6 |
 
 ### Методика
