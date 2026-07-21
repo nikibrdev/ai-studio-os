@@ -15,11 +15,11 @@
 | `execution/` | Сущность Execution — единичный запуск Executor'а: Lifecycle, команды, гонка Fail/Abort порядком выполнения | [execution/README.md](execution/README.md) |
 | `executor/` | Сущность Executor — реестр технических бэкендов: идентичность, роли, доступность | [executor/README.md](executor/README.md) |
 | `task/` | Сущность Task (инварианты, переходы через workflow.Rules) + контракты записи/чтения/экспорта | [task/README.md](task/README.md) |
-| `project/` | Реестр управляемых проектов | [project/README.md](project/README.md) |
+| `project/` | Сущность Project (граница инициативы, явный Activate) + контракт реестра | [project/README.md](project/README.md) |
 | `event/` | Словарь типов событий | [event/README.md](event/README.md) |
 | `workflow/` | Правила state machine (Rules) и определения процессов (Definition, Step) | [workflow/README.md](workflow/README.md) |
 
-Все пять спецификаций EPIC-003 (Artifact, Execution, Executor, Task, Project) утверждены — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md). `artifact/` (TASK-034), `execution/` (TASK-035), `executor/` (TASK-036) и `task/` (TASK-037 — сущность и расширенный контракт) — пакеты с реализованной логикой этапа 2; расширение `project` и реализация `workflow.Rules` появятся отдельными задачами того же этапа. Остальные модули доменной модели (`tool`, `memory`, `git`, `identity`) — вне scope EPIC-003, по решению архитектора отдельно.
+Все пять спецификаций EPIC-003 (Artifact, Execution, Executor, Task, Project) утверждены — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md). Все пять доменных сущностей реализованы на этапе 2: `artifact/` (TASK-034), `execution/` (TASK-035), `executor/` (TASK-036), `task/` (TASK-037), `project/` (TASK-038); остаётся реализация `workflow.Rules` (TASK-039). Остальные модули доменной модели (`tool`, `memory`, `git`, `identity`) — вне scope EPIC-003, по решению архитектора отдельно.
 
 ### Зависимости
 
