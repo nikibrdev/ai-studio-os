@@ -52,9 +52,9 @@
 
 **Результат достигнут:** платформа работает end-to-end на реальных хранилищах и интеграциях — подтверждено интеграционным тестом ([internal/infrastructure/wiring/golden_path_integration_test.go](internal/infrastructure/wiring/golden_path_integration_test.go)): та же золотая дорожка, что и в v0.4, на реальных PostgreSQL-адаптерах и производственном EventBus (с журналом, восстановимым отдельным select'ом), без единой строки изменений в `internal/application`/`internal/domain`. Единственное исключение — `RepositoryProvider`: покрыт unit-тестами против GitHub REST API, но не проверен вживую на реальном репозитории (нет тестового репозитория и токена в этой сессии) — принятый открытый риск, не блокирующий результат.
 
-### v0.6 AI Agent Runtime — исполнение агентов
+### v0.6 AI Agent Runtime — исполнение агентов — **В работе** (открыт 2026-07-21)
 
-- Контракт адаптера агента (ADR-005, ADR-006 — Decision Required); первый адаптер — Claude Code.
+- [EPIC-006](docs/roadmap/EPIC-006-ai-agent-runtime.md): целевая модель исполнения из [ADR-006](docs/adr/ADR-006-agent-execution-environment.md) (принят) — одно Execution = один Docker-контейнер, сетевой allowlist, короткоживущие секреты; первый реальный адаптер `Executor` ([ADR-005](docs/adr/ADR-005-executor-contract.md), принят) — Claude Code.
 - Роль Developer исполняется агентом по процессу из [CLAUDE.md](CLAUDE.md); оформление изменений через GitHub.
 
 **Результат:** агент-разработчик выполняет подготовленные задачи в исполняемой платформе.

@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.5 Infrastructure Layer — **завершён** (2026-07-21); следующий — v0.6 AI Agent Runtime ([ROADMAP.md](ROADMAP.md)) |
+| **Version** | v0.6 AI Agent Runtime — **в работе** (открыт 2026-07-21); v0.5 Infrastructure Layer — завершён ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-005 Infrastructure Layer](docs/roadmap/EPIC-005-infrastructure-layer.md) — **закрыт** (2026-07-21): пять портов хранения на PostgreSQL, производственный EventBus с журналом (восстановим select'ом), GitHub Repository Provider (TASK-046…051); golden path зелёный на реальной инфраструктуре. EPIC-006 (AI Agent Runtime) — не открыт |
+| **Current Epic** | [EPIC-006 AI Agent Runtime](docs/roadmap/EPIC-006-ai-agent-runtime.md) — **в работе** (открыт 2026-07-21): целевая модель исполнения (Docker-контейнер на Execution, ADR-006) + первый реальный адаптер Executor — Claude Code (ADR-005) (TASK-052…057) |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
