@@ -64,6 +64,23 @@ func New(id, taskID, executorID string) (*Execution, Queued, error) {
 	return e, event, nil
 }
 
+// Restore reconstructs an Execution from previously persisted state,
+// without re-running business rules or producing an event. It exists for
+// storage adapters (internal/infrastructure) loading an aggregate that was
+// already validated by New/Accept/RecordArtifact/Succeed/Fail/Abort at the
+// time it was saved — callers outside a Store implementation should not
+// use it.
+func Restore(id, taskID, executorID string, createdAt time.Time, artifactIDs []string, state State) *Execution {
+	return &Execution{
+		id:          id,
+		taskID:      taskID,
+		executorID:  executorID,
+		createdAt:   createdAt,
+		artifactIDs: append([]string(nil), artifactIDs...),
+		state:       state,
+	}
+}
+
 // Accept transitions Queued -> Running: the Executor confirmed taking the
 // work (spec Commands: Accept; ADR-005 capability Accept). Invalid once
 // the Execution has left Queued (Behavioral Invariant 3).

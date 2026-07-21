@@ -20,7 +20,7 @@ Infrastructure Layer — адаптеры, реализующие контрак
 
 | Пакет | Содержимое | Задача |
 | --- | --- | --- |
-| `postgres/` | Подключение (`pgxpool.Pool`), раннер миграций, Store-адаптеры пяти агрегатов | TASK-046 (каркас), TASK-047 (Project+Task), TASK-048 |
+| `postgres/` | Подключение (`pgxpool.Pool`), раннер миграций, Store-адаптеры пяти агрегатов | TASK-046 (каркас), TASK-047 (Project+Task), TASK-048 (Executor+Execution+Artifact) |
 | `eventbus/` | Производственный `platform.EventBus` + журнал событий в PostgreSQL | TASK-049 |
 | `github/` | `platform.RepositoryProvider` — GitHub REST API | TASK-050 |
 
@@ -52,7 +52,9 @@ pool, err := postgres.NewPoolFromDSN(ctx, dsn) // явный DSN
 
 `ProjectStore` и `TaskStore` (TASK-047) реализуют `application.ProjectStore`/`application.TaskStore` — те же контракты, что и in-memory фейки EPIC-004, без изменений. `Save` — upsert по `id`; `Get` на отсутствующей строке возвращает `application.ErrNotFound` (тот же sentinel, что и у фейков — use-case'ы не отличают технологию хранения).
 
-Доменные агрегаты (`project.Project`, `task.Task`) хранят поля неэкспортированными и не давали способа собрать их из уже сохранённых данных — только через бизнес-команды (`New`, `Activate`, ...). Для адаптеров хранения в оба пакета добавлена `Restore(...)` — чистая реконструкция из уже провалидированных при сохранении данных, без бизнес-правил и без события; вызывать её вне Store-адаптера не следует.
+`ExecutorStore`, `ExecutionStore` и `ArtifactStore` (TASK-048) реализуют оставшиеся три порта тем же образом.
+
+Доменные агрегаты (`project.Project`, `task.Task`, `executor.Executor`, `execution.Execution`, `artifact.Artifact`) хранят поля неэкспортированными и не давали способа собрать их из уже сохранённых данных — только через бизнес-команды (`New`, `Activate`, ...). Во все пять пакетов добавлена `Restore(...)` — чистая реконструкция из уже провалидированных при сохранении данных, без бизнес-правил и без события; вызывать её вне Store-адаптера не следует.
 
 ### Локальный PostgreSQL
 

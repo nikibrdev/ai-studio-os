@@ -3,6 +3,7 @@ package executor
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"ai-studio-os/internal/domain/shared"
 )
@@ -258,5 +259,37 @@ func TestRoles_ReturnsCopyNotAlias(t *testing.T) {
 	out[0] = shared.RoleArchitect
 	if got := e.Roles(); got[0] != shared.RoleDeveloper {
 		t.Errorf("mutating accessor result changed the entity: %v", got)
+	}
+}
+
+// --- Restore ---
+
+func TestRestore_RoundTripsPersistedFields(t *testing.T) {
+	registeredAt := time.Now().Add(-time.Hour)
+	e := Restore("exec-1", "claude-code-instance-1", []shared.Role{shared.RoleDeveloper}, registeredAt, StateActive)
+
+	if got := e.ID(); got != "exec-1" {
+		t.Errorf("ID() = %q, want exec-1", got)
+	}
+	if got := e.Backend(); got != "claude-code-instance-1" {
+		t.Errorf("Backend() = %q, want claude-code-instance-1", got)
+	}
+	if got := e.Roles(); len(got) != 1 || got[0] != shared.RoleDeveloper {
+		t.Errorf("Roles() = %v, want [%v]", got, shared.RoleDeveloper)
+	}
+	if got := e.RegisteredAt(); !got.Equal(registeredAt) {
+		t.Errorf("RegisteredAt() = %v, want %v", got, registeredAt)
+	}
+	if got := e.State(); got != StateActive {
+		t.Errorf("State() = %q, want %q", got, StateActive)
+	}
+}
+
+func TestRestore_CopiesRolesNotAlias(t *testing.T) {
+	roles := []shared.Role{shared.RoleDeveloper}
+	e := Restore("exec-1", "backend", roles, time.Now(), StateActive)
+	roles[0] = shared.RoleArchitect
+	if got := e.Roles(); got[0] != shared.RoleDeveloper {
+		t.Errorf("Restore aliased the input slice: %v", got)
 	}
 }
