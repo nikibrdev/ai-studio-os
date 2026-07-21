@@ -88,19 +88,42 @@ Execution уже полностью определён разделами One Se
 
 ## Domain Events
 
-(Раздел — PR 2, не входит в этот PR.)
+Только переходы Lifecycle порождают обязательные публичные Domain Events — согласовано с уже принятым для [Artifact](artifact.md) принципом (Delta Review). Каждое из пяти событий соответствует ровно одному переходу или созданию.
+
+- **ExecutionQueued** — публикуется при создании Execution (вход в Queued). Данные: Identifier, Task, Executor, момент создания.
+- **ExecutionStarted** — публикуется при переходе Queued → Running (Executor подтвердил принятие работы). Данные: Identifier, момент перехода.
+- **ExecutionSucceeded** — публикуется при переходе Running → Succeeded. Данные: Identifier, момент перехода, ссылки на произведённые Artifact (если есть).
+- **ExecutionFailed** — публикуется при переходе Running → Failed. Данные: Identifier, момент перехода, ссылки на произведённые к этому моменту Artifact (Behavioral Invariant 4 не требует их отсутствия — неудача может произойти уже после того, как часть работы произведена).
+- **ExecutionAborted** — публикуется при переходе в Aborted (из Queued или из Running — единое событие для обоих путей, поскольку итоговое состояние одно и то же, аналогично `ArtifactArchived` у Artifact). Данные: Identifier, момент перехода, состояние, из которого пришли (Queued | Running).
 
 ## Commands
 
-(Раздел — PR 2, не входит в этот PR.)
+Соответствие четырём возможностям контракта Executor ([ADR-005](../../adr/ADR-005-executor-contract.md): `Accept`/`Artifacts`/`Status`/`Finish`) явно: `Accept` отражается командой **Accept**, `Artifacts` — командой **RecordArtifact** (платформа опрашивает Executor и переносит результат в Execution), `Status`/`Finish` вместе отражаются терминальными командами **Succeed**/**Fail** — единый акт завершения работы Executor'ом, различающийся только исходом. **Abort** не имеет прямого соответствия в контракте Executor — это решение, инициированное платформой (Task/Workflow), а не самим Executor.
+
+1. **Create** — регистрирует новый Execution в состоянии Queued. Обязательные параметры: Task, Executor (Structural Invariants 1–2).
+2. **Accept** — переводит Queued → Running; недопустима, если Execution уже покинул Queued.
+3. **RecordArtifact** — добавляет ссылку на произведённый Artifact к множеству Execution; допустима только пока Execution в состоянии Running (Behavioral Invariant 4).
+4. **Succeed** — переводит Running → Succeeded; после выполнения дальнейшие RecordArtifact для этого Execution недопустимы (Behavioral Invariant 1).
+5. **Fail** — переводит Running → Failed; как и Succeed, финализирует множество произведённых Artifact.
+6. **Abort** — переводит Queued → Aborted или Running → Aborted; не изменяет и не удаляет уже произведённые к этому моменту Artifact.
 
 ## Queries
 
-(Раздел — PR 2, не входит в этот PR.)
+- **Получить по Identifier** — вернуть конкретный Execution.
+- **Найти по Task** — все Execution, порождённые данной Task, включая историю неудачных и отменённых попыток (Relationships: Task владеет Execution).
+- **Найти по Executor** — все Execution, выполненные данным Executor (например, для оценки его загрузки или надёжности).
+- **Найти по состоянию** — например, все Running (мониторинг активных исполнений) или все Queued дольше заданного порога (эксплуатационная потребность, см. Open Questions).
+- **Найти по произведённому Artifact** — какое Execution произвело данный Artifact; сторона запроса, симметричная собственному query Artifact «Найти по породившему Execution» — оба обращаются к одной и той же связи, не дублируют её независимым хранением.
 
 ## Examples
 
-(Раздел — PR 2, не входит в этот PR.)
+Ни кода, ни JSON — только содержательные примеры, показывающие, что модель выдерживает разнородные реальные случаи.
+
+- **Успешная реализация задачи** — Task: написание Pull Request; Executor: Claude Code. Queued (назначен) → Running (Accept, пишет код, по ходу RecordArtifact для промежуточных файлов) → Succeeded. Произведён Artifact типа PullRequest.
+- **Неудачный тестовый прогон** — Task: QA-проверка; Executor: автоматический тестовый раннер. Running → Failed (тесты не прошли, Executor сообщил через `Finish`). Artifact типа TestReport всё же произведён — отчёт о неудаче тоже результат работы (ExecutionFailed не запрещает RecordArtifact, произошедший до отказа).
+- **Отменённая до начала задача** — Task отменена человеком раньше, чем Executor успел принять работу. Execution: Queued → Aborted, ни один Artifact не произведён.
+- **Человек как Executor** — Executor: человек-архитектор, вручную оформляющий решение. Queued → Running → Succeeded, произведён Artifact типа ADR — показывает, что модель не завязана технически на автоматических исполнителях ([ADR-005](../../adr/ADR-005-executor-contract.md): Executor — любой технический бэкенд, включая человека).
+- **Повторная попытка после сбоя** — первый Execution той же Task: Running → Failed. Та же Task порождает второй, независимый Execution (тем же или другим Executor): Queued → Running → Succeeded. Оба Execution существуют одновременно в истории одной Task (Behavioral Invariant 1: неудачный Execution не переиспользуется и не мутирует).
 
 ## Acceptance Criteria
 
@@ -138,7 +161,7 @@ Execution уже полностью определён разделами One Se
 
 ## Статус
 
-Черновик — PR 1 из 3 (фундамент). Разделы Domain Events/Commands/Queries/Examples — PR 2; Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
+Черновик — PR 2 из 3 (поведение). Разделы Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
 
 ## Последнее обновление
 
