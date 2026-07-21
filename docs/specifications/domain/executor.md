@@ -81,19 +81,38 @@ Executor уже полностью определён разделами One Sen
 
 ## Domain Events
 
-(Раздел — PR 2, не входит в этот PR.)
+Только переходы Lifecycle порождают обязательные публичные Domain Events (согласовано через Delta Review с уже принятым для [Artifact](artifact.md) и [Execution](execution.md) принципом). Одно событие на переход в общее терминальное/целевое состояние, независимо от того, из какого состояния оно достигнуто, — тот же принцип, что и `ArtifactArchived`/`ExecutionAborted`.
+
+- **ExecutorRegistered** — публикуется при создании Executor (вход в Registered). Данные: Identifier, идентичность бэкенда, изначально заявленный набор Role, момент регистрации.
+- **ExecutorActivated** — публикуется при переходе в Active (из Registered или из Disabled — единое событие для обоих путей, итоговое состояние одно и то же). Данные: Identifier, момент перехода, состояние, из которого пришли (Registered | Disabled).
+- **ExecutorDisabled** — публикуется при переходе Active → Disabled. Данные: Identifier, момент перехода.
+- **ExecutorRetired** — публикуется при переходе в Retired (из Active или из Disabled — единое событие для обоих путей). Данные: Identifier, момент перехода, состояние, из которого пришли (Active | Disabled).
 
 ## Commands
 
-(Раздел — PR 2, не входит в этот PR.)
+1. **Register** — регистрирует новый Executor в состоянии Registered. Обязательные параметры: идентичность бэкенда, изначальный набор Role (Structural Invariants 1–2, набор не может быть пустым).
+2. **Activate** — переводит Registered → Active или Disabled → Active.
+3. **Disable** — переводит Active → Disabled.
+4. **Retire** — переводит Active → Retired или Disabled → Retired; после выполнения дальнейшие переходы недопустимы (Behavioral Invariant 1).
+5. **GrantRole** — добавляет Role к набору исполняемых Executor'ом ролей; допустима в любом нетерминальном состоянии (Behavioral Invariant 3 — набор может только расти либо оставаться прежним через эту команду).
+6. **RevokeRole** — убирает Role из набора; недопустима, если Role — последняя оставшаяся (Behavioral Invariant 3, Structural Invariant 2): для полного вывода Executor из строя используется Retire, а не опустошение набора Role.
 
 ## Queries
 
-(Раздел — PR 2, не входит в этот PR.)
+- **Получить по Identifier** — вернуть конкретный Executor.
+- **Найти по Role** — все Executor, способные исполнять данную Role (используется при выборе кандидата на назначение).
+- **Найти по статусу** — например, все Active (кандидаты на новое назначение) или все Disabled (операционный мониторинг).
+- **Получить историю Execution** — делегируется к Query «Найти по Executor» спецификации [Execution](execution.md), не дублируется отдельным хранением на стороне Executor.
 
 ## Examples
 
-(Раздел — PR 2, не входит в этот PR.)
+Ни кода, ни JSON — только содержательные примеры, показывающие, что модель выдерживает разнородные реальные случаи.
+
+- **Автоматический бэкенд** — Identity: конкретный зарегистрированный экземпляр Claude Code; Roles: Developer. Registered → Active.
+- **Человек как Executor** — Identity: конкретный человек-архитектор; Roles: Architect, Reviewer. Registered → Active — показывает, что модель не завязана технически на автоматических бэкендах ([ADR-005](../../adr/ADR-005-executor-contract.md)).
+- **Временное ограничение провайдера** — Executor, чей провайдер временно ограничил нагрузку (rate limit). Active → Disabled → Active после снятия ограничения; уже выполненные им Execution не затронуты (Behavioral Invariant 2).
+- **Вывод из эксплуатации** — Executor устаревшей интеграции. Active → Retired; история его прошлых Execution остаётся доступной через Query «Найти по Executor» ([Execution](execution.md)), сам Executor больше не может получать новые назначения.
+- **Один бэкенд, несколько ролей** — Executor, способный исполнять и Developer, и Reviewer (Structural Invariant 2: 1..* Role) — набор ролей расширен командой GrantRole после первичной регистрации только с Developer.
 
 ## Acceptance Criteria
 
@@ -131,7 +150,7 @@ Executor уже полностью определён разделами One Sen
 
 ## Статус
 
-Черновик — PR 1 из 3 (фундамент). Разделы Domain Events/Commands/Queries/Examples — PR 2; Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
+Черновик — PR 2 из 3 (поведение). Разделы Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
 
 ## Последнее обновление
 
