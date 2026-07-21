@@ -96,7 +96,7 @@ stateDiagram-v2
 ### Статус решений
 
 - [ADR-004](../adr/ADR-004-task-storage.md) — **принято** (см. выше).
-- [ADR-008](../adr/ADR-008-git-policies.md) — **Decision Required**: момент слияния PR относительно Testing (тестировать ветку до слияния или слитый результат). Влияет на условия перехода Testing → Done и порядок событий MergeCompleted / TaskCompleted ([events.md](events.md)).
+- [ADR-008](../adr/ADR-008-git-policies.md) — **принято** (2026-07-21): слияние PR — после Testing (QA проверяет ветку, в `main` попадает только проверенное; актуальность ветки относительно базы обязательна перед merge). Guard перехода Testing → Done включает факт слияния PR; порядок событий: TestsPassed → MergeCompleted → TaskCompleted.
 
 ## Статус
 
@@ -104,4 +104,4 @@ stateDiagram-v2
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-21
