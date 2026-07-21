@@ -3,6 +3,7 @@ package project
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func newCreated(t *testing.T) *Project {
@@ -193,5 +194,37 @@ func TestRepositories_ReturnsCopyNotAlias(t *testing.T) {
 	out[0] = "tampered"
 	if got := p.Repositories(); got[0] != "github.com/org/repo" {
 		t.Errorf("mutating accessor result changed the entity: %v", got)
+	}
+}
+
+// --- Restore ---
+
+func TestRestore_RoundTripsPersistedFields(t *testing.T) {
+	createdAt := time.Now().Add(-time.Hour)
+	p := Restore("proj-1", "Alpha", []string{"github.com/org/repo"}, createdAt, StateActive)
+
+	if got := p.ID(); got != "proj-1" {
+		t.Errorf("ID() = %q, want proj-1", got)
+	}
+	if got := p.Name(); got != "Alpha" {
+		t.Errorf("Name() = %q, want Alpha", got)
+	}
+	if got := p.Repositories(); len(got) != 1 || got[0] != "github.com/org/repo" {
+		t.Errorf("Repositories() = %v, want [github.com/org/repo]", got)
+	}
+	if got := p.CreatedAt(); !got.Equal(createdAt) {
+		t.Errorf("CreatedAt() = %v, want %v", got, createdAt)
+	}
+	if got := p.State(); got != StateActive {
+		t.Errorf("State() = %q, want %q", got, StateActive)
+	}
+}
+
+func TestRestore_CopiesRepositoriesNotAlias(t *testing.T) {
+	repos := []string{"github.com/org/repo"}
+	p := Restore("proj-1", "Alpha", repos, time.Now(), StateActive)
+	repos[0] = "tampered"
+	if got := p.Repositories(); got[0] != "github.com/org/repo" {
+		t.Errorf("Restore aliased the input slice: %v", got)
 	}
 }

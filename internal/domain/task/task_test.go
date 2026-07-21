@@ -3,6 +3,7 @@ package task
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"ai-studio-os/internal/domain/shared"
 )
@@ -193,5 +194,50 @@ func TestAcceptanceCriteria_ReturnsCopyNotAlias(t *testing.T) {
 	out[0] = "подменён через аксессор"
 	if got := task.AcceptanceCriteria(); got[0] != "критерий" {
 		t.Errorf("mutating an accessor result changed the entity: %v", got)
+	}
+}
+
+// --- Restore ---
+
+func TestRestore_RoundTripsPersistedFields(t *testing.T) {
+	createdAt := time.Now().Add(-time.Hour)
+	criteria := []string{"критерий"}
+	task := Restore("task-1", "proj-1", "epic-1", "Название", "feature", "scope", criteria, createdAt, shared.StateReady)
+
+	if got := task.ID(); got != "task-1" {
+		t.Errorf("ID() = %q, want task-1", got)
+	}
+	if got := task.ProjectID(); got != "proj-1" {
+		t.Errorf("ProjectID() = %q, want proj-1", got)
+	}
+	if got := task.EpicID(); got != "epic-1" {
+		t.Errorf("EpicID() = %q, want epic-1", got)
+	}
+	if got := task.Title(); got != "Название" {
+		t.Errorf("Title() = %q, want Название", got)
+	}
+	if got := task.Type(); got != "feature" {
+		t.Errorf("Type() = %q, want feature", got)
+	}
+	if got := task.Scope(); got != "scope" {
+		t.Errorf("Scope() = %q, want scope", got)
+	}
+	if got := task.AcceptanceCriteria(); len(got) != 1 || got[0] != "критерий" {
+		t.Errorf("AcceptanceCriteria() = %v, want [критерий]", got)
+	}
+	if got := task.CreatedAt(); !got.Equal(createdAt) {
+		t.Errorf("CreatedAt() = %v, want %v", got, createdAt)
+	}
+	if got := task.State(); got != shared.StateReady {
+		t.Errorf("State() = %q, want %q", got, shared.StateReady)
+	}
+}
+
+func TestRestore_CopiesAcceptanceCriteriaNotAlias(t *testing.T) {
+	criteria := []string{"критерий"}
+	task := Restore("task-1", "proj-1", "", "Название", "feature", "", criteria, time.Now(), shared.StateBacklog)
+	criteria[0] = "подменён снаружи"
+	if got := task.AcceptanceCriteria(); got[0] != "критерий" {
+		t.Errorf("Restore aliased the input slice: %v", got)
 	}
 }
