@@ -17,6 +17,7 @@
 Отдельно от пользовательских версий v0.X — рубежи, отмечающие качественные изменения в самом процессе разработки, а не в готовности продукта.
 
 - **First Reference Domain Specification** (2026-07-20) — [Artifact](docs/specifications/domain/artifact.md) стал первой доменной спецификацией проекта со статусом **Reference**: не просто утверждённой, а официально признанной образцом для всех последующих спецификаций Domain Layer ([решение](engineering/decisions/2026-07-20-domain-specification-reference-status.md)). Момент, когда у проекта впервые появился не только код и документация, но и проверенный, воспроизводимый метод доменного моделирования, на который опираются все следующие сущности.
+- **Domain Specifications First — этап 1 закрыт** (2026-07-21) — все пять спецификаций Domain Layer ([Artifact](docs/specifications/domain/artifact.md), [Execution](docs/specifications/domain/execution.md), [Executor](docs/specifications/domain/executor.md), [Task](docs/specifications/domain/task.md), [Project](docs/specifications/domain/project.md)) утверждены архитектором. Каждая закрыта в тот же день, когда взята в работу — метод, откалиброванный на Artifact, воспроизвёлся четыре раза подряд без потери в качестве ревью (реальные раунды Changes Requested/Approve на каждой). Два реальных расхождения со старым кодом EPIC-002 (`internal/domain/task`, `internal/domain/project`) не устранялись правкой кода, а получили явное архитектурное решение — контракты целенаправленно расширяются вслед за спецификацией на этапе 2.
 
 ### v0.1 Foundation — фундамент — **Завершено**
 
@@ -34,8 +35,8 @@
 ### v0.3 Domain Layer — предметная область
 
 - [EPIC-003](docs/roadmap/EPIC-003-domain-layer.md): реализация доменных модулей, начиная не с `task`, а с порядка **Artifact → Execution → Executor → Task → Project** ([domain-model.md](docs/architecture/domain-model.md), [ADR-016](docs/adr/ADR-016-artifact-aggregate-root.md)).
-- Этап 1 — Domain Specifications First: полные спецификации всех пяти модулей утверждаются архитектором до единой строки Go ([Specification.md](.claude/templates/Specification.md); требование Domain Layer — [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)).
-- Этап 2 — реализация пяти модулей в том же порядке, только после утверждения этапа 1.
+- Этап 1 — Domain Specifications First: полные спецификации всех пяти модулей утверждаются архитектором до единой строки Go ([Specification.md](.claude/templates/Specification.md); требование Domain Layer — [engineering/decisions/2026-07-20-domain-layer-specification-requirement.md](engineering/decisions/2026-07-20-domain-layer-specification-requirement.md)). **Закрыт (2026-07-21)** — все пять спецификаций утверждены.
+- Этап 2 — реализация пяти модулей в том же порядке. Открыт.
 
 **Результат:** доменная логика (в т.ч. state machine задачи) работает и покрыта тестами, без внешних зависимостей.
 
@@ -89,4 +90,4 @@
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-21
