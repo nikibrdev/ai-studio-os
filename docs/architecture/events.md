@@ -98,6 +98,29 @@
 
 Получатели дополнительных событий — стандартные (журнал, проекция Dashboard, Orchestrator).
 
+### События доменных сущностей Domain Layer
+
+Каталогизированы здесь при реализации Application Layer (TASK-042, EPIC-004) — определены в утверждённых спецификациях [Artifact](../specifications/domain/artifact.md), [Execution](../specifications/domain/execution.md), [Executor](../specifications/domain/executor.md), [Project](../specifications/domain/project.md) (раздел Domain Events каждой), но не были перенесены в этот каталог при утверждении спецификаций — пробел закрыт здесь и константами [internal/domain/event](../../internal/domain/event/README.md), а не заново решён.
+
+| Событие | Источник | Данные (ключевое) |
+| --- | --- | --- |
+| ArtifactCreated | модуль `artifact` | Identifier, Type, Origin, Author, CreatedAt, Project |
+| ArtifactPublished | модуль `artifact` | Identifier, момент, ссылка на породившее Execution (если есть) |
+| ArtifactArchived | модуль `artifact` | Identifier, момент, состояние-источник (Draft \| Published) |
+| ExecutionQueued | модуль `execution` | Identifier, Task, Executor, момент создания |
+| ExecutionStarted | модуль `execution` | Identifier, момент |
+| ExecutionSucceeded | модуль `execution` | Identifier, момент, ссылки на произведённые Artifact |
+| ExecutionFailed | модуль `execution` | Identifier, момент, ссылки на произведённые к моменту сбоя Artifact |
+| ExecutionAborted | модуль `execution` | Identifier, момент, состояние-источник (Queued \| Running) |
+| ExecutorRegistered | модуль `executor` | Identifier, идентичность бэкенда, набор Role, момент |
+| ExecutorActivated | модуль `executor` | Identifier, момент, состояние-источник (Registered \| Disabled) |
+| ExecutorDisabled | модуль `executor` | Identifier, момент |
+| ExecutorRetired | модуль `executor` | Identifier, момент, состояние-источник (Registered \| Active \| Disabled) |
+| ProjectCreated | модуль `project` | Identifier, название, момент |
+| RepositoryConnected | модуль `project` | Identifier проекта, ссылка на Repository, момент |
+| ProjectActivated | модуль `project` | Identifier, момент |
+| ProjectArchived | модуль `project` | Identifier, момент |
+
 ### Sequence Diagram: создание новой задачи
 
 ```mermaid
@@ -129,7 +152,7 @@ sequenceDiagram
 
 - [ADR-002](../adr/ADR-002-event-delivery.md) — **принято**: In-Memory Event Bus; журнал в PostgreSQL; версия схемы — в каждом событии.
 - [ADR-014](../adr/ADR-014-module-interaction.md) — **принято**: проекции строятся только из событий.
-- [ADR-008](../adr/ADR-008-git-policies.md) — **Decision Required**: порядок MergeCompleted относительно Testing/TaskCompleted.
+- [ADR-008](../adr/ADR-008-git-policies.md) — **принято**: слияние после Testing; порядок TestsPassed → MergeCompleted → TaskCompleted.
 
 ## Статус
 
@@ -137,4 +160,4 @@ sequenceDiagram
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-21

@@ -30,3 +30,30 @@ const (
 	TaskCancelled         = "TaskCancelled"
 	TaskArchived          = "TaskArchived"
 )
+
+// Domain Layer entity events (docs/architecture/events.md, "События
+// доменных сущностей Domain Layer") — defined in the approved
+// specifications of Artifact, Execution, Executor and Project; catalogued
+// here at TASK-042 (EPIC-004), which was the first consumer to need them
+// as constants rather than string literals.
+const (
+	ArtifactCreated   = "ArtifactCreated"
+	ArtifactPublished = "ArtifactPublished"
+	ArtifactArchived  = "ArtifactArchived"
+
+	ExecutionQueued    = "ExecutionQueued"
+	ExecutionStarted   = "ExecutionStarted"
+	ExecutionSucceeded = "ExecutionSucceeded"
+	ExecutionFailed    = "ExecutionFailed"
+	ExecutionAborted   = "ExecutionAborted"
+
+	ExecutorRegistered = "ExecutorRegistered"
+	ExecutorActivated  = "ExecutorActivated"
+	ExecutorDisabled   = "ExecutorDisabled"
+	ExecutorRetired    = "ExecutorRetired"
+
+	ProjectCreated      = "ProjectCreated"
+	RepositoryConnected = "RepositoryConnected"
+	ProjectActivated    = "ProjectActivated"
+	ProjectArchived     = "ProjectArchived"
+)

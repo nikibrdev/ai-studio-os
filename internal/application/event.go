@@ -1,8 +1,6 @@
 package application
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"time"
 
 	"ai-studio-os/internal/platform"
@@ -32,7 +30,7 @@ var _ platform.Event = Envelope{}
 // be "" for a system-initiated fact (platform.Event contract).
 func NewEvent(eventType, source, actor, projectID, subjectID string, occurredAt time.Time) Envelope {
 	return Envelope{
-		id:            newEventID(),
+		id:            NewID(),
 		eventType:     eventType,
 		schemaVersion: 1,
 		occurredAt:    occurredAt,
@@ -68,18 +66,3 @@ func (e Envelope) ProjectID() string { return e.projectID }
 // SubjectID returns the identifier of the domain entity the event is
 // about.
 func (e Envelope) SubjectID() string { return e.subjectID }
-
-// newEventID generates a random hex identifier using only the standard
-// library: no UUID dependency is listed in .claude/context/stack.md, and
-// event identity needs only uniqueness, not a specific structured format.
-func newEventID() string {
-	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		// crypto/rand.Read does not fail on any platform this project
-		// targets; a zero-value ID would silently violate the Event
-		// contract, so panic is the honest response to an impossible
-		// condition rather than returning a bad ID.
-		panic("application: failed to generate event id: " + err.Error())
-	}
-	return hex.EncodeToString(b[:])
-}
