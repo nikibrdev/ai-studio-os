@@ -12,9 +12,9 @@
 | --- | --- | --- |
 | Architecture | **95%** | Заморожена; 5% — 9 ADR в Decision Required ([индекс](docs/adr/DECISIONS_INDEX.md)) |
 | Documentation | **100%** | Для текущего этапа: 17 архитектурных документов, процессы, спецификационная структура |
-| Workflow | **15%** | State machine и контракты готовы; реализация правил — EPIC-003 этап 2 |
-| Implementation | **5%** | Только контракты (6 пакетов, интерфейсы без логики); все 5 доменных спецификаций утверждены (EPIC-003 этап 1 закрыт), код этапа 2 не начат |
-| Testing | **0%** | По плану — с v0.4 (QA Engine) |
+| Workflow | **60%** | Каноническая state machine реализована (`workflow.Machine`, 100% покрытия); Definition/Step и оркестрация — v0.4+ |
+| Implementation | **30%** | Domain Layer завершён (EPIC-003 закрыт): 5 сущностей + Machine, инварианты — проверяемый код; Application/Infrastructure не начаты |
+| Testing | **20%** | 82 unit-теста Domain Layer (покрытие пакетов 81.8–100%), включая сквозной сценарий слоя; интеграционные/e2e — с v0.4–v0.5 (QA Engine) |
 | API | **0%** | REST принят (ADR-003); реализация после Application Layer |
 | Dashboard | **0%** | v0.6 |
 
