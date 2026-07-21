@@ -12,9 +12,10 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 | --- | --- |
 | `ports.go` | Пять узких портов хранения агрегатов: `ProjectStore`, `TaskStore`, `ExecutorStore`, `ExecutionStore`, `ArtifactStore` (Get/Save); `ErrNotFound` |
 | `event.go` | `Envelope` — оборачивает данные доменных событий в контракт `platform.Event` (ADR-002) перед публикацией |
-| `inmemory/` | Детерминированные фейки портов для тестов этого эпика — не инфраструктурный адаптер |
+| `inmemory/` | Детерминированные фейки портов и `EventBus` для тестов этого эпика — не инфраструктурный адаптер |
+| `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`) |
 
-Use-case'ы (TASK-041…045: постановка задачи, запуск работы, производство результата, завершение задачи, проекция чтения) добавляются отдельными файлами по мере реализации.
+Остальные use-case'ы (TASK-042…045: запуск работы, производство результата, завершение задачи, проекция чтения) добавляются отдельными файлами по мере реализации.
 
 ### Почему порты здесь, а не в internal/platform
 
