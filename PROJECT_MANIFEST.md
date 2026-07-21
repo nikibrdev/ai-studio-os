@@ -30,17 +30,17 @@
 | Infrastructure | Not Started |
 | API | Not Started (REST, после Application) |
 | Dashboard | Not Started (v0.6) |
-| Developer Engine | Planning (ADR-005 принят — Executor Contract; блокер — ADR-006) |
+| Developer Engine | Planning (ADR-005 и ADR-006 приняты — контракт и среда исполнения определены; реализация — v0.6) |
 | Workflow | **Machine реализована** — каноническая state machine (20 переходов, 100% покрытия); Definition/Step — контракты до появления потребителя (v0.4) |
 
 ### Контрольные точки
 
 | Поле | Значение |
 | --- | --- |
-| **Last ADR** | [ADR-008](docs/adr/ADR-008-git-policies.md) (git-политики: merge commit; слияние после Testing; порядок TestsPassed → MergeCompleted → TaskCompleted) |
+| **Last ADR** | [ADR-006](docs/adr/ADR-006-agent-execution-environment.md) (среда агентов — Docker-контейнер на Execution; до v0.6 — только локально под надзором человека) |
 | **Last Review** | 2026-07-21 — Code Review этапа 2 EPIC-003 (TASK-034…039, PR #42–#47); эпик закрыт целиком |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
-| **Открытые решения** | 5 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
+| **Открытые решения** | 4 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
 
 ### Правило обновления

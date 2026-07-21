@@ -16,7 +16,7 @@
 | [003](ADR-003-api-protocol.md) | **Accepted** | Протокол API — REST | Нет |
 | [004](ADR-004-task-storage.md) | **Accepted** | Задачи — PostgreSQL source of truth; `tasks/` — экспорт | Нет |
 | [005](ADR-005-executor-contract.md) | **Accepted** | Executor Contract — четыре возможности (Accept/Artifacts/Status/Finish) | Нет |
-| [006](ADR-006-agent-execution-environment.md) | Decision Required | Среда выполнения и изоляция агентов | v0.3 Developer Engine |
+| [006](ADR-006-agent-execution-environment.md) | **Accepted** | Среда агентов — Docker-контейнер на Execution (сеть по allowlist, короткоживущие секреты); до v0.6 — только локально под надзором человека | Нет |
 | [007](ADR-007-pm-qa-executors.md) | Decision Required | Исполнители ролей PM и QA в MVP | Объём v0.2 (PM) и v0.4 (QA) |
 | [008](ADR-008-git-policies.md) | **Accepted** | Git-политики: merge commit; слияние после Testing (TestsPassed → MergeCompleted → TaskCompleted); 1 ревьюер, агент допустим | Нет |
 | [009](ADR-009-toolchain.md) | **Accepted** | Toolchain — Go 1.24, Next.js 15, pnpm, golangci-lint, gofumpt | Нет |
@@ -30,9 +30,9 @@
 
 ### Сводка
 
-- **Принято:** 11 (001, 002, 003, 004, 005, 008, 009, 011, 014, 015, 016)
-- **Decision Required:** 5 (006, 007, 010, 012, 013)
-- Ближайшие к принятию по roadmap: ADR-006 (среда выполнения Executor — v0.6 AI Agent Runtime), ADR-007 (исполнители PM/QA — v0.4).
+- **Принято:** 12 (001, 002, 003, 004, 005, 006, 008, 009, 011, 014, 015, 016)
+- **Decision Required:** 4 (007, 010, 012, 013)
+- Ближайшие к принятию по roadmap: ADR-007 (исполнители PM/QA — v0.4), ADR-013 (подключение управляемых проектов — v0.5/v0.6).
 
 ## Статус
 

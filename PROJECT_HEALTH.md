@@ -10,7 +10,7 @@
 
 | Направление | Готовность | Комментарий |
 | --- | --- | --- |
-| Architecture | **95%** | Заморожена; 5% — 5 ADR в Decision Required ([индекс](docs/adr/DECISIONS_INDEX.md)) |
+| Architecture | **97%** | Заморожена; 3% — 4 ADR в Decision Required, ни один не блокирует v0.4–v0.6 ([индекс](docs/adr/DECISIONS_INDEX.md)) |
 | Documentation | **100%** | Для текущего этапа: 17 архитектурных документов, процессы, спецификационная структура |
 | Workflow | **60%** | Каноническая state machine реализована (`workflow.Machine`, 100% покрытия); Definition/Step и оркестрация — v0.4+ |
 | Implementation | **30%** | Domain Layer завершён (EPIC-003 закрыт): 5 сущностей + Machine, инварианты — проверяемый код; Application/Infrastructure не начаты |
