@@ -56,12 +56,13 @@ Executor не отвечает за (кратко; исчерпывающий с
 Registered → Active ⇄ Disabled
 Active → Retired
 Disabled → Retired
+Registered → Retired
 ```
 
 - **Registered** — Executor добавлен в реестр платформы, идентичность и набор способных Role заявлены, но он ещё не допущен к получению работы; отдельный явный шаг активации отделяет регистрацию от готовности.
 - **Active** — доступен для назначения нового Execution.
 - **Disabled** — временно недоступен для *новых* назначений (например, приостановлен вручную или ограничен по нагрузке); обратимо, может вернуться в Active. Уже назначенные ранее Execution этим переходом не затрагиваются.
-- **Retired** — окончательно выведен из активного использования; терминальное состояние (Behavioral Invariant 1).
+- **Retired** — окончательно выведен из активного использования; терминальное состояние (Behavioral Invariant 1). Достижим и напрямую из Registered (Architect Review, Final): нелогично требовать прохождение через Active для отказа от бэкенда, который так и не был задействован ни разу — принудительная активация ради немедленного вывода из строя не защищает ни один инвариант.
 
 ## Relationships
 
@@ -86,14 +87,14 @@ Executor уже полностью определён разделами One Sen
 - **ExecutorRegistered** — публикуется при создании Executor (вход в Registered). Данные: Identifier, идентичность бэкенда, изначально заявленный набор Role, момент регистрации.
 - **ExecutorActivated** — публикуется при переходе в Active (из Registered или из Disabled — единое событие для обоих путей, итоговое состояние одно и то же). Данные: Identifier, момент перехода, состояние, из которого пришли (Registered | Disabled).
 - **ExecutorDisabled** — публикуется при переходе Active → Disabled. Данные: Identifier, момент перехода.
-- **ExecutorRetired** — публикуется при переходе в Retired (из Active или из Disabled — единое событие для обоих путей). Данные: Identifier, момент перехода, состояние, из которого пришли (Active | Disabled).
+- **ExecutorRetired** — публикуется при переходе в Retired (из Active, Disabled или напрямую из Registered — единое событие для всех путей). Данные: Identifier, момент перехода, состояние, из которого пришли (Registered | Active | Disabled).
 
 ## Commands
 
 1. **Register** — регистрирует новый Executor в состоянии Registered. Обязательные параметры: идентичность бэкенда, изначальный набор Role (Structural Invariants 1–2, набор не может быть пустым).
 2. **Activate** — переводит Registered → Active или Disabled → Active.
 3. **Disable** — переводит Active → Disabled.
-4. **Retire** — переводит Active → Retired или Disabled → Retired; после выполнения дальнейшие переходы недопустимы (Behavioral Invariant 1).
+4. **Retire** — переводит Active → Retired, Disabled → Retired или Registered → Retired; после выполнения дальнейшие переходы недопустимы (Behavioral Invariant 1).
 5. **GrantRole** — добавляет Role к набору исполняемых Executor'ом ролей; допустима в любом нетерминальном состоянии (Behavioral Invariant 3 — набор может только расти либо оставаться прежним через эту команду).
 6. **RevokeRole** — убирает Role из набора; недопустима, если Role — последняя оставшаяся (Behavioral Invariant 3, Structural Invariant 2): для полного вывода Executor из строя используется Retire, а не опустошение набора Role.
 
@@ -171,15 +172,14 @@ Executor уже полностью определён разделами One Sen
 | Executor — самостоятельный Aggregate Root, реестр технических бэкендов, отдельный от Role и Execution | [domain-model.md](../../architecture/domain-model.md), [VISION.md](../../../VISION.md) |
 | Доменная сущность Executor отделена от платформенного контракта `internal/platform.Executor` | [ADR-005](../../adr/ADR-005-executor-contract.md), [ADR-015](../../adr/ADR-015-internal-layering.md); постановка задачи TASK-031 |
 | Executor ≠ Agent (логическая роль-исполнитель) | [ADR-005](../../adr/ADR-005-executor-contract.md) |
-| Lifecycle: Registered → Active ⇄ Disabled → Retired | [domain-model.md](../../architecture/domain-model.md) |
+| Lifecycle: Registered → Active ⇄ Disabled → Retired, плюс прямой переход Registered → Retired | [domain-model.md](../../architecture/domain-model.md); прямой переход — Architect Review, Final |
 | Одно событие на общее целевое состояние независимо от источника перехода (ExecutorActivated/ExecutorRetired) | Delta Review против [Artifact](artifact.md)/[Execution](execution.md) |
 | Связь Executor↔Execution — ссылка, не владение, согласована с обеих сторон | Delta Review против [Execution](execution.md) |
 
 ## Open Questions
 
-- **Регистрация без активации** (Lifecycle) — сколько Executor может находиться в Registered до активации, и кто принимает решение об активации, — не определяется этой спецификацией, вероятно, вопрос Application Layer.
-- **Прямой переход Registered → Retired** — не включён в диаграмму Lifecycle (зарегистрированный, но так и не активированный Executor, от которого решено отказаться); требует подтверждения архитектора.
-- **Критерии автоматического Disabled** (например, по частоте ошибок или ограничению нагрузки провайдера) — принадлежат Application/Infrastructure, не домену.
+- **Регистрация без активации** (Lifecycle) — сколько Executor может находиться в Registered до активации, и кто принимает решение об активации, — не определяется этой спецификацией, вопрос Application Layer, не блокирует утверждение.
+- **Критерии автоматического Disabled** (например, по частоте ошибок или ограничению нагрузки провайдера) — принадлежат Application/Infrastructure, не домену, не блокируют утверждение.
 
 ### Three-Pass Review — ответы на диагностические вопросы
 
@@ -199,7 +199,7 @@ Executor уже полностью определён разделами One Sen
 
 ## Статус
 
-Черновик — PR 3 из 3 написан, ожидает финального решения архитектора об утверждении (не выставляется самостоятельно).
+**Утверждена** — Final Architecture Review пройден (2026-07-21): единственное содержательное замечание (отсутствие прямого перехода Registered → Retired) устранено — переход добавлен в Lifecycle/Commands/Domain Events, зафиксирован в Decision Log.
 
 ## Последнее обновление
 
