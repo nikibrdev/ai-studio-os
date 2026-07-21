@@ -21,6 +21,7 @@ type Envelope struct {
 	actor         string
 	projectID     string
 	subjectID     string
+	data          map[string]string
 }
 
 var _ platform.Event = Envelope{}
@@ -66,3 +67,20 @@ func (e Envelope) ProjectID() string { return e.projectID }
 // SubjectID returns the identifier of the domain entity the event is
 // about.
 func (e Envelope) SubjectID() string { return e.subjectID }
+
+// WithData attaches event-type-specific data to a copy of the envelope.
+// This is deliberately NOT part of the platform.Event contract (ADR-002,
+// EPIC-002): platform.Event carries only the common fields every event
+// has; WithData/Data are extra methods on the concrete Envelope type,
+// reachable only by code in internal/application that knows about
+// Envelope specifically (e.g. a projection type-asserting the
+// platform.Event it receives back to Envelope) — not a change to the
+// accepted contract itself.
+func (e Envelope) WithData(data map[string]string) Envelope {
+	e.data = data
+	return e
+}
+
+// Data returns the event-type-specific data attached via WithData, or nil
+// if none was attached.
+func (e Envelope) Data() map[string]string { return e.data }
