@@ -13,6 +13,17 @@
 | `container/` | Жизненный цикл контейнера Execution: клон рабочей копии, сетевой allowlist, инъекция секретов | TASK-054 |
 | (корень) | Реализация `platform.Executor` (Accept/Artifacts/Status/Finish) | TASK-055 |
 
+### `Executor` — реализация `platform.Executor`
+
+`New(image, gitToken, providerAPIKey)` (TASK-055) создаёт одно значение `Executor` на один жизненный цикл Execution (`Accept` → ... → `Finish`) — не переиспользуется между несколькими исполнениями.
+
+- **`Accept`** — собирает промпт из полей `platform.ExecutorTask` (роль, заголовок, тип, scope, критерии приёмки) и запускает песочницу (`container.Manager.Start`) с командой `claude --print --permission-mode bypassPermissions <промпт>`. `--permission-mode bypassPermissions` необходим для запуска без человека (некому отвечать на запрос подтверждения инструмента внутри контейнера) — это ровно та граница, ради которой существует песочница TASK-054 (allowlist сети, отсутствие секретов платформы, эфемерная рабочая копия). Точное поведение флагов CLI подтверждается реальным вызовом в TASK-056 — эта задача проверяет только логику адаптера (на фейковой песочнице), не настоящий вызов AI-провайдера.
+- **`Artifacts`** — читает `git log` внутри контейнера и возвращает произведённые коммиты как `platform.Artifact{Type: "Commit"}`; открытие Pull Request'а — задача вызывающего application-сервиса (`ResultService`/`CompletionService`, EPIC-004, через `platform.RepositoryProvider`), не этого адаптера.
+- **`Status`** — отображает состояние контейнера (`container.Manager.Status`) на `running`/`succeeded`/`failed`.
+- **`Finish`** — останавливает песочницу (`container.Manager.Stop`).
+
+`sandbox` — узкий интерфейс, сужающий `*container.Manager` до четырёх нужных адаптеру методов (тот же паттерн, что `commandRunner` в `container/`) — тесты подставляют фейк, не требуют реального Docker (91.1% покрытия).
+
 ### `container` — жизненный цикл Execution
 
 `Manager` (TASK-054) управляет Docker-контейнером Execution через прямые вызовы `docker` CLI (`os/exec`) — без клиентской библиотеки Docker: `agents/` не может импортировать `internal/infrastructure`, а горстка команд (`run`, `network create`, `exec`, `rm`) не оправдывает новую зависимость (тот же принцип, что ADR-017 и GitHub-адаптер).
