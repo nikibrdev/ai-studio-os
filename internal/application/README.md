@@ -15,13 +15,14 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 | `inmemory/` | Детерминированные фейки портов и `EventBus` для тестов этого эпика — не инфраструктурный адаптер |
 | `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`) |
 | `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution) |
-| `id.go` | `NewID()` — общий генератор идентификаторов (`crypto/rand`, без внешней UUID-зависимости) для сущностей, порождаемых как побочный эффект use-case (Execution), а не именованных явной командой |
+| `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` |
+| `id.go` | `NewID()` — общий генератор идентификаторов (`crypto/rand`, без внешней UUID-зависимости) для сущностей, порождаемых как побочный эффект use-case (Execution, здесь же переиспользуется), а не именованных явной командой |
 
-Остальные use-case'ы (TASK-043…045: производство результата, завершение задачи, проекция чтения) добавляются отдельными файлами по мере реализации.
+Остальные use-case'ы (TASK-044…045: завершение задачи, проекция чтения) добавляются отдельными файлами по мере реализации.
 
 ### Известное ограничение: нет межагрегатной транзакции
 
-`WorkService.StartTask` сохраняет Task и Execution последовательно, не атомарно: если сохранение Execution откажет после того, как Task уже сохранён в In Progress и опубликовано `TaskStarted`, откат не происходит (проверено тестом `TestStartTask_PropagatesExecutionStoreFailure`). С in-memory фейками этого эпика это не проявляется (фейки не отказывают); при реализации PostgreSQL-адаптера (EPIC-005) потребуется либо единая транзакция на несколько агрегатов, либо saga/outbox — решение архитектора, не принимается здесь.
+`WorkService.StartTask` и `ResultService.RecordDraftArtifact` сохраняют несколько агрегатов последовательно, не атомарно: если второе сохранение откажет после того, как первое уже прошло и событие опубликовано, отката не происходит (проверено тестом `TestStartTask_PropagatesExecutionStoreFailure`). С in-memory фейками этого эпика это не проявляется (фейки не отказывают); при реализации PostgreSQL-адаптера (EPIC-005) потребуется либо единая транзакция на несколько агрегатов, либо saga/outbox — решение архитектора, не принимается здесь.
 
 ### Почему порты здесь, а не в internal/platform
 
