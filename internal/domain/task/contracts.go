@@ -1,4 +1,6 @@
-// Package task defines the contracts of the task write and read paths.
+// Package task defines the contracts of the task write and read paths and
+// implements the Task entity itself
+// (docs/specifications/domain/task.md, status: Утверждена).
 //
 // ADR-004 (accepted): PostgreSQL is the source of truth, all state changes
 // flow through a single validated write path, and the tasks/ directory is a
@@ -20,8 +22,20 @@ import (
 // (docs/architecture/events.md).
 type Commands interface {
 	// Create registers a new task in the Backlog state and returns its
-	// identifier (format — ADR-011, Decision Required; strings until then).
-	Create(ctx context.Context, projectID, title, taskType string) (string, error)
+	// identifier (format — ADR-011, Decision Required; strings until
+	// then). epicID is optional — pass "" for a task outside any Epic
+	// (spec Structural Invariant 2: the Task<->Epic link is 0..1).
+	Create(ctx context.Context, projectID, epicID, title, taskType string) (string, error)
+
+	// SetScope records the task's goal and scope. Valid only while the
+	// task is in Backlog: Ready means Definition of Ready is met, and
+	// changed requirements go through the Ready -> Backlog return first
+	// (state-machine.md: TaskReturnedToBacklog).
+	SetScope(ctx context.Context, taskID, scope string) error
+
+	// SetAcceptanceCriteria records the task's acceptance criteria.
+	// Same Backlog-only rule as SetScope.
+	SetAcceptanceCriteria(ctx context.Context, taskID string, criteria []string) error
 
 	// Transition moves the task to the target state. The reason is
 	// mandatory for transitions that require one (Blocked, Cancelled).
