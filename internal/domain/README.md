@@ -11,12 +11,13 @@
 | Пакет | Ответственность | README |
 | --- | --- | --- |
 | `shared/` | Язык домена: Role, TaskState (позже ID, ошибки, value objects) | [shared/README.md](shared/README.md) |
+| `artifact/` | Сущность Artifact — инварианты, Lifecycle и команды, реализованные в коде (не только контракты) | [artifact/README.md](artifact/README.md) |
 | `task/` | Контракты записи/чтения/экспорта задач | [task/README.md](task/README.md) |
 | `project/` | Реестр управляемых проектов | [project/README.md](project/README.md) |
 | `event/` | Словарь типов событий | [event/README.md](event/README.md) |
 | `workflow/` | Правила state machine (Rules) и определения процессов (Definition, Step) | [workflow/README.md](workflow/README.md) |
 
-Остальные модули доменной модели (`artifact`, `execution`, `executor`, `tool`, `memory`, `git`, `identity`) добавляются в EPIC-003 и последующих эпиках; порядок и текущий статус спецификаций — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md). Спецификация `artifact` — в работе, [docs/specifications/domain/artifact.md](../../docs/specifications/domain/artifact.md) (черновик, PR 1 из 3).
+Все пять спецификаций EPIC-003 (Artifact, Execution, Executor, Task, Project) утверждены — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md). `artifact/` — первый пакет с реализованной логикой (этап 2, TASK-034); `execution`, `executor` появятся отдельными задачами того же этапа, в том же порядке проектирования. Остальные модули доменной модели (`tool`, `memory`, `git`, `identity`) — вне scope EPIC-003, по решению архитектора отдельно.
 
 ### Зависимости
 
@@ -37,4 +38,4 @@
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-21
