@@ -46,11 +46,11 @@
 
 **Результат достигнут:** платформа исполняет use-case'ы, не завязанные на конкретную инфраструктуру — подтверждено сквозным тестом ([internal/application/e2e_test.go](internal/application/e2e_test.go)): вся золотая дорожка на in-memory адаптерах, включая ветки «changes requested» и «tests failed», состояние читается только через проекцию.
 
-### v0.5 Infrastructure Layer — инфраструктура — **В работе** (открыт 2026-07-21)
+### v0.5 Infrastructure Layer — инфраструктура — **Завершено** (2026-07-21)
 
 - [EPIC-005](docs/roadmap/EPIC-005-infrastructure-layer.md): адаптеры портов EPIC-004 к реальным технологиям — PostgreSQL (источник истины задач, [ADR-004](docs/adr/ADR-004-task-storage.md), драйвер `pgx/v5` — [ADR-017](docs/adr/ADR-017-postgresql-driver.md)), производственный In-Memory Event Bus с журналом в PostgreSQL ([ADR-002](docs/adr/ADR-002-event-delivery.md)), GitHub (Repository Provider).
 
-**Результат:** платформа работает end-to-end на реальных хранилищах и интеграциях.
+**Результат достигнут:** платформа работает end-to-end на реальных хранилищах и интеграциях — подтверждено интеграционным тестом ([internal/infrastructure/wiring/golden_path_integration_test.go](internal/infrastructure/wiring/golden_path_integration_test.go)): та же золотая дорожка, что и в v0.4, на реальных PostgreSQL-адаптерах и производственном EventBus (с журналом, восстановимым отдельным select'ом), без единой строки изменений в `internal/application`/`internal/domain`. Единственное исключение — `RepositoryProvider`: покрыт unit-тестами против GitHub REST API, но не проверен вживую на реальном репозитории (нет тестового репозитория и токена в этой сессии) — принятый открытый риск, не блокирующий результат.
 
 ### v0.6 AI Agent Runtime — исполнение агентов
 

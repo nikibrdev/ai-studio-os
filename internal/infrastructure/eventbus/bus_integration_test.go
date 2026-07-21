@@ -83,3 +83,53 @@ func TestBus_Publish_WritesToEventJournal(t *testing.T) {
 		t.Errorf("journal data = %v, want to=ready", gotData)
 	}
 }
+
+func TestReadJournal_ReturnsReconstructedEvents(t *testing.T) {
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("TEST_DATABASE_URL not set; run docker compose up and set it to run this test")
+	}
+
+	ctx := context.Background()
+	pool, err := postgres.NewPoolFromDSN(ctx, dsn)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	defer pool.Close()
+	if err := postgres.Migrate(ctx, pool); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+
+	bus := New(pool)
+	id := fmt.Sprintf("evt-readjournal-%d", time.Now().UnixNano())
+	e := testEventWithData{
+		testEvent: testEvent{id: id, typ: "task.review-completed", source: "test", occurredAt: time.Now(), schemaVersion: 1},
+		data:      map[string]string{"to": "testing"},
+	}
+	if err := bus.Publish(ctx, e); err != nil {
+		t.Fatalf("Publish: %v", err)
+	}
+
+	events, err := ReadJournal(ctx, pool)
+	if err != nil {
+		t.Fatalf("ReadJournal: %v", err)
+	}
+
+	var found platform.Event
+	for _, evt := range events {
+		if evt.ID() == id {
+			found = evt
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("ReadJournal() did not return the published event %s", id)
+	}
+	dc, ok := found.(interface{ Data() map[string]string })
+	if !ok {
+		t.Fatalf("reconstructed event does not implement Data()")
+	}
+	if dc.Data()["to"] != "testing" {
+		t.Errorf("reconstructed event Data() = %v, want to=testing", dc.Data())
+	}
+}

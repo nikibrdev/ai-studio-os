@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.5 Infrastructure Layer — **в работе** (открыт 2026-07-21); v0.4 Application Layer — завершён ([ROADMAP.md](ROADMAP.md)) |
+| **Version** | v0.5 Infrastructure Layer — **завершён** (2026-07-21); следующий — v0.6 AI Agent Runtime ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-005 Infrastructure Layer](docs/roadmap/EPIC-005-infrastructure-layer.md) — **в работе** (открыт 2026-07-21): реализация портов EPIC-004 на PostgreSQL (`pgx/v5`, [ADR-017](docs/adr/ADR-017-postgresql-driver.md)), производственный EventBus с журналом, GitHub Repository Provider (TASK-046…051) |
+| **Current Epic** | [EPIC-005 Infrastructure Layer](docs/roadmap/EPIC-005-infrastructure-layer.md) — **закрыт** (2026-07-21): пять портов хранения на PostgreSQL, производственный EventBus с журналом (восстановим select'ом), GitHub Repository Provider (TASK-046…051); golden path зелёный на реальной инфраструктуре. EPIC-006 (AI Agent Runtime) — не открыт |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -27,7 +27,7 @@
 | Domain | **Implemented** — 5 сущностей (artifact/execution/executor/task/project) + `workflow.Machine`, инварианты покрыты тестами (81.8–100%), сквозной сценарий слоя зелёный ([goldenpath_test.go](internal/domain/goldenpath_test.go)) |
 | Application | **Implemented** — 4 use-case-сервиса (TaskPlanning/Work/Result/Completion) + проекция чтения, порты хранения на in-memory фейках, покрытие 83.1% ([README](internal/application/README.md)) |
 | Platform (контракты) | Contracts ready |
-| Infrastructure | **В работе** (v0.5, EPIC-005: каркас БД, Postgres-адаптеры, EventBus, GitHub Provider) |
+| Infrastructure | **Implemented** — PostgreSQL (пять Store, `pgx/v5`, самописные миграции), производственный EventBus с журналом, GitHub Repository Provider ([README](internal/infrastructure/README.md)) |
 | API | Not Started (REST, после Infrastructure) |
 | Dashboard | Not Started (v0.6) |
 | Developer Engine | Planning (ADR-005 и ADR-006 приняты — контракт и среда исполнения определены; реализация — v0.6) |
@@ -38,7 +38,7 @@
 | Поле | Значение |
 | --- | --- |
 | **Last ADR** | [ADR-017](docs/adr/ADR-017-postgresql-driver.md) (драйвер PostgreSQL — `pgx/v5`; миграции — самописный раннер) |
-| **Last Review** | 2026-07-21 — Code Review EPIC-004 (TASK-040…045, PR #53–#57); эпик закрыт целиком |
+| **Last Review** | 2026-07-21 — Code Review EPIC-005 (TASK-046…051, PR #60–#65); эпик закрыт целиком |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 4 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
