@@ -76,19 +76,48 @@ Task уже полностью определена разделами One Sente
 
 ## Domain Events
 
-(Раздел — PR 2, не входит в этот PR.)
+Полный каталог — [events.md](../../architecture/events.md); не дублируется, только подтверждение согласованности с этой спецификацией (Behavioral Invariant 4). Пятнадцать событий, по одному на переход, кроме Testing → Done (два подряд).
+
+| Событие | Переход | Источник |
+| --- | --- | --- |
+| TaskCreated | → Backlog | `task` |
+| TaskPlanned | Backlog → Ready | `task` |
+| TaskReturnedToBacklog | Ready → Backlog | `task` |
+| TaskStarted | Ready → In Progress | `task` |
+| ReviewRequested | In Progress → Review | `task` |
+| ReviewCompleted | Review → In Progress \| Review → Testing | `git` |
+| TestsFailed | Testing → In Progress | `execution` |
+| TestsPassed, затем TaskCompleted | Testing → Done | `execution`, затем `task` |
+| TaskBlocked | любое активное состояние → Blocked | `task` |
+| TaskUnblocked | Blocked → Ready \| Blocked → In Progress | `task` |
+| TaskCancelled | Backlog \| Ready \| Blocked \| In Progress → Cancelled | `task` |
+| TaskArchived | Done \| Cancelled → Archived | `task` |
+| MergeRequested, MergeCompleted | сопутствуют Review/Testing (порядок относительно Testing — [ADR-008](../../adr/ADR-008-git-policies.md), Decision Required) | `git` |
 
 ## Commands
 
-(Раздел — PR 2, не входит в этот PR.)
+Согласовано с уже принятым `Commands` ([internal/domain/task/contracts.go](../../../internal/domain/task/contracts.go)) — эта спецификация не вводит новых команд сверх того, что уже принято.
+
+1. **Create** — регистрирует Task в Backlog. Обязательные параметры: Project, название, тип. Цель, scope и критерии приёмки контрактом отдельно не фиксируются (см. Open Questions).
+2. **Transition** — единственный путь изменения состояния; допустимость перехода проверяется модулем `workflow` по [state-machine.md](../../architecture/state-machine.md); причина обязательна там, где это требует state-machine.md (Blocked, Cancelled).
 
 ## Queries
 
-(Раздел — PR 2, не входит в этот PR.)
+Согласовано с уже принятым `Queries` — намеренно узкий контракт (не межмодульный, [ADR-014](../../adr/ADR-014-module-interaction.md)).
+
+1. **State** — текущее состояние Task. Единственный метод уже принятого контракта; более широкие запросы (по Project, по Epic, по статусу) в контракт пока не входят (см. Future Extensions).
+
+Отдельно, вне Commands/Queries: **Exporter** — генерирует markdown-представление Task в `tasks/`; не Command и не Query в доменном смысле, а специфичный для переходного периода механизм экспорта ([ADR-004](../../adr/ADR-004-task-storage.md)) — не источник истины.
 
 ## Examples
 
-(Раздел — PR 2, не входит в этот PR.)
+Ни кода, ни JSON — только содержательные примеры, показывающие, что модель выдерживает разнородные реальные случаи.
+
+- **Обычная документационная задача** — эта самая спецификация (TASK-032): Backlog → Ready → In Progress (порождает Execution для агента-исполнителя) → Review → Testing → Done.
+- **Заблокированная задача** — Task, ожидающая внешнего архитектурного решения (например, требует ещё не принятого ADR). In Progress → Blocked, причина и требуемое решение зафиксированы (Behavioral Invariant 2).
+- **Отменённая до начала задача** — требования устарели прежде, чем работа началась. Backlog → Cancelled.
+- **Задача, вернувшаяся на доработку** — Review → In Progress (вердикт «changes requested») → снова Review → Testing.
+- **Задача без Epic** — самостоятельный срочный bugfix, не входящий ни в один Epic (Structural Invariant 2: связь опциональна).
 
 ## Acceptance Criteria
 
@@ -126,7 +155,7 @@ Task уже полностью определена разделами One Sente
 
 ## Статус
 
-Черновик — PR 1 из 3 (фундамент). Разделы Domain Events/Commands/Queries/Examples — PR 2; Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
+Черновик — PR 2 из 3 (поведение). Разделы Acceptance Criteria/Future Extensions/Anti-Responsibilities/Non-Goals/Removal Test/Decision Log/Open Questions (финальная сверка)/Stability Assessment — PR 3.
 
 ## Последнее обновление
 
