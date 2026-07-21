@@ -46,9 +46,9 @@
 
 **Результат достигнут:** платформа исполняет use-case'ы, не завязанные на конкретную инфраструктуру — подтверждено сквозным тестом ([internal/application/e2e_test.go](internal/application/e2e_test.go)): вся золотая дорожка на in-memory адаптерах, включая ветки «changes requested» и «tests failed», состояние читается только через проекцию.
 
-### v0.5 Infrastructure Layer — инфраструктура
+### v0.5 Infrastructure Layer — инфраструктура — **В работе** (открыт 2026-07-21)
 
-- Адаптеры: PostgreSQL (источник истины задач, [ADR-004](docs/adr/ADR-004-task-storage.md)), In-Memory Event Bus ([ADR-002](docs/adr/ADR-002-event-delivery.md)), GitHub (Repository Provider).
+- [EPIC-005](docs/roadmap/EPIC-005-infrastructure-layer.md): адаптеры портов EPIC-004 к реальным технологиям — PostgreSQL (источник истины задач, [ADR-004](docs/adr/ADR-004-task-storage.md), драйвер `pgx/v5` — [ADR-017](docs/adr/ADR-017-postgresql-driver.md)), производственный In-Memory Event Bus с журналом в PostgreSQL ([ADR-002](docs/adr/ADR-002-event-delivery.md)), GitHub (Repository Provider).
 
 **Результат:** платформа работает end-to-end на реальных хранилищах и интеграциях.
 
