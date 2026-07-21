@@ -12,10 +12,10 @@
 | --- | --- | --- |
 | Architecture | **97%** | Заморожена; 3% — 4 ADR в Decision Required, ни один не блокирует v0.5–v0.6 ([индекс](docs/adr/DECISIONS_INDEX.md)) |
 | Documentation | **100%** | Для текущего этапа: 17 архитектурных документов, процессы, спецификационная структура |
-| Workflow | **60%** | Каноническая state machine реализована (`workflow.Machine`, 100% покрытия) и используется всеми use-case'ами Application Layer; Definition/Step — v0.5+ |
-| Implementation | **45%** | Domain Layer (EPIC-003) и Application Layer (EPIC-004) завершены: 5 сущностей + Machine + 4 use-case-сервиса + проекция чтения, поверх портов на in-memory фейках; Infrastructure не начата |
-| Testing | **30%** | 136 unit-теста (Domain 81.8–100%, Application 83.1%/86.8%), включая сквозной сценарий слоя и сквозной golden-path тест приложения; интеграционные/e2e — с v0.5–v0.6 (реальные адаптеры, QA Engine) |
-| API | **0%** | REST принят (ADR-003); реализация после Infrastructure Layer |
+| Workflow | **60%** | Каноническая state machine реализована (`workflow.Machine`, 100% покрытия) и используется всеми use-case'ами Application Layer; Definition/Step — v0.6+ |
+| Implementation | **55%** | Domain (EPIC-003), Application (EPIC-004) и Infrastructure Layer (EPIC-005) завершены: 5 сущностей + Machine + 4 use-case-сервиса + проекция чтения — теперь работают на реальном PostgreSQL, производственном EventBus (журнал в БД) и GitHub-адаптере, не только на in-memory фейках |
+| Testing | **40%** | 170 unit-теста (Domain 91.1–100%, Application 83.1%/86.8%, Infrastructure — юнит-часть 50–93%, DB-логика покрыта интеграционными тестами) + интеграционные тесты на реальном PostgreSQL (golden path, все Store, EventBus/журнал), CI-job `integration`; e2e/QA Engine — v0.6+ |
+| API | **0%** | REST принят (ADR-003); Infrastructure Layer готова, реализация API — v0.9 |
 | Dashboard | **0%** | v0.6 |
 
 ### Методика
