@@ -78,6 +78,24 @@ func New(id, backend string, roles []shared.Role) (*Executor, Registered, error)
 	return e, event, nil
 }
 
+// Restore reconstructs an Executor from previously persisted state,
+// without re-running business rules or producing an event. It exists for
+// storage adapters (internal/infrastructure) loading an aggregate that was
+// already validated by New/Activate/Disable/Retire/GrantRole/RevokeRole at
+// the time it was saved — callers outside a Store implementation should
+// not use it.
+func Restore(id, backend string, roles []shared.Role, registeredAt time.Time, state State) *Executor {
+	out := make([]shared.Role, len(roles))
+	copy(out, roles)
+	return &Executor{
+		id:           id,
+		backend:      backend,
+		roles:        out,
+		registeredAt: registeredAt,
+		state:        state,
+	}
+}
+
 // Activate transitions Registered -> Active or Disabled -> Active (spec
 // Commands: Activate). What exactly is verified before activation is an
 // open question of the specification (Application Layer) — the domain

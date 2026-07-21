@@ -3,6 +3,7 @@ package artifact
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func newDraft(t *testing.T) *Artifact {
@@ -285,5 +286,41 @@ func TestLifecycle_TransitionsAreIrreversible(t *testing.T) {
 	}
 	if _, err := a.Publish(); !errors.Is(err, ErrArchived) {
 		t.Errorf("Publish() from Archived error = %v, want %v", err, ErrArchived)
+	}
+}
+
+// --- Restore ---
+
+func TestRestore_RoundTripsPersistedFields(t *testing.T) {
+	createdAt := time.Now().Add(-time.Hour)
+	payload := []byte("payload")
+	a := Restore("art-1", "proj-1", Type("PullRequest"), OriginProduced, Author("nikita"), createdAt, "exec-1", payload, StatePublished)
+
+	if got := a.ID(); got != "art-1" {
+		t.Errorf("ID() = %q, want art-1", got)
+	}
+	if got := a.ProjectID(); got != "proj-1" {
+		t.Errorf("ProjectID() = %q, want proj-1", got)
+	}
+	if got := a.ArtifactType(); got != Type("PullRequest") {
+		t.Errorf("ArtifactType() = %q, want PullRequest", got)
+	}
+	if got := a.Origin(); got != OriginProduced {
+		t.Errorf("Origin() = %q, want %q", got, OriginProduced)
+	}
+	if got := a.Author(); got != Author("nikita") {
+		t.Errorf("Author() = %q, want nikita", got)
+	}
+	if got := a.CreatedAt(); !got.Equal(createdAt) {
+		t.Errorf("CreatedAt() = %v, want %v", got, createdAt)
+	}
+	if got := a.ProducedBy(); got != "exec-1" {
+		t.Errorf("ProducedBy() = %q, want exec-1", got)
+	}
+	if got := string(a.Payload()); got != "payload" {
+		t.Errorf("Payload() = %q, want payload", got)
+	}
+	if got := a.State(); got != StatePublished {
+		t.Errorf("State() = %q, want %q", got, StatePublished)
 	}
 }

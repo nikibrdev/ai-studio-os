@@ -3,6 +3,7 @@ package execution
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func newQueued(t *testing.T) *Execution {
@@ -267,5 +268,40 @@ func TestArtifactIDs_ReturnsCopyNotAlias(t *testing.T) {
 	external[0] = "tampered-again"
 	if got := e.ArtifactIDs(); got[0] != "art-1" {
 		t.Errorf("mutating an accessor result changed the entity: %v", got)
+	}
+}
+
+// --- Restore ---
+
+func TestRestore_RoundTripsPersistedFields(t *testing.T) {
+	createdAt := time.Now().Add(-time.Hour)
+	e := Restore("exec-1", "task-1", "executor-1", createdAt, []string{"art-1"}, StateSucceeded)
+
+	if got := e.ID(); got != "exec-1" {
+		t.Errorf("ID() = %q, want exec-1", got)
+	}
+	if got := e.TaskID(); got != "task-1" {
+		t.Errorf("TaskID() = %q, want task-1", got)
+	}
+	if got := e.ExecutorID(); got != "executor-1" {
+		t.Errorf("ExecutorID() = %q, want executor-1", got)
+	}
+	if got := e.CreatedAt(); !got.Equal(createdAt) {
+		t.Errorf("CreatedAt() = %v, want %v", got, createdAt)
+	}
+	if got := e.ArtifactIDs(); len(got) != 1 || got[0] != "art-1" {
+		t.Errorf("ArtifactIDs() = %v, want [art-1]", got)
+	}
+	if got := e.State(); got != StateSucceeded {
+		t.Errorf("State() = %q, want %q", got, StateSucceeded)
+	}
+}
+
+func TestRestore_CopiesArtifactIDsNotAlias(t *testing.T) {
+	ids := []string{"art-1"}
+	e := Restore("exec-1", "task-1", "executor-1", time.Now(), ids, StateRunning)
+	ids[0] = "tampered"
+	if got := e.ArtifactIDs(); got[0] != "art-1" {
+		t.Errorf("Restore aliased the input slice: %v", got)
 	}
 }

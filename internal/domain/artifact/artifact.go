@@ -78,6 +78,32 @@ func New(id, projectID string, typ Type, origin Origin, author Author, producedB
 	return a, event, nil
 }
 
+// Restore reconstructs an Artifact from previously persisted state,
+// without re-running business rules or producing an event. It exists for
+// storage adapters (internal/infrastructure) loading an aggregate that was
+// already validated by New/UpdateDraft/Publish/Archive at the time it was
+// saved — callers outside a Store implementation should not use it.
+func Restore(
+	id, projectID string,
+	typ Type, origin Origin, author Author,
+	createdAt time.Time,
+	producedBy string,
+	payload []byte,
+	state State,
+) *Artifact {
+	return &Artifact{
+		id:         id,
+		projectID:  projectID,
+		typ:        typ,
+		origin:     origin,
+		author:     author,
+		createdAt:  createdAt,
+		producedBy: producedBy,
+		payload:    payload,
+		state:      state,
+	}
+}
+
 // UpdateDraft updates the Payload and/or refines the Author while the
 // Artifact is in Draft (spec Commands: UpdateDraft). Type and Origin are
 // not parameters here: Type is fixed at Create (Structural Invariant 1),
