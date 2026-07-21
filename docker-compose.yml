@@ -1,0 +1,26 @@
+# Локальный PostgreSQL для разработки и интеграционных тестов
+# Infrastructure Layer (EPIC-005, ADR-017). Не для production —
+# креды намеренно простые, том не защищён.
+#
+# Использование: docker compose up -d
+# DSN для интеграционных тестов: postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ai_studio_os
+      POSTGRES_PASSWORD: ai_studio_os
+      POSTGRES_DB: ai_studio_os
+    ports:
+      - "5432:5432"
+    volumes:
+      - ai_studio_os_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_studio_os"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  ai_studio_os_postgres_data:
