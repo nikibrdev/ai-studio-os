@@ -18,7 +18,7 @@
 | [005](ADR-005-executor-contract.md) | **Accepted** | Executor Contract — четыре возможности (Accept/Artifacts/Status/Finish) | Нет |
 | [006](ADR-006-agent-execution-environment.md) | Decision Required | Среда выполнения и изоляция агентов | v0.3 Developer Engine |
 | [007](ADR-007-pm-qa-executors.md) | Decision Required | Исполнители ролей PM и QA в MVP | Объём v0.2 (PM) и v0.4 (QA) |
-| [008](ADR-008-git-policies.md) | Decision Required | Git-политики: слияние, ревью, момент merge относительно Testing | Условие Testing → Done; число обязательных approve в защите main (сейчас 0 — self-approval не засчитывается, TASK-016) |
+| [008](ADR-008-git-policies.md) | **Accepted** | Git-политики: merge commit; слияние после Testing (TestsPassed → MergeCompleted → TaskCompleted); 1 ревьюер, агент допустим | Нет |
 | [009](ADR-009-toolchain.md) | **Accepted** | Toolchain — Go 1.24, Next.js 15, pnpm, golangci-lint, gofumpt | Нет |
 | [010](ADR-010-documentation-language.md) | Decision Required | Язык документации (EN-версия) | Публичный релиз v1.0 |
 | [011](ADR-011-task-identifiers.md) | **Accepted** | Идентификаторы — `TASK-NNN`/`EPIC-NNN`, последовательные в рамках Project; суррогатный ключ в БД; выдача — модуль `task` (последовательность на проект, v0.5) | Нет |
@@ -30,9 +30,9 @@
 
 ### Сводка
 
-- **Принято:** 10 (001, 002, 003, 004, 005, 009, 011, 014, 015, 016)
-- **Decision Required:** 6 (006, 007, 008, 010, 012, 013)
-- Ближайшие к принятию по roadmap: ADR-008 (момент merge относительно Testing — оркестрация v0.4), ADR-006 (среда выполнения Executor — v0.6 AI Agent Runtime).
+- **Принято:** 11 (001, 002, 003, 004, 005, 008, 009, 011, 014, 015, 016)
+- **Decision Required:** 5 (006, 007, 010, 012, 013)
+- Ближайшие к принятию по roadmap: ADR-006 (среда выполнения Executor — v0.6 AI Agent Runtime), ADR-007 (исполнители PM/QA — v0.4).
 
 ## Статус
 
