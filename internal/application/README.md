@@ -12,13 +12,18 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 | --- | --- |
 | `ports.go` | Пять узких портов хранения агрегатов: `ProjectStore`, `TaskStore`, `ExecutorStore`, `ExecutionStore`, `ArtifactStore` (Get/Save); `ErrNotFound` |
 | `event.go` | `Envelope` — оборачивает данные доменных событий в контракт `platform.Event` (ADR-002) перед публикацией |
-| `inmemory/` | Детерминированные фейки портов и `EventBus` для тестов этого эпика — не инфраструктурный адаптер |
+| `inmemory/` | Детерминированные фейки портов, `EventBus` и `RepositoryProvider` для тестов этого эпика — не инфраструктурный адаптер |
 | `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`) |
 | `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution) |
 | `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` |
+| `completion.go` | `CompletionService` (TASK-044) — «Завершение задачи»: `RequestReview`, `CompleteReview`, `CompleteTesting` — реализует ADR-008 (merge — код-гейт перед Done, порядок TestsPassed → MergeCompleted → TaskCompleted) |
 | `id.go` | `NewID()` — общий генератор идентификаторов (`crypto/rand`, без внешней UUID-зависимости) для сущностей, порождаемых как побочный эффект use-case (Execution, здесь же переиспользуется), а не именованных явной командой |
 
-Остальные use-case'ы (TASK-044…045: завершение задачи, проекция чтения) добавляются отдельными файлами по мере реализации.
+Остальной use-case (TASK-045: проекция чтения) добавляется отдельным файлом по мере реализации — этим завершается декомпозиция EPIC-004.
+
+### ADR-008 в коде
+
+`CompletionService.CompleteTesting` кодирует решение ADR-008 не только комментарием: при успехе тестов сначала публикуется `TestsPassed`, затем вызывается `RepositoryProvider.MergePullRequest`, затем `MergeCompleted` — и только после успешного merge задача переходит в Done с `TaskCompleted`. Если merge вернёт ошибку, задача остаётся в Testing и `TaskCompleted` не публикуется — проверено тестом `TestCompleteTesting_MergeFailure_BlocksDone`.
 
 ### Известное ограничение: нет межагрегатной транзакции
 
