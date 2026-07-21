@@ -38,33 +38,33 @@
 
 ## Критерии завершения (этап 1)
 
-- [ ] Пять спецификаций написаны по шаблону Specification-Domain.md, все 20 разделов в каждой, тремя PR (фундамент → поведение → завершение). ([Artifact](../specifications/domain/artifact.md) — done, статус Reference.)
-- [ ] Каждая спецификация прошла три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency с Delta Review начиная с TASK-030, Future-proof Review).
-- [ ] Каждая спецификация непротиворечива с уже принятыми ADR-005/ADR-016/domain-model.md и друг с другом (например: `ExecutorTask`/`Artifact`/`ExecutionStatus` в спецификации Execution/Executor не противоречат абстрактным типам `internal/platform`).
-- [ ] Все пять спецификаций явно утверждены архитектором (статус «Утверждена», не «Черновик»).
-- [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
+- [x] Пять спецификаций написаны по шаблону Specification-Domain.md, все 20 разделов в каждой, тремя PR (фундамент → поведение → завершение). ([Artifact](../specifications/domain/artifact.md) — статус Reference; [Execution](../specifications/domain/execution.md), [Executor](../specifications/domain/executor.md), [Task](../specifications/domain/task.md), [Project](../specifications/domain/project.md) — статус Утверждена.)
+- [x] Каждая спецификация прошла три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) (Internal Consistency, Cross-domain Consistency с Delta Review начиная с TASK-030, Future-proof Review).
+- [x] Каждая спецификация непротиворечива с уже принятыми ADR-005/ADR-016/domain-model.md и друг с другом (например: `ExecutorTask`/`Artifact`/`ExecutionStatus` в спецификации Execution/Executor не противоречат абстрактным типам `internal/platform`).
+- [x] Все пять спецификаций явно утверждены архитектором (статус «Утверждена», не «Черновик»).
+- [x] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
 
 ## Декомпозиция
 
 | Задача | Содержание | Статус |
 | --- | --- | --- |
 | TASK-029 | Спецификация `Artifact` | done — статус **Reference** (первая доменная спецификация проекта, [решение](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md)) |
-| TASK-030 | Спецификация `Execution` | ready |
-| TASK-031 | Спецификация `Executor` | ready |
-| TASK-032 | Спецификация `Task` | ready |
-| TASK-033 | Спецификация `Project` | ready |
+| TASK-030 | Спецификация `Execution` | done — статус **Утверждена** |
+| TASK-031 | Спецификация `Executor` | done — статус **Утверждена** |
+| TASK-032 | Спецификация `Task` | done — статус **Утверждена** (расхождения с `contracts.go` — решённое направление расширения на этапе 2) |
+| TASK-033 | Спецификация `Project` | done — статус **Утверждена** (Activate — решённое направление расширения `registry.go` на этапе 2) |
 
 ## Риски и зависимости
 
-- Спецификации Task/Project пишутся поверх уже существующего кода ([internal/domain/task](../../internal/domain/task/), [internal/domain/project](../../internal/domain/project/)) — риск обнаружить расхождение между кодом и новым порядком/решениями (ADR-016 и т.д.); если найдено — фиксируется как Open Question, код в рамках этапа 1 не трогается.
-- Спецификации Artifact/Execution/Executor взаимозависимы (Execution ссылается на Artifact и использует Executor) — утверждаются по отдельности, но проверяются на согласованность друг с другом перед утверждением каждой следующей.
-- Одна задача (например, TASK-029) может закрываться несколькими PR, если по ходу работы возникают вопросы, требующие решения архитектора, — сознательно принятый риск против скорости ([решение](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md)).
-- Начиная с TASK-030, каждая спецификация обязана пройти **Delta Review** относительно уже утверждённых/Reference спецификаций (сейчас — только Artifact): не требует ли пересмотра уже принятого, использует ли принятые понятия единообразно, не вводит ли дублирующее понятие под другим именем ([решение](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md)). Утверждённые/Reference спецификации после этого изменяются только через новый ADR, отдельный Domain Revision PR либо обоснованное изменение с тем же Delta Review — не напрямую.
+- Спецификации Task/Project писались поверх уже существующего кода ([internal/domain/task](../../internal/domain/task/), [internal/domain/project](../../internal/domain/project/)) — расхождения найдены (`epicID`/scope-AC у Task; отсутствие `Activate` у Project) и разрешены финальным ревью как решённое направление расширения контрактов на этапе 2, а не как правки кода в рамках этапа 1.
+- Спецификации Artifact/Execution/Executor/Task/Project взаимозависимы — утверждались по порядку, каждая следующая проверена на согласованность с уже утверждёнными перед своим утверждением (Delta Review).
+- Все пять спецификаций закрыты за один день каждая (как и планировалось [решением](../../engineering/decisions/2026-07-20-domain-specification-three-pass-review.md) — сознательный темп, не в ущерб раундам ревью).
+- Начиная с TASK-030, каждая спецификация прошла обязательный **Delta Review** относительно уже утверждённых/Reference спецификаций ([решение](../../engineering/decisions/2026-07-20-domain-specification-reference-status.md)). Утверждённые/Reference спецификации теперь изменяются только через новый ADR, отдельный Domain Revision PR либо обоснованное изменение с тем же Delta Review — не напрямую.
 
 ## Статус
 
-В работе (этап 1 открыт 2026-07-20)
+Этап 1 (Domain Specifications First) **закрыт** — все пять спецификаций утверждены (2026-07-21). Этап 2 (Реализация) открывается отдельными задачами.
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-21
