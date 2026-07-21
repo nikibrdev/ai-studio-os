@@ -65,6 +65,21 @@ func New(id, name string) (*Project, Created, error) {
 	return p, Created{ID: id, Name: name, At: now}, nil
 }
 
+// Restore reconstructs a Project from previously persisted state, without
+// re-running business rules or producing an event. It exists for storage
+// adapters (internal/infrastructure) loading an aggregate that was already
+// validated by New/ConnectRepository/Activate/Archive at the time it was
+// saved — callers outside a Store implementation should not use it.
+func Restore(id, name string, repositories []string, createdAt time.Time, state State) *Project {
+	return &Project{
+		id:           id,
+		name:         name,
+		repositories: append([]string(nil), repositories...),
+		createdAt:    createdAt,
+		state:        state,
+	}
+}
+
 // ConnectRepository attaches a repository reference; allowed in Created
 // and Active, never in Archived (spec Commands). It never transitions
 // state by itself — it only satisfies Activate's guard (spec: no hidden

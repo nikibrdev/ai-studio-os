@@ -72,6 +72,31 @@ func New(id, projectID, epicID, title, taskType string) (*Task, Created, error) 
 	return t, event, nil
 }
 
+// Restore reconstructs a Task from previously persisted state, without
+// re-running business rules or producing an event. It exists for storage
+// adapters (internal/infrastructure) loading an aggregate that was already
+// validated by New/AttachToEpic/SetScope/SetAcceptanceCriteria/Transition at
+// the time it was saved — callers outside a Store implementation should not
+// use it.
+func Restore(
+	id, projectID, epicID, title, taskType, scope string,
+	acceptanceCriteria []string,
+	createdAt time.Time,
+	state shared.TaskState,
+) *Task {
+	return &Task{
+		id:                 id,
+		projectID:          projectID,
+		epicID:             epicID,
+		title:              title,
+		taskType:           taskType,
+		scope:              scope,
+		acceptanceCriteria: append([]string(nil), acceptanceCriteria...),
+		createdAt:          createdAt,
+		state:              state,
+	}
+}
+
 // AttachToEpic sets or changes the owning Epic. Valid only in Backlog:
 // once the task is planned, its organizational placement is part of what
 // Definition of Ready approved.

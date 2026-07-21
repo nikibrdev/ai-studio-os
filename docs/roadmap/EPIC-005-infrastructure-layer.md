@@ -49,7 +49,7 @@
 | Задача | Содержание | Статус |
 | --- | --- | --- |
 | TASK-046 | Каркас `internal/infrastructure`: конфигурация подключения, `pgxpool`, раннер миграций, Docker Compose, README | done |
-| TASK-047 | Postgres-адаптеры `ProjectStore` + `TaskStore` (источник истины задач по ADR-004), схема таблиц | ready |
+| TASK-047 | Postgres-адаптеры `ProjectStore` + `TaskStore` (источник истины задач по ADR-004), схема таблиц | done |
 | TASK-048 | Postgres-адаптеры `ExecutorStore` + `ExecutionStore` + `ArtifactStore`, схема таблиц | ready |
 | TASK-049 | Производственный `EventBus` (in-process) + подписчик-журнал в PostgreSQL | ready |
 | TASK-050 | `RepositoryProvider` — адаптер GitHub REST API | ready |
