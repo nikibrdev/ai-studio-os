@@ -53,7 +53,7 @@
 | TASK-052 | Конкретизация типов `platform.Executor` (`ExecutorTask`/`Artifact`/`ExecutionStatus`) | done |
 | TASK-053 | Docker-образ исполнения на базе Dev Container | done |
 | TASK-054 | Жизненный цикл контейнера Execution: клон рабочей копии, сетевой allowlist, инъекция секретов | done |
-| TASK-055 | Адаптер `agents/claude-code` — реализация `platform.Executor` | ready |
+| TASK-055 | Адаптер `agents/claude-code` — реализация `platform.Executor` | done |
 | TASK-056 | Демонстрационный реальный прогон на тестовой задаче | ready |
 | TASK-057 | Синхронизация документации, закрытие эпика | ready |
 
