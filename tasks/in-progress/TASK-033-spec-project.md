@@ -50,7 +50,11 @@ Project — пятый, последний модуль в порядке про
 
 ## План реализации
 
-<Заполняется при взятии задачи в работу.>
+Тот же процесс, что и в TASK-029/030/031/032: три PR, порядок Model First, 20 разделов [Specification-Domain.md](../../.claude/templates/Specification-Domain.md). Как и Task — документирование поверх уже принятого контракта ([internal/domain/project/registry.go](../../internal/domain/project/registry.go)), последняя спецификация этапа 1.
+
+- **PR 1 — фундамент** (сегодня): One Sentence → Identity → Purpose → Responsibilities → Invariants → Lifecycle (Created → Active → Archived) → Relationships (владение Task/Artifact, `Project ├── Task └── Artifact`) → Alternative Interpretations Considered. Delta Review — против Artifact (Reference), Execution, Executor и Task (черновики). Сверка с `registry.go` выявила: контракт не содержит явной команды `Activate` — гипотеза (переход Created→Active при подключении первого Repository) зафиксирована как предложение, не факт; отсутствует операция отключения Repository.
+- **PR 2 — поведение**: Domain Events, Commands/Queries (согласованные с уже принятым `Registry`), Examples.
+- **PR 3 — завершение и ревью**: Acceptance Criteria, Future Extensions, Anti-Responsibilities, Non-Goals, Removal Test, Decision Log (ADR-013), Open Questions, Stability Assessment; три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md). Это последняя из пяти спецификаций этапа 1 — после утверждения всех пяти EPIC-003 переходит к критериям завершения этапа.
 
 ## История
 
@@ -58,3 +62,6 @@ Project — пятый, последний модуль в порядке про
 2026-07-20 — Architect — введён Domain Specification Review (12 обязательных разделов, Specification-Domain.md); задача синхронизирована с новым шаблоном перед стартом.
 2026-07-20 — Architect — введён Three-Pass Review (+4 раздела до 16, три прохода проверки, сознательный темп).
 2026-07-20 — Architect — введён Model First (+3 раздела до 19: One Sentence, Identity, Alternative Interpretations Considered; Invariants разделены на Structural/Behavioral; спецификация пишется тремя PR — фундамент/поведение/завершение).
+2026-07-20 — Architect — введён Reference Status (+1 раздел Stability Assessment, итого 20; Delta Review обязателен).
+2026-07-21 — Claude Code (Developer) — задача взята в работу, переведена в `tasks/in-progress/`; план PR 1 записан.
+2026-07-21 — Claude Code (Developer) — PR 1 (`docs/specifications/domain/project.md`, черновик) написан: One Sentence, Identity, Purpose, Responsibilities, Invariants (Structural/Behavioral), Lifecycle (Created → Active → Archived), Relationships (владение Epic/Task/Artifact), Alternative Interpretations Considered. Delta Review — против Artifact (Reference), Execution, Executor и Task (черновики) — без расхождений. Сверка с `internal/domain/project/registry.go` выявила: контракт не содержит явной команды `Activate` — гипотеза о переходе Created→Active при подключении первого Repository зафиксирована как предложение, требующее подтверждения, не как решённый факт; операция отключения Repository в контракте отсутствует. Оба зафиксированы как Open Questions, код не изменён. Содержание требует реального ревью, не самоапрува.
