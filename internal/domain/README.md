@@ -17,9 +17,9 @@
 | `task/` | Сущность Task (инварианты, переходы через workflow.Rules) + контракты записи/чтения/экспорта | [task/README.md](task/README.md) |
 | `project/` | Сущность Project (граница инициативы, явный Activate) + контракт реестра | [project/README.md](project/README.md) |
 | `event/` | Словарь типов событий | [event/README.md](event/README.md) |
-| `workflow/` | Правила state machine (Rules) и определения процессов (Definition, Step) | [workflow/README.md](workflow/README.md) |
+| `workflow/` | Каноническая state machine (Machine/Rules) и контракты определений процессов (Definition, Step) | [workflow/README.md](workflow/README.md) |
 
-Все пять спецификаций EPIC-003 (Artifact, Execution, Executor, Task, Project) утверждены — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md). Все пять доменных сущностей реализованы на этапе 2: `artifact/` (TASK-034), `execution/` (TASK-035), `executor/` (TASK-036), `task/` (TASK-037), `project/` (TASK-038); остаётся реализация `workflow.Rules` (TASK-039). Остальные модули доменной модели (`tool`, `memory`, `git`, `identity`) — вне scope EPIC-003, по решению архитектора отдельно.
+Все пять спецификаций EPIC-003 (Artifact, Execution, Executor, Task, Project) утверждены — [docs/roadmap/EPIC-003-domain-layer.md](../../docs/roadmap/EPIC-003-domain-layer.md), и весь заявленный код этапа 2 реализован: пять сущностей (`artifact/` TASK-034, `execution/` TASK-035, `executor/` TASK-036, `task/` TASK-037, `project/` TASK-038) и каноническая state machine (`workflow.Machine`, TASK-039). Остальные модули доменной модели (`tool`, `memory`, `git`, `identity`) — вне scope EPIC-003, по решению архитектора отдельно.
 
 ### Зависимости
 
