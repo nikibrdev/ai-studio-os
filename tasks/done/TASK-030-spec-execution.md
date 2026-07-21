@@ -30,11 +30,11 @@ Execution — второй модуль в порядке проектирова
 
 ## Критерии приёмки
 
-- [ ] Спецификация содержит все 19 обязательных разделов Specification-Domain.md, тремя PR (фундамент → поведение → завершение, [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md)).
-- [ ] Пройдены три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md).
-- [ ] Непротиворечива с ADR-005, ADR-016, domain-model.md и утверждённой спецификацией Artifact (TASK-029).
-- [ ] Статус спецификации — «Утверждена».
-- [ ] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
+- [x] Спецификация содержит все 20 обязательных разделов Specification-Domain.md, тремя PR (фундамент → поведение → завершение, [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md)).
+- [x] Пройдены три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md).
+- [x] Непротиворечива с ADR-005, ADR-016, domain-model.md и утверждённой спецификацией Artifact (TASK-029).
+- [x] Статус спецификации — «Утверждена».
+- [x] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
 
 ## Затрагиваемые модули и документы
 
@@ -68,3 +68,16 @@ Execution — второй модуль в порядке проектирова
 2026-07-21 — Claude Code (Developer) — PR 1 (`docs/specifications/domain/execution.md`, черновик) написан: One Sentence, Identity, Purpose, Responsibilities, Invariants (Structural/Behavioral), Lifecycle (Queued → Running → Succeeded | Failed | Aborted, плюс Queued → Aborted), Relationships, Alternative Interpretations Considered. Delta Review относительно Artifact проведён: терминология «ссылка, не владение» и кардинальность связи Execution↔Artifact выровнены с уже утверждённой спецификацией, не переопределены заново. Три вопроса, требующие решения архитектора, зафиксированы в Open Questions, не решены самостоятельно. Содержание — самостоятельная доменная модель, требует реального ревью, не самоапрува; merge не выполняется до обратной связи. Локальная верификация (`verify-docs.sh`, `markdownlint-cli2`) пройдена; коммит `dad9256`.
 2026-07-21 — Claude Code (Developer) — PR 2 написан: Domain Events (пять, по одному на переход/создание — согласовано с принципом Artifact через Delta Review), Commands (явное соответствие четырём возможностям ADR-005: Accept/RecordArtifact/Succeed+Fail/Abort), Queries, Examples (пять содержательных сценариев, включая человека как Executor и повторную попытку после сбоя). Локальная верификация пройдена; коммит `2e84101`.
 2026-07-21 — Claude Code (Developer) — PR 3 написан: Acceptance Criteria (8 критериев с самопроверкой), Future Extensions (ожидаемые: метрики Executor/тайм-аут Queued/политика повторов; возможные: Attempt/параллельные под-исполнения/приоритизация очереди/структура прогресс-лога), Anti-Responsibilities (5 пунктов), Non-Goals (4 пункта), Removal Test, Decision Log (7 строк), Open Questions (3 подлинно открытых вопроса) плюс письменные ответы на три диагностических вопроса Three-Pass Review, включая обязательный Delta Review против Artifact (все три ответа — модель не требует пересмотра, понятия использованы единообразно, дублирующих понятий не введено). Stability Assessment: Provisional-leaning Stable for v1, Confidence Medium (ниже, чем у Artifact, из-за открытой политики повторов, зависящей от будущей спецификации Task). Статус документа оставлен «Черновик» — финальное решение об «Утверждена» не принимается самостоятельно. Локальная верификация пройдена; коммит записывается отдельно. Три PR завершены за один день, как и TASK-029; ветка `feature/TASK-030-spec-execution` готова к реальному ревью архитектора, merge не выполняется до обратной связи.
+2026-07-21 — Architect — Final Architecture Review: содержательное замечание к Open Questions PR 3 — граница Failed/Aborted, оставленная открытой, на самом деле разрешима на уровне домена: гонка команд — вопрос порядка доставки (Application/Infrastructure), не отдельное доменное правило, которое стоило бы оставлять неопределённым. Остальные два открытых вопроса (порог Queued, детальная политика повторов) — корректно вне домена/future work, не блокируют утверждение. Решение: добавить Behavioral Invariant, разрешающий гонку порядком выполнения; после этого — Approve.
+2026-07-21 — Claude Code (Developer) — добавлен Behavioral Invariant 5 (Execution): гонка Fail/Aborted разрешается порядком выполнения команд в едином пути записи, не отдельной доменной гонкой; Decision Log дополнен; Open Questions сокращён до двух подлинно открытых, некритичных для утверждения пунктов. Локальная верификация пройдена, коммит `<pending>`.
+2026-07-21 — Architect — Approve. Статус спецификации выставлен «Утверждена» (не Reference — этот статус остаётся исключительным для Artifact). Задача переведена в `tasks/done/`.
+
+## Отчёт о выполнении
+
+1. **Задача:** TASK-030 — спецификация домен-модуля Execution, вторая спецификация Domain Layer (EPIC-003, этап 1).
+2. **Что сделано:** написана и утверждена полная спецификация `docs/specifications/domain/execution.md` — 20 разделов, тремя PR, с обязательным Delta Review против Artifact (Reference). Единственное содержательное замечание финального ревью (граница Fail/Aborted) устранено добавлением Behavioral Invariant 5. Итоговый статус — **Утверждена**.
+3. **Изменённые файлы:** `docs/specifications/domain/execution.md` (новый), файл задачи.
+4. **Как проверялось:** на каждом PR — `gofumpt`/`golangci-lint`/`go vet` (чисто, Go-код не менялся), `bash scripts/verify-docs.sh` (0 ошибок), `npx markdownlint-cli2` (0 issues); финально — три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) с письменными ответами.
+5. **Обновлённая документация:** см. «Изменённые файлы» — реализация `internal/domain/execution` — отдельная задача этапа 2.
+6. **Open Questions:** два подлинно открытых вопроса остаются в самой спецификации (порог Queued — Infrastructure/Application; детальная политика повторов — Workflow/Task future work) — не блокируют утверждение, не решены самостоятельно.
+7. **Рекомендации:** приступить к оставшимся спецификациям этапа 1 (Executor уже написан параллельно, ждёт этого же ревью); при реализации `internal/domain/execution` (этап 2) учесть оба открытых вопроса как явные конфигурационные решения Application Layer, не как доменные пробелы.
