@@ -1,0 +1,83 @@
+# TASK-031: Спецификация домен-модуля Executor
+
+## Тип
+
+docs
+
+## Эпик
+
+[EPIC-003 Domain Layer](../../docs/roadmap/EPIC-003-domain-layer.md), этап 1 (Domain Specifications First)
+
+## Цель
+
+Полная, утверждённая спецификация `docs/specifications/domain/executor.md` по шаблону [Specification-Domain.md](../../.claude/templates/Specification-Domain.md) (Domain Specification Review — 12 обязательных разделов, [решение](../../engineering/decisions/2026-07-20-domain-specification-review.md)) — техническое задание для будущей реализации `internal/domain/executor` (этап 2, не начинается без утверждения).
+
+## Контекст
+
+Executor — третий модуль в порядке проектирования: реестр исполнителей (реальных технических бэкендов — Claude Code, Codex, OpenHands, человек), их возможности и статус ([core.md](../../docs/architecture/core.md)). Не путать с `internal/platform.Executor` (контракт адаптера, [ADR-005](../../docs/adr/ADR-005-executor-contract.md)) — доменный модуль `executor` описывает домен-сущность Executor (кто зарегистрирован, какие роли может исполнять), платформенный контракт — как к нему обращается ядро. Зависит от TASK-030 (Execution использует Executor).
+
+## Scope
+
+### Входит
+
+- `docs/specifications/domain/executor.md`, все 12 обязательных разделов: Purpose, Responsibilities, Invariants, Lifecycle (Registered → Active ⇄ Disabled → Retired), Relationships, Domain Events, Commands, Queries, Acceptance Criteria, Future Extensions, Anti-Responsibilities (явно: не выполняет работу сам — это платформенный адаптер через `internal/platform.Executor`, домен-модуль только реестр/состояние), Decision Log (ADR-005 и соотношение с понятием Agent — [ubiquitous-language.md](../../docs/domain/ubiquitous-language.md)).
+
+### Не входит
+
+- Реализация Go-пакета `internal/domain/executor`.
+- Изменение `internal/platform/executor.go` (уже принят, ADR-005/TASK-026).
+- Спецификации Artifact/Execution/Task/Project.
+
+## Критерии приёмки
+
+- [x] Спецификация содержит все 20 обязательных разделов Specification-Domain.md, тремя PR (фундамент → поведение → завершение, [Model First](../../engineering/decisions/2026-07-20-domain-specification-model-first.md)).
+- [x] Пройдены три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md).
+- [x] Непротиворечива с ADR-005, `internal/platform/executor.go`, domain-model.md и утверждённой спецификацией Execution (TASK-030).
+- [x] Статус спецификации — «Утверждена».
+- [x] `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто.
+
+## Затрагиваемые модули и документы
+
+`docs/specifications/domain/executor.md` (новый).
+
+## Definition of Ready
+
+- [x] Цель и результат сформулированы
+- [x] Критерии приёмки определены
+- [x] Затрагиваемые модули/документы указаны
+- [x] Ограничения и зависимости указаны — зависит от утверждённой спецификации Execution (TASK-030)
+
+## План реализации
+
+Тот же процесс, что и в TASK-029/TASK-030: три отдельных PR, порядок Model First, 20 разделов [Specification-Domain.md](../../.claude/templates/Specification-Domain.md).
+
+- **PR 1 — фундамент** (сегодня): One Sentence → Identity → Purpose → Responsibilities → Invariants (Structural/Behavioral) → Lifecycle (Registered → Active ⇄ Disabled → Retired) → Relationships → Alternative Interpretations Considered. Ни одного упоминания Go. Источники: [ADR-005](../../docs/adr/ADR-005-executor-contract.md), [ubiquitous-language.md](../../docs/domain/ubiquitous-language.md) (разделение Agent/Executor), [core.md](../../docs/architecture/core.md) (домен-модуль `executor` — реестр, отдельно от платформенного контракта `internal/platform.Executor`), [domain-model.md](../../docs/architecture/domain-model.md). Ключевая граница, которую держит вся спецификация: доменная сущность Executor (реестр — кто зарегистрирован, какие роли способен исполнять, какой статус) — не то же самое, что платформенный контракт адаптера (как ядро технически вызывает бэкенд). Delta Review — относительно Artifact (Reference) и черновика Execution (согласованность связи Execution↔Executor с обеих сторон).
+- **PR 2 — поведение**: Domain Events, Commands, Queries, Examples.
+- **PR 3 — завершение и ревью**: Acceptance Criteria, Future Extensions, Anti-Responsibilities (явно — не выполняет работу сам), Non-Goals, Removal Test, Decision Log, Open Questions, Stability Assessment; три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md).
+
+Открытые по ходу PR 1 вопросы (активация после регистрации, прямой переход Registered → Retired, критерии автоматического Disabled) фиксируются в Open Questions, не решаются самостоятельно.
+
+## История
+
+2026-07-20 — Architect — EPIC-003 открыт в режиме Domain Specifications First; задача поставлена в очередь (третья по порядку проектирования).
+2026-07-20 — Architect — введён Domain Specification Review (12 обязательных разделов, Specification-Domain.md); задача синхронизирована с новым шаблоном перед стартом.
+2026-07-20 — Architect — введён Three-Pass Review (+4 раздела до 16, три прохода проверки, сознательный темп).
+2026-07-20 — Architect — введён Model First (+3 раздела до 19: One Sentence, Identity, Alternative Interpretations Considered; Invariants разделены на Structural/Behavioral; спецификация пишется тремя PR — фундамент/поведение/завершение).
+2026-07-20 — Architect — введён Reference Status (+1 раздел Stability Assessment, итого 20; Delta Review обязателен, начиная с TASK-030).
+2026-07-21 — Claude Code (Developer) — задача взята в работу, переведена в `tasks/in-progress/`; план PR 1 записан.
+2026-07-21 — Claude Code (Developer) — PR 1 (`docs/specifications/domain/executor.md`, черновик) написан: One Sentence, Identity, Purpose, Responsibilities, Invariants (Structural/Behavioral), Lifecycle (Registered → Active ⇄ Disabled → Retired), Relationships, Alternative Interpretations Considered. Ключевая граница спецификации: доменная сущность Executor (реестр) явно отделена от платформенного контракта адаптера (`internal/platform.Executor`, ADR-005) — контракт описывает «как вызывается», спецификация — «кто зарегистрирован и в каком состоянии». Delta Review проведён относительно Artifact (Reference) и черновика Execution: связь Execution↔Executor согласована с обеих сторон (Execution фиксирует Executor при создании, Executor не владеет своими Execution). Три вопроса зафиксированы в Open Questions, не решены самостоятельно. Содержание требует реального ревью, не самоапрува; merge не выполняется до обратной связи. Ветка `feature/TASK-031-spec-executor` основана на `feature/TASK-030-spec-execution` (не на `main`) — executor.md ссылается на execution.md, ещё не смерженный; коммит `da3a01b`.
+2026-07-21 — Claude Code (Developer) — PR 2 написан: Domain Events (четыре — по одному на переход/группу переходов в общее целевое состояние, тот же паттерн, что `ArtifactArchived`/`ExecutionAborted`), Commands (Register/Activate/Disable/Retire/GrantRole/RevokeRole), Queries, Examples (пять сценариев, включая человека как Executor и временное ограничение провайдера). Коммит `4122f53`.
+2026-07-21 — Claude Code (Developer) — PR 3 написан: Acceptance Criteria (8 критериев), Future Extensions (ожидаемые: метрики Executor/критерии активации и Disable/приоритет выбора; возможные: составной Executor/квоты/детальные настройки), Anti-Responsibilities (5 пунктов), Non-Goals (4 пункта), Removal Test, Decision Log (6 строк), Open Questions (3 вопроса) плюс письменные ответы на три диагностических вопроса Three-Pass Review, включая Delta Review против Artifact/Execution (все три ответа — без пересмотра, понятия единообразны, дублирующих понятий нет). Stability Assessment: Stable for v1, Confidence Medium. Статус документа оставлен «Черновик» — решение об «Утверждена» не принимается самостоятельно. Три PR завершены за один день. Готово к реальному ревью архитектора.
+2026-07-21 — Architect — Final Architecture Review: единственное содержательное замечание — отсутствие прямого перехода Registered → Retired (Open Questions PR 3): требовать прохождения через Active ради немедленного вывода из строя незадействованного бэкенда нелогично, не защищает ни один инвариант. Остальные два открытых вопроса (критерии активации, критерии автоматического Disable) корректно вне домена, не блокируют утверждение. Решение: добавить переход в Lifecycle/Commands/Domain Events; после этого — Approve.
+2026-07-21 — Claude Code (Developer) — добавлен прямой переход Registered → Retired в Lifecycle, Commands (Retire) и Domain Events (ExecutorRetired); Decision Log дополнен; Open Questions сокращён до двух подлинно открытых, некритичных для утверждения пунктов. Локальная верификация пройдена.
+2026-07-21 — Architect — Approve. Статус спецификации выставлен «Утверждена». Задача переведена в `tasks/done/`.
+
+## Отчёт о выполнении
+
+1. **Задача:** TASK-031 — спецификация домен-модуля Executor, третья спецификация Domain Layer (EPIC-003, этап 1).
+2. **Что сделано:** написана и утверждена полная спецификация `docs/specifications/domain/executor.md` — 20 разделов, тремя PR, с обязательным Delta Review против Artifact и Execution. Ключевая граница спецификации — доменная сущность Executor (реестр) явно отделена от платформенного контракта адаптера. Единственное содержательное замечание финального ревью (отсутствие Registered → Retired) устранено. Итоговый статус — **Утверждена**.
+3. **Изменённые файлы:** `docs/specifications/domain/executor.md` (новый), файл задачи.
+4. **Как проверялось:** на каждом PR — `gofumpt`/`golangci-lint`/`go vet` (чисто, Go-код не менялся), `bash scripts/verify-docs.sh`, `npx markdownlint-cli2` — чисто; финально — три прохода [DomainSpecificationReview.md](../../.claude/checklists/DomainSpecificationReview.md) с письменными ответами.
+5. **Обновлённая документация:** см. «Изменённые файлы» — реализация `internal/domain/executor` — отдельная задача этапа 2.
+6. **Open Questions:** два подлинно открытых вопроса остаются в спецификации (критерии активации, критерии автоматического Disable — оба Application/Infrastructure) — не блокируют утверждение.
+7. **Рекомендации:** при реализации `internal/domain/executor` (этап 2) явные критерии активации и автоматического Disable — решить на уровне Application Layer, не как доменные правила.
