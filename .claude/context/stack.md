@@ -17,7 +17,7 @@
 | Formatter (Go) | **gofumpt** | строже gofmt |
 | API | **REST** | Dashboard → REST → Go Core ([ADR-003](../../docs/adr/ADR-003-api-protocol.md)) |
 | События | **In-Memory Event Bus** | интерфейс неизменен; будущая замена: Redis Streams / NATS ([ADR-002](../../docs/adr/ADR-002-event-delivery.md)) |
-| База данных | PostgreSQL | **источник истины задач** ([ADR-004](../../docs/adr/ADR-004-task-storage.md)); подключение с v0.2 |
+| База данных | PostgreSQL | **источник истины задач** ([ADR-004](../../docs/adr/ADR-004-task-storage.md)); драйвер `pgx/v5` ([ADR-017](../../docs/adr/ADR-017-postgresql-driver.md)); подключение с v0.2 |
 | Кэш | Redis | с v0.2; не используется для доставки событий в MVP |
 | Векторный поиск | Qdrant | с v0.7 (Memory) |
 | Тестирование e2e | Playwright | с v0.4 (QA Engine) |
@@ -37,4 +37,4 @@
 
 ## Последнее обновление
 
-2026-07-19
+2026-07-21
