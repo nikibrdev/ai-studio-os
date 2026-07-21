@@ -8,7 +8,7 @@
 
 ### Ответственность
 
-- Контракты: EventBus (Event, EventHandler, Subscription), **Executor** (не Agent — платформа запускает исполнителей, не агентов; [ADR-005](../../docs/adr/ADR-005-executor-contract.md): `Accept`/`Artifacts`/`Status`/`Finish`, `ExecutorTask`/`Artifact`/`ExecutionStatus` абстрактны до Domain Layer), Tool (ToolDescriptor), MemoryProvider (MemoryEntry), RepositoryProvider (PullRequestState).
+- Контракты: EventBus (Event, EventHandler, Subscription), **Executor** (не Agent — платформа запускает исполнителей, не агентов; [ADR-005](../../docs/adr/ADR-005-executor-contract.md): `Accept`/`Artifacts`/`Status`/`Finish`; `ExecutorTask`/`Artifact`/`ExecutionStatus` — конкретные структуры с примитивными полями, TASK-052 EPIC-006 — не псевдонимы доменных типов, домен-агностичность сохранена), Tool (ToolDescriptor), MemoryProvider (MemoryEntry), RepositoryProvider (PullRequestState).
 - Концептуальный источник истины — [docs/architecture/interfaces.md](../../docs/architecture/interfaces.md).
 
 ### Зависимости
@@ -30,4 +30,4 @@
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-21
