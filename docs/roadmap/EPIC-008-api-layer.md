@@ -43,7 +43,7 @@
 - [ ] `ProjectService` (CreateProject/Activate) реализован и покрыт тестами по образцу остальных сервисов Application Layer.
 - [ ] Последовательный `TASK-NNN` на проект генерируется платформой (не вызывающим кодом), проверено тестом на конкурентный вызов.
 - [ ] `docs/api/*.md` — спецификации всех операций по шаблону API.md, написаны до реализации соответствующих хендлеров.
-- [ ] `apps/api` реализует весь golden path через HTTP: создание проекта → создание и планирование задачи → запуск работы → черновик и публикация артефакта → результат исполнения → ревью → тестирование → завершение.
+- [ ] `apps/api` реализует весь golden path через HTTP: создание проекта → подключение репозитория → активация → создание и планирование задачи → запуск работы → черновик и публикация артефакта → результат исполнения → ревью → тестирование → завершение.
 - [ ] Сквозной HTTP-сценарий подтверждён вживую на реальном PostgreSQL (не только на фейках).
 - [ ] `docs/architecture/*.md`, затронутые эпиком (module-boundaries.md, system-design.md при необходимости), синхронизированы.
 - [ ] PROJECT_MANIFEST/PROJECT_HEALTH/ROADMAP/CHANGELOG синхронизированы при закрытии.
@@ -52,7 +52,7 @@
 
 | Задача | Содержание | Статус |
 | --- | --- | --- |
-| TASK-064 | `ProjectService` (CreateProject/Activate) в `internal/application` | ready |
+| TASK-064 | `ProjectService` (CreateProject/Activate) в `internal/application` | done |
 | TASK-065 | Генерация последовательного `TASK-NNN` на проект (ADR-011) в `internal/infrastructure/postgres` | ready |
 | TASK-066 | `docs/api/*.md` — спецификации по ресурсам (Documentation First) | ready |
 | TASK-067 | Каркас `apps/api`: `main.go`, сборка через `wiring.System`, маршрутизация, JSON-хелперы, отображение ошибок в HTTP-коды | ready |

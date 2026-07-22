@@ -21,6 +21,7 @@ feature
 ### Входит
 
 - `POST /projects` → `ProjectService.CreateProject`.
+- `POST /projects/{id}/repositories` → `ProjectService.ConnectRepository` (обязателен перед `activate` — guard домена «≥1 Repository», TASK-064).
 - `POST /projects/{id}/activate` → `ProjectService.Activate`.
 - `POST /tasks` → `TaskPlanningService.CreateTask` (ID берётся из генератора последовательности, TASK-065, а не из тела запроса).
 - `POST /tasks/{id}/plan` → `TaskPlanningService.PlanTask`.
@@ -34,7 +35,7 @@ feature
 
 ## Критерии приёмки
 
-- [ ] Все пять операций реализованы в точности по `docs/api/projects.md`/`docs/api/tasks.md` (TASK-066) — коды ошибок совпадают со спецификацией.
+- [ ] Все шесть операций реализованы в точности по `docs/api/projects.md`/`docs/api/tasks.md` (TASK-066) — коды ошибок совпадают со спецификацией.
 - [ ] `POST /tasks` использует генератор последовательности (TASK-065), не принимает ID в теле запроса.
 - [ ] `GET /tasks/{id}` для неизвестного ID возвращает 404, не 200 с пустым телом.
 - [ ] `make verify` — чисто.

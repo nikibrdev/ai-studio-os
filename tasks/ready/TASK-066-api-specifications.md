@@ -14,13 +14,13 @@ docs
 
 ## Контекст
 
-Операции берутся один в один из уже существующего Application Layer (EPIC-004) плюс `ProjectService` (TASK-064) — эта задача не придумывает новые возможности, только описывает HTTP-форму уже принятых use-case-методов: `TaskPlanningService.CreateTask/PlanTask`, `WorkService.StartTask`, `ResultService.RecordDraftArtifact/UpdateArtifactDraft/PublishArtifact/SucceedExecution/FailExecution`, `CompletionService.RequestReview/CompleteReview/CompleteTesting`, `TaskProjection.Get`, `ProjectService.CreateProject/Activate` (TASK-064).
+Операции берутся один в один из уже существующего Application Layer (EPIC-004) плюс `ProjectService` (TASK-064) — эта задача не придумывает новые возможности, только описывает HTTP-форму уже принятых use-case-методов: `TaskPlanningService.CreateTask/PlanTask`, `WorkService.StartTask`, `ResultService.RecordDraftArtifact/UpdateArtifactDraft/PublishArtifact/SucceedExecution/FailExecution`, `CompletionService.RequestReview/CompleteReview/CompleteTesting`, `TaskProjection.Get`, `ProjectService.CreateProject/ConnectRepository/Activate` (TASK-064 — `ConnectRepository` обязателен перед `Activate`, иначе guard домена «≥1 Repository» всегда отказывает).
 
 ## Scope
 
 ### Входит
 
-- `docs/api/projects.md` — `POST /projects`, `POST /projects/{id}/activate`.
+- `docs/api/projects.md` — `POST /projects`, `POST /projects/{id}/repositories` (`ConnectRepository` — обязателен перед `activate`: guard домена «≥1 Repository», TASK-064), `POST /projects/{id}/activate`.
 - `docs/api/tasks.md` — `POST /tasks`, `POST /tasks/{id}/plan`, `GET /tasks/{id}` (через `TaskProjection`), `POST /tasks/{id}/start`, `POST /tasks/{id}/request-review`, `POST /tasks/{id}/complete-review`, `POST /tasks/{id}/complete-testing`.
 - `docs/api/artifacts.md` — `POST /artifacts` (черновик), `PATCH /artifacts/{id}`, `POST /artifacts/{id}/publish`.
 - `docs/api/executions.md` — `POST /executions/{id}/succeed`, `POST /executions/{id}/fail`.
