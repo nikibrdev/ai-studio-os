@@ -44,11 +44,11 @@ func newResultFixture(t *testing.T) resultFixture {
 	if _, err := planning.CreateTask(ctx, application.CreateTaskParams{ID: "task-1", ProjectID: "proj-1", Title: "Задача", Type: "feature"}); err != nil {
 		t.Fatalf("CreateTask: %v", err)
 	}
-	if err := planning.PlanTask(ctx, "task-1", ""); err != nil {
+	if err := planning.PlanTask(ctx, "proj-1", "task-1", ""); err != nil {
 		t.Fatalf("PlanTask: %v", err)
 	}
 	saveExecutor(t, executors, true, shared.RoleDeveloper)
-	if _, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1"}); err != nil {
+	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); err != nil {
 		t.Fatalf("StartTask: %v", err)
 	}
 
@@ -106,7 +106,7 @@ func TestRecordDraftArtifact_RejectedWhenExecutionNotRunning(t *testing.T) {
 	ctx := context.Background()
 	f := newResultFixture(t)
 	execID := runningExecutionID(t, f)
-	if err := f.result.SucceedExecution(ctx, execID, ""); err != nil {
+	if err := f.result.SucceedExecution(ctx, "proj-1", execID, ""); err != nil {
 		t.Fatalf("SucceedExecution: %v", err)
 	}
 
@@ -193,7 +193,7 @@ func TestSucceedExecution_Success(t *testing.T) {
 		t.Fatalf("RecordDraftArtifact: %v", err)
 	}
 
-	if err := f.result.SucceedExecution(ctx, execID, "developer:executor-1"); err != nil {
+	if err := f.result.SucceedExecution(ctx, "proj-1", execID, "developer:executor-1"); err != nil {
 		t.Fatalf("SucceedExecution: %v", err)
 	}
 	run, err := f.executions.Get(ctx, execID)
@@ -222,7 +222,7 @@ func TestFailExecution_KeepsProducedArtifacts(t *testing.T) {
 		t.Fatalf("RecordDraftArtifact: %v", err)
 	}
 
-	if err := f.result.FailExecution(ctx, execID, ""); err != nil {
+	if err := f.result.FailExecution(ctx, "proj-1", execID, ""); err != nil {
 		t.Fatalf("FailExecution: %v", err)
 	}
 	run, err := f.executions.Get(ctx, execID)
@@ -241,10 +241,10 @@ func TestSucceedExecution_RejectedAfterFail_RaceAlreadyResolvedByDomain(t *testi
 	ctx := context.Background()
 	f := newResultFixture(t)
 	execID := runningExecutionID(t, f)
-	if err := f.result.FailExecution(ctx, execID, ""); err != nil {
+	if err := f.result.FailExecution(ctx, "proj-1", execID, ""); err != nil {
 		t.Fatalf("FailExecution: %v", err)
 	}
-	if err := f.result.SucceedExecution(ctx, execID, ""); err == nil {
+	if err := f.result.SucceedExecution(ctx, "proj-1", execID, ""); err == nil {
 		t.Error("SucceedExecution() after Fail error = nil, want the domain's ErrTerminal (Behavioral Invariant 5)")
 	}
 }
@@ -294,14 +294,14 @@ func TestPublishArtifact_NotFound(t *testing.T) {
 
 func TestFailExecution_NotFound(t *testing.T) {
 	f := newResultFixture(t)
-	if err := f.result.FailExecution(context.Background(), "missing", ""); !errors.Is(err, application.ErrNotFound) {
+	if err := f.result.FailExecution(context.Background(), "proj-1", "missing", ""); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("FailExecution() error = %v, want %v", err, application.ErrNotFound)
 	}
 }
 
 func TestSucceedExecution_NotFound(t *testing.T) {
 	f := newResultFixture(t)
-	if err := f.result.SucceedExecution(context.Background(), "missing", ""); !errors.Is(err, application.ErrNotFound) {
+	if err := f.result.SucceedExecution(context.Background(), "proj-1", "missing", ""); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("SucceedExecution() error = %v, want %v", err, application.ErrNotFound)
 	}
 }

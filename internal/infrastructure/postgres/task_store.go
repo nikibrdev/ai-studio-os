@@ -28,29 +28,31 @@ func NewTaskStore(pool *pgxpool.Pool) *TaskStore {
 	return &TaskStore{pool: pool}
 }
 
-// Get loads a Task by id, or application.ErrNotFound if none exists.
-func (s *TaskStore) Get(ctx context.Context, id string) (*task.Task, error) {
+// Get loads a Task by (projectID, id) — TASK-NNN is unique only within a
+// Project (ADR-011, BUGFIX-003) — or application.ErrNotFound if none
+// exists.
+func (s *TaskStore) Get(ctx context.Context, projectID, id string) (*task.Task, error) {
 	const q = `
 SELECT id, project_id, epic_id, title, task_type, scope, acceptance_criteria, created_at, state
-FROM tasks WHERE id = $1`
+FROM tasks WHERE project_id = $1 AND id = $2`
 
 	var (
-		gotID, projectID, epicID, title, taskType, scope, state string
-		acceptanceCriteria                                      []string
-		createdAt                                               time.Time
+		gotID, gotProjectID, epicID, title, taskType, scope, state string
+		acceptanceCriteria                                         []string
+		createdAt                                                  time.Time
 	)
-	err := s.pool.QueryRow(ctx, q, id).Scan(
-		&gotID, &projectID, &epicID, &title, &taskType, &scope, &acceptanceCriteria, &createdAt, &state,
+	err := s.pool.QueryRow(ctx, q, projectID, id).Scan(
+		&gotID, &gotProjectID, &epicID, &title, &taskType, &scope, &acceptanceCriteria, &createdAt, &state,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, application.ErrNotFound
 	}
 	if err != nil {
-		return nil, fmt.Errorf("postgres: get task %s: %w", id, err)
+		return nil, fmt.Errorf("postgres: get task %s/%s: %w", projectID, id, err)
 	}
 
 	return task.Restore(
-		gotID, projectID, epicID, title, taskType, scope, acceptanceCriteria, createdAt, shared.TaskState(state),
+		gotID, gotProjectID, epicID, title, taskType, scope, acceptanceCriteria, createdAt, shared.TaskState(state),
 	), nil
 }
 
@@ -73,12 +75,13 @@ RETURNING next_number - 1`
 	return fmt.Sprintf("TASK-%03d", n), nil
 }
 
-// Save creates or updates a Task (upsert on id).
+// Save creates or updates a Task (upsert on the (project_id, id) pair —
+// BUGFIX-003: id alone is only unique within a project, ADR-011).
 func (s *TaskStore) Save(ctx context.Context, t *task.Task) error {
 	const q = `
 INSERT INTO tasks (id, project_id, epic_id, title, task_type, scope, acceptance_criteria, created_at, state)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-ON CONFLICT (id) DO UPDATE SET
+ON CONFLICT (project_id, id) DO UPDATE SET
 	epic_id             = EXCLUDED.epic_id,
 	scope               = EXCLUDED.scope,
 	acceptance_criteria = EXCLUDED.acceptance_criteria,

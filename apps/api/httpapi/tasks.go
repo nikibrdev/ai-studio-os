@@ -10,14 +10,21 @@ import (
 // registerTaskCreationRoutes wires the Task operations owned by this task
 // (TASK-068): create, plan, and read. StartTask/Review/Testing are
 // TASK-069.
+//
+// Task-scoped routes are nested under /projects/{projectId} (BUGFIX-003):
+// TASK-NNN is unique only within a Project (ADR-011), so a bare
+// /tasks/{id} path cannot disambiguate which project's task is meant —
+// ADR-011 anticipated exactly this ("любой межпроектный контекст обязан
+// использовать полностью квалифицированную пару (Project, ID)").
 func registerTaskCreationRoutes(mux *http.ServeMux, deps Deps) {
-	mux.HandleFunc("POST /tasks", handleCreateTask(deps))
-	mux.HandleFunc("POST /tasks/{id}/plan", handlePlanTask(deps))
-	mux.HandleFunc("GET /tasks/{id}", handleGetTask(deps))
+	mux.HandleFunc("POST /projects/{projectId}/tasks", handleCreateTask(deps))
+	mux.HandleFunc("POST /projects/{projectId}/tasks/{id}/plan", handlePlanTask(deps))
+	mux.HandleFunc("GET /projects/{projectId}/tasks/{id}", handleGetTask(deps))
 }
 
+// createTaskRequest has no ProjectID field: the project is already in the
+// URL path (/projects/{projectId}/tasks), so the body does not repeat it.
 type createTaskRequest struct {
-	ProjectID          string   `json:"projectId"`
 	EpicID             string   `json:"epicId"`
 	Title              string   `json:"title"`
 	Type               string   `json:"type"`
@@ -49,7 +56,7 @@ func handleCreateTask(deps Deps) http.HandlerFunc {
 		// (docs/api/tasks.md): the platform generates the public TASK-NNN
 		// itself (ADR-011, TASK-065) via TaskPlanningService.IDs.
 		t, err := deps.Tasks.CreateTask(r.Context(), application.CreateTaskParams{
-			ProjectID:          req.ProjectID,
+			ProjectID:          r.PathValue("projectId"),
 			EpicID:             req.EpicID,
 			Title:              req.Title,
 			Type:               req.Type,
@@ -76,7 +83,7 @@ func handlePlanTask(deps Deps) http.HandlerFunc {
 			return
 		}
 
-		if err := deps.Tasks.PlanTask(r.Context(), r.PathValue("id"), req.Actor); err != nil {
+		if err := deps.Tasks.PlanTask(r.Context(), r.PathValue("projectId"), r.PathValue("id"), req.Actor); err != nil {
 			writeError(w, err)
 			return
 		}
@@ -93,7 +100,7 @@ type taskViewResponse struct {
 
 func handleGetTask(deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		view, ok := deps.Views.Get(r.PathValue("id"))
+		view, ok := deps.Views.Get(r.PathValue("projectId"), r.PathValue("id"))
 		if !ok {
 			writeError(w, application.ErrNotFound)
 			return

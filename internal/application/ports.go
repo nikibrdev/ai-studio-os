@@ -23,9 +23,12 @@ type ProjectStore interface {
 	Save(ctx context.Context, p *project.Project) error
 }
 
-// TaskStore persists and retrieves Task aggregates.
+// TaskStore persists and retrieves Task aggregates. Get takes projectID
+// because the public TASK-NNN identifier is unique only within a Project
+// (ADR-011) — a bare id cannot disambiguate between two different
+// projects' tasks (BUGFIX-003).
 type TaskStore interface {
-	Get(ctx context.Context, id string) (*task.Task, error)
+	Get(ctx context.Context, projectID, id string) (*task.Task, error)
 	Save(ctx context.Context, t *task.Task) error
 }
 

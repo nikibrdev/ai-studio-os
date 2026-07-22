@@ -10,15 +10,15 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 
 | Файл/пакет | Ответственность |
 | --- | --- |
-| `ports.go` | Пять узких портов хранения агрегатов: `ProjectStore`, `TaskStore`, `ExecutorStore`, `ExecutionStore`, `ArtifactStore` (Get/Save); `ErrNotFound`; `TaskIDGenerator` (TASK-065, EPIC-008) |
+| `ports.go` | Пять узких портов хранения агрегатов: `ProjectStore`, `TaskStore` (`Get(ctx, projectID, id)` — BUGFIX-003), `ExecutorStore`, `ExecutionStore`, `ArtifactStore` (Get/Save); `ErrNotFound`; `TaskIDGenerator` (TASK-065, EPIC-008) |
 | `event.go` | `Envelope` — оборачивает данные доменных событий в контракт `platform.Event` (ADR-002) перед публикацией |
 | `inmemory/` | Детерминированные фейки портов, `EventBus` и `RepositoryProvider` для тестов этого эпика — не инфраструктурный адаптер |
 | `project.go` | `ProjectService` (TASK-064, EPIC-008) — жизненный цикл Project: `CreateProject`, `ConnectRepository`, `Activate` (guard «≥1 Repository» — целиком в домене) |
 | `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`); опциональный порт `IDs TaskIDGenerator` (TASK-065, EPIC-008) — генерирует `TASK-NNN` (ADR-011), если `CreateTaskParams.ID` не задан вызывающим |
-| `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution) |
-| `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` |
-| `completion.go` | `CompletionService` (TASK-044) — «Завершение задачи»: `RequestReview`, `CompleteReview`, `CompleteTesting` — реализует ADR-008 (merge — код-гейт перед Done, порядок TestsPassed → MergeCompleted → TaskCompleted) |
-| `projection.go` | `TaskProjection` (TASK-045) — read-модель статуса задачи, построенная только из событий (ADR-014); `Rebuild` доказывает пересобираемость с нуля из журнала |
+| `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution); `StartTaskParams.ProjectID` — BUGFIX-003 |
+| `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` (оба принимают `projectID` — BUGFIX-003) |
+| `completion.go` | `CompletionService` (TASK-044) — «Завершение задачи»: `RequestReview`, `CompleteReview`, `CompleteTesting` (все принимают/несут `projectID` — BUGFIX-003) — реализует ADR-008 (merge — код-гейт перед Done, порядок TestsPassed → MergeCompleted → TaskCompleted) |
+| `projection.go` | `TaskProjection` (TASK-045) — read-модель статуса задачи, построенная только из событий (ADR-014); ключ — пара (ProjectID, ID), не голый ID (BUGFIX-003); `Rebuild` доказывает пересобираемость с нуля из журнала |
 | `id.go` | `NewID()` — общий генератор идентификаторов (`crypto/rand`, без внешней UUID-зависимости) для сущностей, порождаемых как побочный эффект use-case (Execution, здесь же переиспользуется), а не именованных явной командой |
 | `e2e_test.go` | Сквозной тест golden path целиком (`docs/architecture/golden-path.md`) через все четыре сервиса, включая ветки «changes requested» и «tests failed» — состояние проверяется только через `TaskProjection` |
 
@@ -35,6 +35,10 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 ### Известное ограничение: нет межагрегатной транзакции
 
 `WorkService.StartTask` и `ResultService.RecordDraftArtifact` сохраняют несколько агрегатов последовательно, не атомарно: если второе сохранение откажет после того, как первое уже прошло и событие опубликовано, отката не происходит (проверено тестом `TestStartTask_PropagatesExecutionStoreFailure`). С in-memory фейками этого эпика это не проявляется (фейки не отказывают); при реализации PostgreSQL-адаптера (EPIC-005) потребуется либо единая транзакция на несколько агрегатов, либо saga/outbox — решение архитектора, не принимается здесь.
+
+### BUGFIX-003 — TASK-NNN уникален только в рамках Project
+
+Живая проверка EPIC-008/TASK-069 вскрыла реальный баг: `TaskStore.Get` принимал только `id`, но публичный `TASK-NNN` (ADR-011) уникален лишь в рамках Project — два разных проекта неизбежно получают одинаковый `TASK-001` (TASK-065 генерирует номер отдельно на проект), и без `projectID` в ключе поиска задача одного проекта могла быть перепутана или молча испорчена операциями над задачей другого. Исправлено по всему стеку: `TaskStore.Get(ctx, projectID, id)`; `TaskPlanningService.PlanTask`, `CompletionService.RequestReview`/`CompleteReview`, `WorkService.StartTaskParams`, `CompletionService.CompleteTestingParams` — все принимают/несут `projectID`; `ResultService.SucceedExecution`/`FailExecution` тоже принимают `projectID` явным параметром (Execution сам не хранит ссылку на Project — ADR-015, домен не меняли) вместо попытки вывести его из голого `TaskID`; `TaskProjection` — внутренняя карта ключится парой (ProjectID, ID), `Get(projectID, id)`. `apps/api` (TASK-068/069) вкладывает задаче-специфичные маршруты под `/projects/{projectId}/tasks/...`.
 
 ### Почему порты здесь, а не в internal/platform
 

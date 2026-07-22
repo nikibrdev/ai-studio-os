@@ -137,11 +137,11 @@ func TestPlanTask_Success(t *testing.T) {
 		t.Fatalf("CreateTask: %v", err)
 	}
 
-	if err := svc.PlanTask(ctx, "task-1", "pm:executor-2"); err != nil {
+	if err := svc.PlanTask(ctx, "proj-1", "task-1", "pm:executor-2"); err != nil {
 		t.Fatalf("PlanTask: %v", err)
 	}
 
-	got, err := svc.Tasks.Get(ctx, "task-1")
+	got, err := svc.Tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -169,12 +169,12 @@ func TestPlanTask_RulesRejectionKeepsState(t *testing.T) {
 	}
 	// Plan once (Backlog -> Ready), then attempting to plan again is an
 	// illegal transition under the real Machine (Ready -> Ready).
-	if err := svc.PlanTask(ctx, "task-1", ""); err != nil {
+	if err := svc.PlanTask(ctx, "proj-1", "task-1", ""); err != nil {
 		t.Fatalf("first PlanTask: %v", err)
 	}
 	before := len(bus.Published())
 
-	if err := svc.PlanTask(ctx, "task-1", ""); err == nil {
+	if err := svc.PlanTask(ctx, "proj-1", "task-1", ""); err == nil {
 		t.Fatal("second PlanTask() error = nil, want the workflow.Machine's rejection")
 	}
 	if len(bus.Published()) != before {
@@ -184,7 +184,7 @@ func TestPlanTask_RulesRejectionKeepsState(t *testing.T) {
 
 func TestPlanTask_TaskNotFound(t *testing.T) {
 	svc, _, _ := newService()
-	if err := svc.PlanTask(context.Background(), "missing", ""); !errors.Is(err, application.ErrNotFound) {
+	if err := svc.PlanTask(context.Background(), "proj-1", "missing", ""); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("PlanTask() error = %v, want %v", err, application.ErrNotFound)
 	}
 }

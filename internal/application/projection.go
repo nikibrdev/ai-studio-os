@@ -40,6 +40,11 @@ var taskProjectionEvents = []string{
 // truth (TaskStore is) and is fully rebuildable from the event journal at
 // any time — Rebuild proves that by replaying every event this test's
 // EventBus fake recorded.
+//
+// views is keyed by (ProjectID, SubjectID), not SubjectID alone: TASK-NNN
+// is unique only within a Project (ADR-011) — a bare-id key would let two
+// different projects' tasks collide in this map the same way they used to
+// collide in TaskStore before BUGFIX-003.
 type TaskProjection struct {
 	mu    sync.Mutex
 	views map[string]TaskView
@@ -49,6 +54,8 @@ type TaskProjection struct {
 func NewTaskProjection() *TaskProjection {
 	return &TaskProjection{views: make(map[string]TaskView)}
 }
+
+func viewKey(projectID, id string) string { return projectID + "\x00" + id }
 
 // Subscribe registers Handle for every event type this projection reacts
 // to.
@@ -69,7 +76,8 @@ func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	v := p.views[e.SubjectID()]
+	key := viewKey(e.ProjectID(), e.SubjectID())
+	v := p.views[key]
 	v.ID = e.SubjectID()
 	if e.ProjectID() != "" {
 		v.ProjectID = e.ProjectID()
@@ -78,7 +86,7 @@ func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 		v.State = to
 	}
 	v.UpdatedAt = e.OccurredAt()
-	p.views[e.SubjectID()] = v
+	p.views[key] = v
 	return nil
 }
 
@@ -115,10 +123,10 @@ func targetState(e platform.Event) (shared.TaskState, bool) {
 
 // Get returns the current view of a task, or false if the projection has
 // not seen any event for it yet.
-func (p *TaskProjection) Get(id string) (TaskView, bool) {
+func (p *TaskProjection) Get(projectID, id string) (TaskView, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	v, ok := p.views[id]
+	v, ok := p.views[viewKey(projectID, id)]
 	return v, ok
 }
 

@@ -40,14 +40,14 @@ func newCompletionFixture(t *testing.T) completionFixture {
 	if _, err := planning.CreateTask(ctx, application.CreateTaskParams{ID: "task-1", ProjectID: "proj-1", Title: "Задача", Type: "feature"}); err != nil {
 		t.Fatalf("CreateTask: %v", err)
 	}
-	if err := planning.PlanTask(ctx, "task-1", ""); err != nil {
+	if err := planning.PlanTask(ctx, "proj-1", "task-1", ""); err != nil {
 		t.Fatalf("PlanTask: %v", err)
 	}
 	saveExecutor(t, executors, true, shared.RoleDeveloper)
-	if _, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1"}); err != nil {
+	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); err != nil {
 		t.Fatalf("StartTask: %v", err)
 	}
-	if err := completion.RequestReview(ctx, "task-1", ""); err != nil {
+	if err := completion.RequestReview(ctx, "proj-1", "task-1", ""); err != nil {
 		t.Fatalf("RequestReview: %v", err)
 	}
 
@@ -56,7 +56,7 @@ func newCompletionFixture(t *testing.T) completionFixture {
 
 func TestRequestReview_TransitionsToReview(t *testing.T) {
 	f := newCompletionFixture(t) // fixture itself calls RequestReview
-	tsk, err := f.tasks.Get(context.Background(), "task-1")
+	tsk, err := f.tasks.Get(context.Background(), "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -72,10 +72,10 @@ func TestRequestReview_TransitionsToReview(t *testing.T) {
 func TestCompleteReview_ApprovedGoesToTesting(t *testing.T) {
 	ctx := context.Background()
 	f := newCompletionFixture(t)
-	if err := f.completion.CompleteReview(ctx, "task-1", true, "reviewer:executor-3"); err != nil {
+	if err := f.completion.CompleteReview(ctx, "proj-1", "task-1", true, "reviewer:executor-3"); err != nil {
 		t.Fatalf("CompleteReview: %v", err)
 	}
-	tsk, err := f.tasks.Get(ctx, "task-1")
+	tsk, err := f.tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -91,10 +91,10 @@ func TestCompleteReview_ApprovedGoesToTesting(t *testing.T) {
 func TestCompleteReview_ChangesRequestedReturnsToInProgress(t *testing.T) {
 	ctx := context.Background()
 	f := newCompletionFixture(t)
-	if err := f.completion.CompleteReview(ctx, "task-1", false, ""); err != nil {
+	if err := f.completion.CompleteReview(ctx, "proj-1", "task-1", false, ""); err != nil {
 		t.Fatalf("CompleteReview: %v", err)
 	}
-	tsk, err := f.tasks.Get(ctx, "task-1")
+	tsk, err := f.tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -106,14 +106,14 @@ func TestCompleteReview_ChangesRequestedReturnsToInProgress(t *testing.T) {
 func TestCompleteTesting_Failed_ReturnsToInProgress(t *testing.T) {
 	ctx := context.Background()
 	f := newCompletionFixture(t)
-	if err := f.completion.CompleteReview(ctx, "task-1", true, ""); err != nil {
+	if err := f.completion.CompleteReview(ctx, "proj-1", "task-1", true, ""); err != nil {
 		t.Fatalf("CompleteReview: %v", err)
 	}
 
-	if err := f.completion.CompleteTesting(ctx, application.CompleteTestingParams{TaskID: "task-1", Passed: false}); err != nil {
+	if err := f.completion.CompleteTesting(ctx, application.CompleteTestingParams{ProjectID: "proj-1", TaskID: "task-1", Passed: false}); err != nil {
 		t.Fatalf("CompleteTesting: %v", err)
 	}
-	tsk, err := f.tasks.Get(ctx, "task-1")
+	tsk, err := f.tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -135,18 +135,18 @@ func TestCompleteTesting_Failed_ReturnsToInProgress(t *testing.T) {
 func TestCompleteTesting_Passed_EventOrderMatchesADR008(t *testing.T) {
 	ctx := context.Background()
 	f := newCompletionFixture(t)
-	if err := f.completion.CompleteReview(ctx, "task-1", true, ""); err != nil {
+	if err := f.completion.CompleteReview(ctx, "proj-1", "task-1", true, ""); err != nil {
 		t.Fatalf("CompleteReview: %v", err)
 	}
 	before := len(f.bus.Published())
 
 	if err := f.completion.CompleteTesting(ctx, application.CompleteTestingParams{
-		TaskID: "task-1", Passed: true, Repository: "org/repo", PullRequestID: "pr-1", Actor: "qa:executor-4",
+		ProjectID: "proj-1", TaskID: "task-1", Passed: true, Repository: "org/repo", PullRequestID: "pr-1", Actor: "qa:executor-4",
 	}); err != nil {
 		t.Fatalf("CompleteTesting: %v", err)
 	}
 
-	tsk, err := f.tasks.Get(ctx, "task-1")
+	tsk, err := f.tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -179,18 +179,18 @@ func TestCompleteTesting_Passed_EventOrderMatchesADR008(t *testing.T) {
 func TestCompleteTesting_MergeFailure_BlocksDone(t *testing.T) {
 	ctx := context.Background()
 	f := newCompletionFixture(t)
-	if err := f.completion.CompleteReview(ctx, "task-1", true, ""); err != nil {
+	if err := f.completion.CompleteReview(ctx, "proj-1", "task-1", true, ""); err != nil {
 		t.Fatalf("CompleteReview: %v", err)
 	}
 	f.repos.MergeErr = errors.New("merge conflict")
 
 	if err := f.completion.CompleteTesting(ctx, application.CompleteTestingParams{
-		TaskID: "task-1", Passed: true, Repository: "org/repo", PullRequestID: "pr-1",
+		ProjectID: "proj-1", TaskID: "task-1", Passed: true, Repository: "org/repo", PullRequestID: "pr-1",
 	}); err == nil {
 		t.Fatal("CompleteTesting() error = nil, want the merge failure propagated")
 	}
 
-	tsk, err := f.tasks.Get(ctx, "task-1")
+	tsk, err := f.tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -211,7 +211,7 @@ func TestRequestReview_TaskNotFound(t *testing.T) {
 		Events:       inmemory.NewEventBus(),
 		Rules:        workflow.Machine{},
 	}
-	if err := completion.RequestReview(context.Background(), "missing", ""); !errors.Is(err, application.ErrNotFound) {
+	if err := completion.RequestReview(context.Background(), "proj-1", "missing", ""); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("RequestReview() error = %v, want %v", err, application.ErrNotFound)
 	}
 }
@@ -223,7 +223,7 @@ func TestCompleteTesting_TaskNotFound(t *testing.T) {
 		Events:       inmemory.NewEventBus(),
 		Rules:        workflow.Machine{},
 	}
-	if err := completion.CompleteTesting(context.Background(), application.CompleteTestingParams{TaskID: "missing", Passed: true}); !errors.Is(err, application.ErrNotFound) {
+	if err := completion.CompleteTesting(context.Background(), application.CompleteTestingParams{ProjectID: "proj-1", TaskID: "missing", Passed: true}); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("CompleteTesting() error = %v, want %v", err, application.ErrNotFound)
 	}
 }

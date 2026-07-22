@@ -18,14 +18,16 @@ type Deps struct {
 	Views      *application.TaskProjection
 }
 
-// NewServer builds the HTTP router (docs/api/README.md). Resource routes
-// are added here as their handlers are implemented — Projects/Tasks
-// creation (TASK-068), Work/Result/Completion (TASK-069).
+// NewServer builds the HTTP router (docs/api/README.md).
 func NewServer(deps Deps) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	registerProjectRoutes(mux, deps)
 	registerTaskCreationRoutes(mux, deps)
+	registerWorkRoutes(mux, deps)
+	registerArtifactRoutes(mux, deps)
+	registerExecutionRoutes(mux, deps)
+	registerCompletionRoutes(mux, deps)
 	return mux
 }
 
