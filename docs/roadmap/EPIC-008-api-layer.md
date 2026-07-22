@@ -58,7 +58,7 @@
 | TASK-067 | Каркас `apps/api`: `main.go`, сборка через `wiring.System`, маршрутизация, JSON-хелперы, отображение ошибок в HTTP-коды | done |
 | TASK-068 | Хендлеры Projects/Tasks (CreateProject/Activate, CreateTask/PlanTask, чтение через TaskProjection) | done |
 | TASK-069 | Хендлеры Work/Result/Completion (StartTask, черновик/публикация Artifact, Succeed/FailExecution, Review/Testing) | done |
-| TASK-070 | Сквозной интеграционный тест golden path через реальные HTTP-вызовы на настоящем PostgreSQL | ready |
+| TASK-070 | Сквозной интеграционный тест golden path через реальные HTTP-вызовы на настоящем PostgreSQL | done |
 | TASK-071 | README `apps/api`, синхронизация документации, закрытие эпика | ready |
 
 ## Риски и зависимости
