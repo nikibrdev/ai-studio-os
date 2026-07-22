@@ -39,15 +39,15 @@ func TestProjectStore_SaveAndGet(t *testing.T) {
 	}
 }
 
-func TestStore_GetMissing_ReturnsErrNotFound(t *testing.T) {
+func TestTaskStore_GetMissing_ReturnsErrNotFound(t *testing.T) {
 	ctx := context.Background()
 	store := inmemory.NewTaskStore()
-	if _, err := store.Get(ctx, "nonexistent"); !errors.Is(err, application.ErrNotFound) {
+	if _, err := store.Get(ctx, "proj-1", "nonexistent"); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("Get() error = %v, want %v", err, application.ErrNotFound)
 	}
 }
 
-func TestStore_SaveOverwritesPreviousValue(t *testing.T) {
+func TestTaskStore_SaveOverwritesPreviousValue(t *testing.T) {
 	ctx := context.Background()
 	store := inmemory.NewTaskStore()
 	tsk, _, err := task.New("task-1", "proj-1", "", "Название", "feature")
@@ -63,11 +63,46 @@ func TestStore_SaveOverwritesPreviousValue(t *testing.T) {
 	if err := store.Save(ctx, tsk); err != nil {
 		t.Fatalf("second Save: %v", err)
 	}
-	got, err := store.Get(ctx, "task-1")
+	got, err := store.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
 	if got.Scope() != "обновлённый scope" {
 		t.Errorf("Scope() = %q, want the overwritten value", got.Scope())
+	}
+}
+
+// TestTaskStore_SameIDDifferentProjectsDoNotCollide proves BUGFIX-003 at
+// the fake level too: two different projects' tasks sharing the same
+// public id must not overwrite one another.
+func TestTaskStore_SameIDDifferentProjectsDoNotCollide(t *testing.T) {
+	ctx := context.Background()
+	store := inmemory.NewTaskStore()
+
+	taskA, _, err := task.New("TASK-001", "proj-a", "", "Задача A", "feature")
+	if err != nil {
+		t.Fatalf("task.New A: %v", err)
+	}
+	if err := store.Save(ctx, taskA); err != nil {
+		t.Fatalf("Save A: %v", err)
+	}
+	taskB, _, err := task.New("TASK-001", "proj-b", "", "Задача B", "bugfix")
+	if err != nil {
+		t.Fatalf("task.New B: %v", err)
+	}
+	if err := store.Save(ctx, taskB); err != nil {
+		t.Fatalf("Save B: %v", err)
+	}
+
+	gotA, err := store.Get(ctx, "proj-a", "TASK-001")
+	if err != nil {
+		t.Fatalf("Get A: %v", err)
+	}
+	gotB, err := store.Get(ctx, "proj-b", "TASK-001")
+	if err != nil {
+		t.Fatalf("Get B: %v", err)
+	}
+	if gotA.Title() != "Задача A" || gotB.Title() != "Задача B" {
+		t.Errorf("gotA = %+v, gotB = %+v, want each project's own task untouched", gotA, gotB)
 	}
 }

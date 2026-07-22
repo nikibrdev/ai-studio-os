@@ -10,7 +10,7 @@
 
 - Версия: v1
 - Аутентификация: не требуется ([ADR-012](../adr/ADR-012-identity-and-auth.md))
-- Базовый путь: `/tasks`
+- Базовый путь: `/projects/{projectId}/tasks` — все операции вложены под проект (**BUGFIX-003**): публичный `TASK-NNN` уникален только в рамках Project (ADR-011), поэтому голого `/tasks/{id}` недостаточно, чтобы однозначно определить задачу — тот же принцип, что ADR-011 уже предвидел («любой межпроектный контекст обязан использовать полностью квалифицированную пару (Project, ID)»).
 
 ### Операции
 
@@ -18,11 +18,10 @@
 
 **Назначение:** регистрирует Task в состоянии `backlog` внутри границы Active-проекта (`TaskPlanningService.CreateTask`).
 
-**Запрос:** `POST /tasks`
+**Запрос:** `POST /projects/{projectId}/tasks`
 
 ```json
 {
-  "projectId": "string, обязателен",
   "epicId": "string, опционален",
   "title": "string, обязателен",
   "type": "string, обязателен",
@@ -32,7 +31,7 @@
 }
 ```
 
-`id` в теле запроса не указывается — платформа сама генерирует публичный `TASK-NNN` (ADR-011, TASK-065).
+`id` и `projectId` в теле запроса не указываются — `projectId` уже есть в пути, `id` платформа генерирует сама (публичный `TASK-NNN`, ADR-011, TASK-065).
 
 **Ответ:** `201 Created`
 
@@ -48,7 +47,7 @@
 
 **Назначение:** переводит Task `backlog` → `ready` (Definition of Ready выполнено), решение принимает исключительно `workflow.Rules` (`TaskPlanningService.PlanTask`).
 
-**Запрос:** `POST /tasks/{id}/plan`
+**Запрос:** `POST /projects/{projectId}/tasks/{id}/plan`
 
 ```json
 { "actor": "string, опционален" }
@@ -64,7 +63,7 @@
 
 **Назначение:** читает текущее состояние задачи из `TaskProjection` — read-модель, построенная только из событий (ADR-014), не из `TaskStore` напрямую.
 
-**Запрос:** `GET /tasks/{id}`
+**Запрос:** `GET /projects/{projectId}/tasks/{id}`
 
 **Ответ:** `200 OK`
 
@@ -72,15 +71,15 @@
 { "id": "string", "projectId": "string", "state": "string", "updatedAt": "RFC3339" }
 ```
 
-**Ошибки:** `404` — проекция не видела ни одного события по этому ID (`TaskProjection.Get` вернул `ok=false`).
+**Ошибки:** `404` — проекция не видела ни одного события по этому (projectId, id) (`TaskProjection.Get` вернул `ok=false`).
 
-**Ограничение:** возвращает ровно одну запись по ID — списковых операций (все задачи проекта и т.п.) нет в этой версии (см. EPIC-008 «Риски»).
+**Ограничение:** возвращает ровно одну запись по (projectId, id) — списковых операций (все задачи проекта и т.п.) нет в этой версии (см. EPIC-008 «Риски»).
 
 #### Запустить работу
 
-**Назначение:** переводит Task `ready` → `in_progress` и порождает Execution для указанного Executor (`WorkService.StartTask`). Выбор исполнителя — забота вызывающего (ADR-007, Decision Required, не входит в этот эпик).
+**Назначение:** переводит Task `ready` → `in-progress` и порождает Execution для указанного Executor (`WorkService.StartTask`). Выбор исполнителя — забота вызывающего (ADR-007, Decision Required, не входит в этот эпик).
 
-**Запрос:** `POST /tasks/{id}/start`
+**Запрос:** `POST /projects/{projectId}/tasks/{id}/start`
 
 ```json
 { "executorId": "string, обязателен", "actor": "string, опционален" }
@@ -98,9 +97,9 @@
 
 #### Запросить ревью
 
-**Назначение:** переводит Task `in_progress` → `review` (`CompletionService.RequestReview`).
+**Назначение:** переводит Task `in-progress` → `review` (`CompletionService.RequestReview`).
 
-**Запрос:** `POST /tasks/{id}/request-review`
+**Запрос:** `POST /projects/{projectId}/tasks/{id}/request-review`
 
 ```json
 { "actor": "string, опционален" }
@@ -114,9 +113,9 @@
 
 #### Завершить ревью
 
-**Назначение:** переводит Task из `review` в `testing` (одобрено) или обратно в `in_progress` (запрошены изменения) — `CompletionService.CompleteReview`.
+**Назначение:** переводит Task из `review` в `testing` (одобрено) или обратно в `in-progress` (запрошены изменения) — `CompletionService.CompleteReview`.
 
-**Запрос:** `POST /tasks/{id}/complete-review`
+**Запрос:** `POST /projects/{projectId}/tasks/{id}/complete-review`
 
 ```json
 { "approved": true, "actor": "string, опционален" }
@@ -130,9 +129,9 @@
 
 #### Завершить тестирование
 
-**Назначение:** конечный шаг golden path (`CompletionService.CompleteTesting`, [ADR-008](../adr/ADR-008-git-policies.md)). При отказе — `testing` → `in_progress`. При успехе — merge пул-реквеста **до** перевода в `done`: если merge отказывает, задача остаётся в `testing`, `TaskCompleted` не публикуется.
+**Назначение:** конечный шаг golden path (`CompletionService.CompleteTesting`, [ADR-008](../adr/ADR-008-git-policies.md)). При отказе — `testing` → `in-progress`. При успехе — merge пул-реквеста **до** перевода в `done`: если merge отказывает, задача остаётся в `testing`, `TaskCompleted` не публикуется.
 
-**Запрос:** `POST /tasks/{id}/complete-testing`
+**Запрос:** `POST /projects/{projectId}/tasks/{id}/complete-testing`
 
 ```json
 {
@@ -153,7 +152,7 @@
 
 **Task** (представление в ответах): `id`, `projectId`, `epicId`, `title`, `type`, `scope`, `acceptanceCriteria` (string[]), `state`.
 
-**TaskView** (ответ `GET /tasks/{id}`, из `TaskProjection`): `id`, `projectId`, `state`, `updatedAt`.
+**TaskView** (ответ `GET /projects/{projectId}/tasks/{id}`, из `TaskProjection`): `id`, `projectId`, `state`, `updatedAt`.
 
 ## Статус
 

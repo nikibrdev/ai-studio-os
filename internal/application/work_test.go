@@ -38,7 +38,7 @@ func newReadyTask(t *testing.T, planning *application.TaskPlanningService) {
 	}); err != nil {
 		t.Fatalf("CreateTask: %v", err)
 	}
-	if err := planning.PlanTask(ctx, "task-1", ""); err != nil {
+	if err := planning.PlanTask(ctx, "proj-1", "task-1", ""); err != nil {
 		t.Fatalf("PlanTask: %v", err)
 	}
 }
@@ -67,7 +67,7 @@ func TestStartTask_Success(t *testing.T) {
 	newReadyTask(t, planning)
 	saveExecutor(t, work.Executors, true, shared.RoleDeveloper)
 
-	run, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1", Actor: "pm:executor-2"})
+	run, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1", Actor: "pm:executor-2"})
 	if err != nil {
 		t.Fatalf("StartTask: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestStartTask_Success(t *testing.T) {
 		t.Errorf("Execution.State() = %v, want %v (Accept was called)", run.State(), execution.StateRunning)
 	}
 
-	tsk, err := work.Tasks.Get(ctx, "task-1")
+	tsk, err := work.Tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestStartTask_RejectedWhenExecutorNotActive(t *testing.T) {
 	saveExecutor(t, work.Executors, false, shared.RoleDeveloper) // Registered, not Active
 	before := len(bus.Published())
 
-	if _, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1"}); !errors.Is(err, application.ErrExecutorNotAssignable) {
+	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); !errors.Is(err, application.ErrExecutorNotAssignable) {
 		t.Errorf("StartTask() error = %v, want %v", err, application.ErrExecutorNotAssignable)
 	}
 	if len(bus.Published()) != before {
@@ -125,7 +125,7 @@ func TestStartTask_RejectedWhenExecutorLacksRole(t *testing.T) {
 	newReadyTask(t, planning)
 	saveExecutor(t, work.Executors, true, shared.RoleReviewer) // Active, wrong role
 
-	if _, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1"}); !errors.Is(err, application.ErrExecutorNotAssignable) {
+	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); !errors.Is(err, application.ErrExecutorNotAssignable) {
 		t.Errorf("StartTask() error = %v, want %v", err, application.ErrExecutorNotAssignable)
 	}
 }
@@ -141,7 +141,7 @@ func TestStartTask_RejectedWhenTaskNotReady(t *testing.T) {
 	}
 	saveExecutor(t, work.Executors, true, shared.RoleDeveloper)
 
-	if _, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1"}); err == nil {
+	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); err == nil {
 		t.Error("StartTask() from Backlog error = nil, want the workflow.Machine's rejection")
 	}
 }
@@ -149,7 +149,7 @@ func TestStartTask_RejectedWhenTaskNotReady(t *testing.T) {
 func TestStartTask_TaskNotFound(t *testing.T) {
 	work, _, _ := newWorkFixture(t)
 	saveExecutor(t, work.Executors, true, shared.RoleDeveloper)
-	if _, err := work.StartTask(context.Background(), application.StartTaskParams{TaskID: "missing", ExecutorID: "executor-1"}); !errors.Is(err, application.ErrNotFound) {
+	if _, err := work.StartTask(context.Background(), application.StartTaskParams{ProjectID: "proj-1", TaskID: "missing", ExecutorID: "executor-1"}); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("StartTask() error = %v, want %v", err, application.ErrNotFound)
 	}
 }
@@ -157,7 +157,7 @@ func TestStartTask_TaskNotFound(t *testing.T) {
 func TestStartTask_ExecutorNotFound(t *testing.T) {
 	work, _, planning := newWorkFixture(t)
 	newReadyTask(t, planning)
-	if _, err := work.StartTask(context.Background(), application.StartTaskParams{TaskID: "task-1", ExecutorID: "missing"}); !errors.Is(err, application.ErrNotFound) {
+	if _, err := work.StartTask(context.Background(), application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "missing"}); !errors.Is(err, application.ErrNotFound) {
 		t.Errorf("StartTask() error = %v, want %v", err, application.ErrNotFound)
 	}
 }
@@ -178,7 +178,7 @@ func TestStartTask_PropagatesExecutionStoreFailure(t *testing.T) {
 	saveExecutor(t, work.Executors, true, shared.RoleDeveloper)
 	work.Executions = failingExecutionStore{ExecutionStore: work.Executions}
 
-	if _, err := work.StartTask(ctx, application.StartTaskParams{TaskID: "task-1", ExecutorID: "executor-1"}); err == nil {
+	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); err == nil {
 		t.Fatal("StartTask() error = nil, want the store's failure propagated")
 	}
 
@@ -188,7 +188,7 @@ func TestStartTask_PropagatesExecutionStoreFailure(t *testing.T) {
 	// transaction in the Application Layer yet) rather than asserting it
 	// is desirable; EPIC-005 infrastructure may need a saga or outbox to
 	// close this gap when a real store can actually fail mid-sequence.
-	tsk, err := work.Tasks.Get(ctx, "task-1")
+	tsk, err := work.Tasks.Get(ctx, "proj-1", "task-1")
 	if err != nil {
 		t.Fatalf("Tasks.Get: %v", err)
 	}

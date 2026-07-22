@@ -143,7 +143,7 @@ func TestTaskStore_SaveThenGet(t *testing.T) {
 		t.Fatalf("Save task: %v", err)
 	}
 
-	got, err := tasks.Get(ctx, "task-store-1")
+	got, err := tasks.Get(ctx, proj.ID(), "task-store-1")
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -161,8 +161,66 @@ func TestTaskStore_SaveThenGet(t *testing.T) {
 func TestTaskStore_Get_NotFound(t *testing.T) {
 	store := NewTaskStore(testPool(t))
 
-	_, err := store.Get(context.Background(), "does-not-exist")
+	_, err := store.Get(context.Background(), "does-not-exist-project", "does-not-exist")
 	if !errors.Is(err, application.ErrNotFound) {
 		t.Fatalf("Get() error = %v, want application.ErrNotFound", err)
+	}
+}
+
+// TestTaskStore_SameIDDifferentProjectsDoNotCollide proves BUGFIX-003:
+// TASK-NNN is unique only within a Project (ADR-011) — two different
+// projects each saving their own task under the same public id must not
+// overwrite one another (they used to, via `ON CONFLICT (id) DO UPDATE`
+// alone, discovered live-testing EPIC-008/TASK-069).
+func TestTaskStore_SameIDDifferentProjectsDoNotCollide(t *testing.T) {
+	pool := testPool(t)
+	projects := NewProjectStore(pool)
+	tasks := NewTaskStore(pool)
+	ctx := context.Background()
+
+	projA, _, err := project.New("proj-collide-a", "A")
+	if err != nil {
+		t.Fatalf("project.New A: %v", err)
+	}
+	if err := projects.Save(ctx, projA); err != nil {
+		t.Fatalf("Save project A: %v", err)
+	}
+	projB, _, err := project.New("proj-collide-b", "B")
+	if err != nil {
+		t.Fatalf("project.New B: %v", err)
+	}
+	if err := projects.Save(ctx, projB); err != nil {
+		t.Fatalf("Save project B: %v", err)
+	}
+
+	const sharedID = "TASK-001"
+	taskA, _, err := task.New(sharedID, projA.ID(), "", "Задача A", "feature")
+	if err != nil {
+		t.Fatalf("task.New A: %v", err)
+	}
+	if err := tasks.Save(ctx, taskA); err != nil {
+		t.Fatalf("Save task A: %v", err)
+	}
+	taskB, _, err := task.New(sharedID, projB.ID(), "", "Задача B", "bugfix")
+	if err != nil {
+		t.Fatalf("task.New B: %v", err)
+	}
+	if err := tasks.Save(ctx, taskB); err != nil {
+		t.Fatalf("Save task B: %v", err)
+	}
+
+	gotA, err := tasks.Get(ctx, projA.ID(), sharedID)
+	if err != nil {
+		t.Fatalf("Get A: %v", err)
+	}
+	gotB, err := tasks.Get(ctx, projB.ID(), sharedID)
+	if err != nil {
+		t.Fatalf("Get B: %v", err)
+	}
+	if gotA.Title() != "Задача A" || gotA.Type() != "feature" {
+		t.Errorf("project A's task = %+v, want its own title/type untouched by project B", gotA)
+	}
+	if gotB.Title() != "Задача B" || gotB.Type() != "bugfix" {
+		t.Errorf("project B's task = %+v, want its own title/type untouched by project A", gotB)
 	}
 }

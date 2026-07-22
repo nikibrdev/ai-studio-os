@@ -10,7 +10,7 @@
 
 - Версия: v1
 - Аутентификация: не требуется ([ADR-012](../adr/ADR-012-identity-and-auth.md))
-- Базовый путь: `/executions`
+- Базовый путь: `/executions` — не вложен под проект (в отличие от `/projects/{projectId}/tasks`, [tasks.md](tasks.md)): идентификатор Execution глобально уникален (`crypto/rand`, а не последовательный номер на проект), в отличие от `TASK-NNN`. `projectId` тем не менее передаётся в теле запроса (**BUGFIX-003**) — он нужен для поиска владеющей Task по (projectId, TaskID) и для корректной атрибуции публикуемого события.
 
 ### Операции
 
@@ -21,12 +21,12 @@
 **Запрос:** `POST /executions/{id}/succeed`
 
 ```json
-{ "actor": "string, опционален" }
+{ "projectId": "string, обязателен", "actor": "string, опционален" }
 ```
 
 **Ответ:** `204 No Content`.
 
-**Ошибки:** `404` — execution не найден; `409` — execution не в состоянии `running` (`execution.ErrNotRunning`) или уже завершён (`execution.ErrTerminal`).
+**Ошибки:** `404` — execution не найден, либо `projectId` не соответствует владеющей Task; `409` — execution не в состоянии `running` (`execution.ErrNotRunning`) или уже завершён (`execution.ErrTerminal`).
 
 **События:** `ExecutionSucceeded`.
 
@@ -37,12 +37,12 @@
 **Запрос:** `POST /executions/{id}/fail`
 
 ```json
-{ "actor": "string, опционален" }
+{ "projectId": "string, обязателен", "actor": "string, опционален" }
 ```
 
 **Ответ:** `204 No Content`.
 
-**Ошибки:** `404` — execution не найден; `409` — не в состоянии `running` или уже завершён.
+**Ошибки:** `404` — execution не найден, либо `projectId` не соответствует владеющей Task; `409` — не в состоянии `running` или уже завершён.
 
 **События:** `ExecutionFailed`.
 

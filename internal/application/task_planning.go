@@ -95,9 +95,10 @@ func (s *TaskPlanningService) CreateTask(ctx context.Context, p CreateTaskParams
 // PlanTask transitions a Task Backlog -> Ready (Definition of Ready met),
 // validated exclusively by the configured workflow.Rules (state-machine.md
 // invariant 8: the task module never decides legality itself). Publishes
-// TaskPlanned.
-func (s *TaskPlanningService) PlanTask(ctx context.Context, taskID, actor string) error {
-	t, err := s.Tasks.Get(ctx, taskID)
+// TaskPlanned. projectID is required because TASK-NNN is unique only
+// within a Project (ADR-011, BUGFIX-003).
+func (s *TaskPlanningService) PlanTask(ctx context.Context, projectID, taskID, actor string) error {
+	t, err := s.Tasks.Get(ctx, projectID, taskID)
 	if err != nil {
 		return err
 	}

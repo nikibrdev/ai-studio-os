@@ -24,8 +24,10 @@ type CompletionService struct {
 
 // RequestReview transitions a Task In Progress -> Review. Publishes
 // ReviewRequested (source: task, per docs/architecture/events.md).
-func (s *CompletionService) RequestReview(ctx context.Context, taskID, actor string) error {
-	t, err := s.Tasks.Get(ctx, taskID)
+// projectID is required because TASK-NNN is unique only within a Project
+// (ADR-011, BUGFIX-003).
+func (s *CompletionService) RequestReview(ctx context.Context, projectID, taskID, actor string) error {
+	t, err := s.Tasks.Get(ctx, projectID, taskID)
 	if err != nil {
 		return err
 	}
@@ -46,8 +48,8 @@ func (s *CompletionService) RequestReview(ctx context.Context, taskID, actor str
 // transition) with the target state attached via Envelope.WithData, so a
 // subscriber (internal/application/projection.go) can tell the two
 // outcomes apart without re-deriving them from anywhere else.
-func (s *CompletionService) CompleteReview(ctx context.Context, taskID string, approved bool, actor string) error {
-	t, err := s.Tasks.Get(ctx, taskID)
+func (s *CompletionService) CompleteReview(ctx context.Context, projectID, taskID string, approved bool, actor string) error {
+	t, err := s.Tasks.Get(ctx, projectID, taskID)
 	if err != nil {
 		return err
 	}
@@ -73,8 +75,10 @@ func (s *CompletionService) CompleteReview(ctx context.Context, taskID string, a
 // (the domain git module is outside EPIC-003/004 scope) — the caller
 // (Application-adjacent orchestration, later a real Executor adapter)
 // supplies them explicitly, the same way TASK-042 accepts an
-// already-chosen Executor.
+// already-chosen Executor. ProjectID is required because TASK-NNN is
+// unique only within a Project (ADR-011, BUGFIX-003).
 type CompleteTestingParams struct {
+	ProjectID     string
 	TaskID        string
 	Passed        bool
 	Repository    string
@@ -90,7 +94,7 @@ type CompleteTestingParams struct {
 // TaskCompleted is never published: the merge is a code-level guard on
 // Done, not just a documented expectation.
 func (s *CompletionService) CompleteTesting(ctx context.Context, p CompleteTestingParams) error {
-	t, err := s.Tasks.Get(ctx, p.TaskID)
+	t, err := s.Tasks.Get(ctx, p.ProjectID, p.TaskID)
 	if err != nil {
 		return err
 	}

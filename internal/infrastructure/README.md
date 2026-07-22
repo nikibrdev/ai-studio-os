@@ -53,7 +53,7 @@ pool, err := postgres.NewPoolFromDSN(ctx, dsn) // явный DSN
 
 ### `postgres` — Store-адаптеры
 
-`ProjectStore` и `TaskStore` (TASK-047) реализуют `application.ProjectStore`/`application.TaskStore` — те же контракты, что и in-memory фейки EPIC-004, без изменений. `Save` — upsert по `id`; `Get` на отсутствующей строке возвращает `application.ErrNotFound` (тот же sentinel, что и у фейков — use-case'ы не отличают технологию хранения).
+`ProjectStore` и `TaskStore` (TASK-047) реализуют `application.ProjectStore`/`application.TaskStore` — те же контракты, что и in-memory фейки EPIC-004, без изменений. `Get` на отсутствующей строке возвращает `application.ErrNotFound` (тот же sentinel, что и у фейков — use-case'ы не отличают технологию хранения). `TaskStore.Save` — upsert по `(project_id, id)`, не по голому `id`: публичный `TASK-NNN` уникален только в рамках Project (ADR-011), а не глобально — до BUGFIX-003 `tasks` был с `PRIMARY KEY (id)`, и два разных проекта с одинаковым `TASK-001` молча портили друг друга через `ON CONFLICT (id) DO UPDATE`; миграция `0006` меняет ключ на составной, `executions.task_id` стал неформальной ссылкой без FK (тот же принцип, что уже был у `artifacts.produced_by`).
 
 `ExecutorStore`, `ExecutionStore` и `ArtifactStore` (TASK-048) реализуют оставшиеся три порта тем же образом.
 

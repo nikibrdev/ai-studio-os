@@ -12,6 +12,8 @@ import (
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/application/inmemory"
+	"ai-studio-os/internal/domain/executor"
+	"ai-studio-os/internal/domain/shared"
 	"ai-studio-os/internal/domain/workflow"
 )
 
@@ -20,17 +22,23 @@ import (
 // TASK-065) requires a database; these tests exercise the HTTP layer
 // (routing, (de)serialization, error mapping) against real use-case
 // services backed by internal/application/inmemory, the same fakes
-// internal/application's own tests use.
+// internal/application's own tests use. Counts per projectID, not
+// globally — TASK-NNN is unique only within a Project (ADR-011,
+// BUGFIX-003), and two different projects must each get their own
+// TASK-001.
 type sequentialTaskIDGenerator struct {
 	mu sync.Mutex
-	n  int
+	n  map[string]int
 }
 
-func (g *sequentialTaskIDGenerator) NextID(_ context.Context, _ string) (string, error) {
+func (g *sequentialTaskIDGenerator) NextID(_ context.Context, projectID string) (string, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.n++
-	return fmt.Sprintf("TASK-%03d", g.n), nil
+	if g.n == nil {
+		g.n = make(map[string]int)
+	}
+	g.n[projectID]++
+	return fmt.Sprintf("TASK-%03d", g.n[projectID]), nil
 }
 
 // testDeps wires a fresh Deps against in-memory fakes. Deps holds
@@ -62,8 +70,10 @@ func testDeps() Deps {
 		Results: &application.ResultService{
 			Projects: projects, Tasks: tasks, Executions: executions, Artifacts: artifacts, Events: bus,
 		},
-		Completion: &application.CompletionService{Tasks: tasks, Events: bus, Rules: rules},
-		Views:      views,
+		Completion: &application.CompletionService{
+			Tasks: tasks, Repositories: inmemory.NewRepositoryProvider(), Events: bus, Rules: rules,
+		},
+		Views: views,
 	}
 }
 
@@ -116,4 +126,56 @@ func createActiveProject(t *testing.T, server http.Handler) string {
 	}
 
 	return id
+}
+
+// seedActiveDeveloperExecutor registers an Active Executor with the
+// Developer role directly in deps.Work's store — there is no HTTP route
+// to register an Executor in this version of the API (out of scope,
+// ADR-007 Decision Required), so tests exercising StartTask seed one the
+// same way internal/application's own work_test.go does.
+func seedActiveDeveloperExecutor(t *testing.T, deps Deps, id string) {
+	t.Helper()
+	e, _, err := executor.New(id, "claude-code-instance", []shared.Role{shared.RoleDeveloper})
+	if err != nil {
+		t.Fatalf("executor.New: %v", err)
+	}
+	if _, err := e.Activate(); err != nil {
+		t.Fatalf("Activate: %v", err)
+	}
+	if err := deps.Work.Executors.Save(context.Background(), e); err != nil {
+		t.Fatalf("save executor: %v", err)
+	}
+}
+
+// createReadyTask creates and plans a task within projectID
+// (/projects/{projectId}/tasks — BUGFIX-003), returning its ID.
+func createReadyTask(t *testing.T, server http.Handler, projectID string) string {
+	t.Helper()
+	var created taskResponse
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/"+projectID+"/tasks",
+		jsonBody(t, createTaskRequest{Title: "Задача", Type: "feature"})), &created)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create task status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	rec = doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/"+projectID+"/tasks/"+created.ID+"/plan", nil), nil)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("plan task status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	return created.ID
+}
+
+// startExecution seeds an Active Developer Executor and starts the given
+// (Ready) task through real HTTP requests, returning the execution id.
+func startExecution(t *testing.T, server http.Handler, deps Deps, projectID, taskID string) string {
+	t.Helper()
+	const executorID = "executor-1"
+	seedActiveDeveloperExecutor(t, deps, executorID)
+
+	var run executionResponse
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/"+projectID+"/tasks/"+taskID+"/start",
+		jsonBody(t, startTaskRequest{ExecutorID: executorID})), &run)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("start task status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	return run.ExecutionID
 }

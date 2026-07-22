@@ -29,8 +29,10 @@ type WorkService struct {
 	Rules      workflow.Rules
 }
 
-// StartTaskParams are the inputs to StartTask.
+// StartTaskParams are the inputs to StartTask. ProjectID is required
+// because TASK-NNN is unique only within a Project (ADR-011, BUGFIX-003).
 type StartTaskParams struct {
+	ProjectID  string
 	TaskID     string
 	ExecutorID string
 	Actor      string
@@ -43,7 +45,7 @@ type StartTaskParams struct {
 // Publishes TaskStarted (source task), then ExecutionQueued and
 // ExecutionStarted (source execution).
 func (s *WorkService) StartTask(ctx context.Context, p StartTaskParams) (*execution.Execution, error) {
-	t, err := s.Tasks.Get(ctx, p.TaskID)
+	t, err := s.Tasks.Get(ctx, p.ProjectID, p.TaskID)
 	if err != nil {
 		return nil, err
 	}
