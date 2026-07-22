@@ -49,6 +49,23 @@ func TestCloneAndRunScript_TokenOnlyViaEnvNotArgv(t *testing.T) {
 	}
 }
 
+func TestCloneAndRunScript_CapturesExitCodeAndStaysAlive(t *testing.T) {
+	script := cloneAndRunScript("org/repo", "main", []string{"false"})
+
+	if !strings.Contains(script, "echo $? > "+exitCodeFile) {
+		t.Errorf("expected the exit code to be captured to %s, got:\n%s", exitCodeFile, script)
+	}
+	if !strings.Contains(script, "sleep 300") {
+		t.Errorf("expected the container to idle after the command finishes, got:\n%s", script)
+	}
+
+	captureIdx := strings.Index(script, "echo $? > "+exitCodeFile)
+	sleepIdx := strings.Index(script, "sleep 300")
+	if captureIdx < 0 || sleepIdx < 0 || sleepIdx < captureIdx {
+		t.Errorf("exit code must be captured before the idle sleep, got:\n%s", script)
+	}
+}
+
 func TestShellQuote_EscapesSingleQuotes(t *testing.T) {
 	got := shellQuote(`it's "quoted"`)
 	want := `'it'\''s "quoted"'`
