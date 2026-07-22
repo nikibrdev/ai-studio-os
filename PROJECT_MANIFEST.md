@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.6 AI Agent Runtime — **в работе** (открыт 2026-07-21); v0.5 Infrastructure Layer — завершён ([ROADMAP.md](ROADMAP.md)) |
+| **Version** | v0.6 AI Agent Runtime — **завершён** (2026-07-22); следующий — v0.7 Memory System ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-006 AI Agent Runtime](docs/roadmap/EPIC-006-ai-agent-runtime.md) — **в работе** (открыт 2026-07-21): целевая модель исполнения (Docker-контейнер на Execution, ADR-006) + первый реальный адаптер Executor — Claude Code (ADR-005) (TASK-052…057) |
+| **Current Epic** | [EPIC-006 AI Agent Runtime](docs/roadmap/EPIC-006-ai-agent-runtime.md) — **закрыт** (2026-07-22): целевая модель исполнения (Docker-контейнер на Execution, ADR-006) + первый реальный адаптер Executor — Claude Code (ADR-005), подтверждён реальным прогоном (TASK-052…057). EPIC-007 (Memory System) — не открыт |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -30,7 +30,7 @@
 | Infrastructure | **Implemented** — PostgreSQL (пять Store, `pgx/v5`, самописные миграции), производственный EventBus с журналом, GitHub Repository Provider ([README](internal/infrastructure/README.md)) |
 | API | Not Started (REST, после Infrastructure) |
 | Dashboard | Not Started (v0.6) |
-| Developer Engine | Planning (ADR-005 и ADR-006 приняты — контракт и среда исполнения определены; реализация — v0.6) |
+| Developer Engine | **Implemented** — первый реальный адаптер Executor ([agents/claude-code](agents/claude-code/README.md)): Docker-контейнер на Execution, сетевой allowlist, короткоживущие секреты (ADR-005/006); реальный AI-вызов не проверен — нет ключа в этой сессии (честный предел, TASK-056) |
 | Workflow | **Machine реализована** — каноническая state machine (20 переходов, 100% покрытия); Definition/Step — контракты до появления потребителя (v0.4) |
 
 ### Контрольные точки
@@ -38,7 +38,7 @@
 | Поле | Значение |
 | --- | --- |
 | **Last ADR** | [ADR-017](docs/adr/ADR-017-postgresql-driver.md) (драйвер PostgreSQL — `pgx/v5`; миграции — самописный раннер) |
-| **Last Review** | 2026-07-21 — Code Review EPIC-005 (TASK-046…051, PR #60–#65); эпик закрыт целиком |
+| **Last Review** | 2026-07-22 — Code Review EPIC-006 (TASK-052…057, PR #67–#72); эпик закрыт целиком |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 4 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
@@ -53,4 +53,4 @@
 
 ## Последнее обновление
 
-2026-07-21
+2026-07-22
