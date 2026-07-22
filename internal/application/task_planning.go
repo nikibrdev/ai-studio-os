@@ -24,9 +24,18 @@ type TaskPlanningService struct {
 	Tasks    TaskStore
 	Events   platform.EventBus
 	Rules    workflow.Rules
+
+	// IDs generates the public TASK-NNN identifier (ADR-011) when
+	// CreateTaskParams.ID is left empty — added in EPIC-008 (TASK-065).
+	// Optional: nil preserves the original EPIC-004 behavior of requiring
+	// the caller to supply ID (task.New's own ErrMissingField fires if
+	// both are absent).
+	IDs TaskIDGenerator
 }
 
-// CreateTaskParams are the inputs to CreateTask. EpicID, Scope and
+// CreateTaskParams are the inputs to CreateTask. ID may be left empty to
+// have TaskPlanningService generate the next TASK-NNN for ProjectID via
+// IDs (TASK-065) — required when IDs is nil. EpicID, Scope and
 // AcceptanceCriteria are optional (spec Task Structural Invariants 2, 4).
 type CreateTaskParams struct {
 	ID                 string
@@ -51,7 +60,15 @@ func (s *TaskPlanningService) CreateTask(ctx context.Context, p CreateTaskParams
 		return nil, ErrProjectNotActive
 	}
 
-	t, created, err := task.New(p.ID, p.ProjectID, p.EpicID, p.Title, p.Type)
+	id := p.ID
+	if id == "" && s.IDs != nil {
+		id, err = s.IDs.NextID(ctx, p.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	t, created, err := task.New(id, p.ProjectID, p.EpicID, p.Title, p.Type)
 	if err != nil {
 		return nil, err
 	}

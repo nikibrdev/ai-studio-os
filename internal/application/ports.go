@@ -46,3 +46,11 @@ type ArtifactStore interface {
 	Get(ctx context.Context, id string) (*artifact.Artifact, error)
 	Save(ctx context.Context, a *artifact.Artifact) error
 }
+
+// TaskIDGenerator issues the next public TASK-NNN identifier for a
+// project (ADR-011) through a single race-free path — added in EPIC-008
+// (TASK-065) because an external API caller cannot safely compute the
+// next number itself.
+type TaskIDGenerator interface {
+	NextID(ctx context.Context, projectID string) (string, error)
+}
