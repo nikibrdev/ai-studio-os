@@ -57,8 +57,8 @@ flowchart TD
 
 #### `apps/api`
 
-- **Разрешено:** публичные контракты модулей Core (команды, чтение); `pkg/`; HTTP-инфраструктура слоя доставки (после [ADR-003](../adr/ADR-003-api-protocol.md) и [ADR-009](../adr/ADR-009-toolchain.md)).
-- **Запрещено:** доменная логика (правила — только в Core); прямой доступ к хранилищам в обход модулей; импорт внутренних пакетов модулей; зависимость от `apps/orchestrator`, `agents/`, `tools/`.
+- **Разрешено:** публичные use-case-сервисы и проекции `internal/application` (команды, чтение — терминология «модули Core» здесь предшествует [ADR-015](../adr/ADR-015-internal-layering.md) и обновлена после EPIC-004: сегодняшний эквивалент «Core» из этого раздела — `internal/application`, не `internal/domain` напрямую); зависимости этих сервисов собираются через `internal/infrastructure/wiring.System`; `pkg/`; HTTP-инфраструктура слоя доставки (после [ADR-003](../adr/ADR-003-api-protocol.md) и [ADR-009](../adr/ADR-009-toolchain.md)).
+- **Запрещено:** доменная логика (правила — только в `internal/domain`, вызываемые исключительно через `internal/application`); прямой доступ к хранилищам в обход `internal/application`/`internal/infrastructure/wiring`; импорт внутренних пакетов `internal/domain`; зависимость от `apps/orchestrator`, `agents/`, `tools/`.
 
 #### `apps/dashboard`
 
@@ -117,4 +117,4 @@ flowchart TD
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-22
