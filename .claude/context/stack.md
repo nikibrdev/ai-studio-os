@@ -11,8 +11,10 @@
 | Назначение | Технология | Примечание |
 | --- | --- | --- |
 | Backend | **Go 1.24** | единый `go.mod` в корне ([ADR-009](../../docs/adr/ADR-009-toolchain.md)) |
-| Frontend | **Next.js 15** | `apps/dashboard` |
+| Frontend | **Next.js 15** (TypeScript) | `apps/dashboard`, Node.js 22 LTS ([ADR-009](../../docs/adr/ADR-009-toolchain.md)) |
 | Package manager (frontend) | **pnpm** | [ADR-009](../../docs/adr/ADR-009-toolchain.md) |
+| Linter/Formatter (frontend) | **ESLint + Prettier** | [ADR-009](../../docs/adr/ADR-009-toolchain.md) |
+| Unit-фреймворк (frontend) | **Vitest** + React Testing Library | [ADR-009](../../docs/adr/ADR-009-toolchain.md) |
 | Linter (Go) | **golangci-lint** | [ADR-009](../../docs/adr/ADR-009-toolchain.md) |
 | Formatter (Go) | **gofumpt** | строже gofmt |
 | API | **REST** | Dashboard → REST → Go Core ([ADR-003](../../docs/adr/ADR-003-api-protocol.md)) |
@@ -28,7 +30,7 @@
 ### Правила
 
 1. Новая библиотека или сервис — только через ADR.
-2. Версия Node.js, конфигурация ESLint/Prettier и unit-фреймворк frontend фиксируются при создании `apps/dashboard` (см. [ADR-009](../../docs/adr/ADR-009-toolchain.md)).
+2. Версия Node.js, конфигурация ESLint/Prettier и unit-фреймворк frontend зафиксированы при создании `apps/dashboard` — [ADR-009](../../docs/adr/ADR-009-toolchain.md), [EPIC-009](../../docs/roadmap/EPIC-009-dashboard.md).
 3. Агенты используют технологии только из этого списка и из явных указаний задачи.
 
 ## Статус
