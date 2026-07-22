@@ -113,27 +113,35 @@ func (m *Manager) Start(ctx context.Context, p StartParams) (*Handle, error) {
 	return h, nil
 }
 
-// Status reports whether the execution container is still running and,
-// once it has exited, its exit code.
+// Status reports whether the clone-and-command sequence is still running
+// and, once it has finished, its exit code. It reads exitCodeFile rather
+// than the container's own State.Running: the container stays alive
+// (idling) after the command finishes — see cloneAndRunScript — so
+// Docker's own running flag no longer distinguishes "still working" from
+// "finished, idling until Stop".
 func (m *Manager) Status(ctx context.Context, h *Handle) (Status, error) {
-	out, err := m.run.Run(ctx, "docker", "inspect", "--format", "{{.State.Running}} {{.State.ExitCode}}", h.containerName)
+	out, err := m.run.Run(ctx, "docker", "exec", h.containerName, "cat", exitCodeFile)
 	if err != nil {
+		if strings.Contains(err.Error(), "No such file or directory") {
+			return Status{Running: true}, nil
+		}
 		return Status{}, fmt.Errorf("container: status %s: %w", h.containerName, err)
 	}
 
-	fields := strings.Fields(out)
-	if len(fields) != 2 {
-		return Status{}, fmt.Errorf("container: unexpected inspect output for %s: %q", h.containerName, out)
+	exitCode, convErr := strconv.Atoi(strings.TrimSpace(out))
+	if convErr != nil {
+		return Status{}, fmt.Errorf("container: unexpected exit code content for %s: %q", h.containerName, out)
 	}
-	exitCode, _ := strconv.Atoi(fields[1])
-	return Status{Running: fields[0] == "true", ExitCode: exitCode}, nil
+	return Status{Running: false, ExitCode: exitCode}, nil
 }
 
-// Exec runs cmd inside the running execution container and returns its
-// output — used to poll progress (e.g. `git log`, `git diff`) without
-// needing a dedicated port or API from the container itself.
+// Exec runs cmd inside the running execution container, in the cloned
+// working copy (workspaceDir — the container's own WORKDIR is set by
+// docker/execution's Dockerfile to its parent, not the clone itself), and
+// returns its output — used to poll progress (e.g. `git log`, `git diff`)
+// without needing a dedicated port or API from the container itself.
 func (m *Manager) Exec(ctx context.Context, h *Handle, cmd []string) (string, error) {
-	args := append([]string{"exec", h.containerName}, cmd...)
+	args := append([]string{"exec", "--workdir", workspaceDir, h.containerName}, cmd...)
 	out, err := m.run.Run(ctx, "docker", args...)
 	if err != nil {
 		return "", fmt.Errorf("container: exec in %s: %w", h.containerName, err)

@@ -194,9 +194,9 @@ func TestStart_ProxyFailureCleansUpNetwork(t *testing.T) {
 	}
 }
 
-func TestStatus_ParsesRunningAndExitCode(t *testing.T) {
+func TestStatus_FinishedReadsExitCodeFile(t *testing.T) {
 	run := newFakeRunner()
-	run.responses["docker inspect --format {{.State.Running}} {{.State.ExitCode}} ai-studio-os-exec-exec-1"] = "false 1"
+	run.responses["docker exec ai-studio-os-exec-exec-1 cat "+exitCodeFile] = "1"
 	m := newTestManager(run)
 	h := &Handle{containerName: "ai-studio-os-exec-exec-1"}
 
@@ -209,20 +209,48 @@ func TestStatus_ParsesRunningAndExitCode(t *testing.T) {
 	}
 }
 
-func TestStatus_MalformedOutputIsAnError(t *testing.T) {
+func TestStatus_StillRunningWhenExitCodeFileMissing(t *testing.T) {
 	run := newFakeRunner()
-	run.responses["docker inspect --format {{.State.Running}} {{.State.ExitCode}} ai-studio-os-exec-exec-1"] = "garbage"
+	run.errors["docker exec ai-studio-os-exec-exec-1 cat "+exitCodeFile] = errors.New(
+		"exit status 1: cat: " + exitCodeFile + ": No such file or directory",
+	)
+	m := newTestManager(run)
+	h := &Handle{containerName: "ai-studio-os-exec-exec-1"}
+
+	status, err := m.Status(context.Background(), h)
+	if err != nil {
+		t.Fatalf("Status: %v", err)
+	}
+	if !status.Running {
+		t.Errorf("Status() = %+v, want Running:true while the exit code file does not exist yet", status)
+	}
+}
+
+func TestStatus_MalformedExitCodeContentIsAnError(t *testing.T) {
+	run := newFakeRunner()
+	run.responses["docker exec ai-studio-os-exec-exec-1 cat "+exitCodeFile] = "garbage"
 	m := newTestManager(run)
 	h := &Handle{containerName: "ai-studio-os-exec-exec-1"}
 
 	if _, err := m.Status(context.Background(), h); err == nil {
-		t.Fatal("expected error for malformed inspect output")
+		t.Fatal("expected error for malformed exit code content")
+	}
+}
+
+func TestStatus_RealDockerErrorPropagates(t *testing.T) {
+	run := newFakeRunner()
+	run.errors["docker exec ai-studio-os-exec-exec-1 cat "+exitCodeFile] = errors.New("Error: No such container: ai-studio-os-exec-exec-1")
+	m := newTestManager(run)
+	h := &Handle{containerName: "ai-studio-os-exec-exec-1"}
+
+	if _, err := m.Status(context.Background(), h); err == nil {
+		t.Fatal("expected error to propagate when the container itself is gone")
 	}
 }
 
 func TestExec_RunsInsideNamedContainer(t *testing.T) {
 	run := newFakeRunner()
-	run.responses["docker exec ai-studio-os-exec-exec-1 git log --oneline"] = "abc123 commit"
+	run.responses["docker exec --workdir "+workspaceDir+" ai-studio-os-exec-exec-1 git log --oneline"] = "abc123 commit"
 	m := newTestManager(run)
 	h := &Handle{containerName: "ai-studio-os-exec-exec-1"}
 
