@@ -19,7 +19,7 @@
 | События | **In-Memory Event Bus** | интерфейс неизменен; будущая замена: Redis Streams / NATS ([ADR-002](../../docs/adr/ADR-002-event-delivery.md)) |
 | База данных | PostgreSQL | **источник истины задач** ([ADR-004](../../docs/adr/ADR-004-task-storage.md)); драйвер `pgx/v5` ([ADR-017](../../docs/adr/ADR-017-postgresql-driver.md)); подключение с v0.2 |
 | Кэш | Redis | с v0.2; не используется для доставки событий в MVP |
-| Векторный поиск | Qdrant | с v0.7 (Memory) |
+| Векторный поиск | Qdrant | с v0.7 (Memory); доступ — REST API напрямую (`net/http`, без клиентской библиотеки); эмбеддинги — наивный локальный feature hashing ([ADR-018](../../docs/adr/ADR-018-memory-embeddings-and-qdrant-schema.md)) |
 | Тестирование e2e | Playwright | с v0.4 (QA Engine) |
 | Git-хостинг | GitHub | ветки, PR, ревью |
 | Контейнеры | Docker | Compose — после снятия ограничений Foundation |
@@ -37,4 +37,4 @@
 
 ## Последнее обновление
 
-2026-07-21
+2026-07-22

@@ -28,10 +28,11 @@
 | [015](ADR-015-internal-layering.md) | **Accepted** | Слои internal: domain(+shared) / application / platform / infrastructure | Нет |
 | [016](ADR-016-artifact-aggregate-root.md) | **Accepted** | Artifact — самостоятельный Aggregate Root, не часть Execution/Task/Project | Нет |
 | [017](ADR-017-postgresql-driver.md) | **Accepted** | Драйвер PostgreSQL — `pgx/v5` (нативный интерфейс, `pgxpool`); миграции — самописный раннер по `.sql`-файлам | Нет |
+| [018](ADR-018-memory-embeddings-and-qdrant-schema.md) | **Accepted** | Эмбеддинги Memory — наивный локальный feature hashing (256 измерений, без внешних зависимостей); схема Qdrant — одна коллекция `memory_entries` | Нет |
 
 ### Сводка
 
-- **Принято:** 13 (001, 002, 003, 004, 005, 006, 008, 009, 011, 014, 015, 016, 017)
+- **Принято:** 14 (001, 002, 003, 004, 005, 006, 008, 009, 011, 014, 015, 016, 017, 018)
 - **Decision Required:** 4 (007, 010, 012, 013)
 - Ближайшие к принятию по roadmap: ADR-007 (исполнители PM/QA — v0.4), ADR-013 (подключение управляемых проектов — v0.5/v0.6).
 
@@ -41,4 +42,4 @@
 
 ## Последнее обновление
 
-2026-07-21
+2026-07-22
