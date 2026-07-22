@@ -38,12 +38,12 @@
 
 ## Критерии завершения
 
-- [ ] `internal/infrastructure/memory` реализует `platform.MemoryProvider` целиком (`Record`/`Search`), контракт не изменён.
-- [ ] Файлы `memory/<projectID>/<id>.md` — durable источник истины, `Reindex` перестраивает Qdrant с нуля из файлов.
-- [ ] Qdrant — изоляция по `project_id` подтверждена реальным тестом (поиск в одном проекте не возвращает записи другого).
-- [ ] `docker-compose.yml` поднимает Qdrant; интеграционные тесты — реальный прогон, а не только на фейках.
-- [ ] `docs/architecture/memory.md` синхронизирован — три открытых вопроса (структура каталога, эмбеддинги/Qdrant) закрыты, оставшийся (политика устаревания) — явно сохранён как открытый.
-- [ ] PROJECT_MANIFEST/PROJECT_HEALTH/ROADMAP/CHANGELOG синхронизированы при закрытии.
+- [x] `internal/infrastructure/memory` реализует `platform.MemoryProvider` целиком (`Record`/`Search`), контракт не изменён — [provider.go](../../internal/infrastructure/memory/provider.go), TASK-061.
+- [x] Файлы `memory/<projectID>/<id>.md` — durable источник истины, `Reindex` перестраивает Qdrant с нуля из файлов — [provider.go](../../internal/infrastructure/memory/provider.go) (`Reindex`), TASK-059/061.
+- [x] Qdrant — изоляция по `project_id` подтверждена реальным тестом (поиск в одном проекте не возвращает записи другого) — [provider_integration_test.go](../../internal/infrastructure/memory/provider_integration_test.go), TASK-061.
+- [x] `docker-compose.yml` поднимает Qdrant; интеграционные тесты — реальный прогон, а не только на фейках — CI-job `integration` (`.github/workflows/verify.yml`), TASK-060/062.
+- [x] `docs/architecture/memory.md` синхронизирован — три открытых вопроса (структура каталога, эмбеддинги/Qdrant) закрыты, оставшийся (политика устаревания) — явно сохранён как открытый — TASK-063.
+- [x] PROJECT_MANIFEST/PROJECT_HEALTH/ROADMAP/CHANGELOG синхронизированы при закрытии — TASK-063.
 
 ## Декомпозиция
 
@@ -54,7 +54,7 @@
 | TASK-060 | Naive-эмбеддинг + REST-клиент Qdrant, `docker-compose` сервис | done |
 | TASK-061 | `MemoryProvider` целиком (Record/Search/Reindex), реальная проверка вживую | done |
 | TASK-062 | Композиция (`wiring`), CI-интеграция, README | done |
-| TASK-063 | Синхронизация документации, закрытие эпика | ready |
+| TASK-063 | Синхронизация документации, закрытие эпика | done |
 
 ## Риски и зависимости
 
@@ -65,7 +65,7 @@
 
 ## Статус
 
-В работе
+Закрыт
 
 ## Последнее обновление
 
