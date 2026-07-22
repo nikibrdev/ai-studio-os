@@ -1,9 +1,10 @@
-# Локальный PostgreSQL для разработки и интеграционных тестов
-# Infrastructure Layer (EPIC-005, ADR-017). Не для production —
-# креды намеренно простые, том не защищён.
+# Локальный PostgreSQL и Qdrant для разработки и интеграционных тестов
+# (Infrastructure Layer, EPIC-005/ADR-017; Memory System, EPIC-007/ADR-018).
+# Не для production — креды намеренно простые, тома не защищены.
 #
 # Использование: docker compose up -d
-# DSN для интеграционных тестов: postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable
+# DSN Postgres для интеграционных тестов: postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable
+# URL Qdrant для интеграционных тестов: http://localhost:6333
 
 services:
   postgres:
@@ -22,5 +23,13 @@ services:
       timeout: 3s
       retries: 5
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - ai_studio_os_qdrant_data:/qdrant/storage
+
 volumes:
   ai_studio_os_postgres_data:
+  ai_studio_os_qdrant_data:
