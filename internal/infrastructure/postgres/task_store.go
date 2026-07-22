@@ -54,6 +54,25 @@ FROM tasks WHERE id = $1`
 	), nil
 }
 
+// NextID atomically issues the next public TASK-NNN identifier for
+// projectID (ADR-011) — implements application.TaskIDGenerator. A single
+// INSERT ... ON CONFLICT DO UPDATE ... RETURNING statement means
+// PostgreSQL's own row lock serializes concurrent callers; no
+// application-level locking is needed.
+func (s *TaskStore) NextID(ctx context.Context, projectID string) (string, error) {
+	const q = `
+INSERT INTO task_sequences (project_id, next_number)
+VALUES ($1, 2)
+ON CONFLICT (project_id) DO UPDATE SET next_number = task_sequences.next_number + 1
+RETURNING next_number - 1`
+
+	var n int
+	if err := s.pool.QueryRow(ctx, q, projectID).Scan(&n); err != nil {
+		return "", fmt.Errorf("postgres: next task id for project %s: %w", projectID, err)
+	}
+	return fmt.Sprintf("TASK-%03d", n), nil
+}
+
 // Save creates or updates a Task (upsert on id).
 func (s *TaskStore) Save(ctx context.Context, t *task.Task) error {
 	const q = `
