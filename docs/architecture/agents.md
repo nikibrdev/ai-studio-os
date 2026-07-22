@@ -10,7 +10,7 @@
 
 Видение проекта ([VISION.md](../../VISION.md)) переформулирует эту модель жёстче, чем просто «роль ≠ исполнитель»: **AI Studio OS — операционная система, умеющая запускать любые типы Исполнителей (Executor)** — Claude Code, Codex, OpenHands, Aider, Cline, человека, в будущем — собственные модели. Ядро не знает, кто именно выполняет работу; оно знает только, что существует Executor, принимающий Context и возвращающий Result ([ubiquitous-language.md](../domain/ubiquitous-language.md)). Агент — лишь один из видов Executor'а: AI-плагин, а не центральное понятие платформы.
 
-Эта абстракция закреплена в коде: контракт `platform.Executor` (`Accept`/`Artifacts`/`Status`/`Finish`, [ADR-005](../adr/ADR-005-executor-contract.md), принято) — не как временная заглушка, а как соответствие видению: ядро не должно приобретать зависимостей от конкретного провайдера или формата обмена раньше, чем это станет необходимо; форма `ExecutorTask`/`Artifact`/`ExecutionStatus` остаётся абстрактной до Domain Layer.
+Эта абстракция закреплена в коде: контракт `platform.Executor` (`Accept`/`Artifacts`/`Status`/`Finish`, [ADR-005](../adr/ADR-005-executor-contract.md), принято) — не как временная заглушка, а как соответствие видению: ядро не должно приобретать зависимостей от конкретного провайдера или формата обмена раньше, чем это станет необходимо. `ExecutorTask`/`Artifact`/`ExecutionStatus` конкретизированы в v0.6 (EPIC-006, TASK-052) — плоские структуры с примитивными полями, не псевдонимы доменных типов (`internal/platform` остаётся домен-агностичным, ADR-015).
 
 ### Ключевая идея: роль ≠ исполнитель
 
@@ -30,7 +30,7 @@
 - сообщать о ходе работы событиями;
 - вернуть результат и отчёт.
 
-Добавление нового провайдера — это добавление адаптера, без изменения ядра. Claude Code — реализация роли Developer по умолчанию; его инструкция — [CLAUDE.md](../../CLAUDE.md).
+Добавление нового провайдера — это добавление адаптера, без изменения ядра. Claude Code — реализация роли Developer по умолчанию; его инструкция — [CLAUDE.md](../../CLAUDE.md). Первый реальный адаптер — [agents/claude-code](../../agents/claude-code/README.md) (v0.6, EPIC-006): запускает Claude Code внутри изолированного Docker-контейнера (ADR-006).
 
 ### Правила работы агентов
 
@@ -50,10 +50,9 @@
 
 ### Decision Required
 
-- [ADR-006](../adr/ADR-006-agent-execution-environment.md) — способ запуска и изоляции исполнителей, модель технических ограничений.
-- [ADR-007](../adr/ADR-007-pm-qa-executors.md) — исполнители по умолчанию для ролей Project Manager и QA Engineer в MVP.
+- [ADR-007](../adr/ADR-007-pm-qa-executors.md) — исполнители по умолчанию для ролей Project Manager и QA Engineer в MVP (Developer уже определён — Claude Code).
 
-Контракт адаптера технического бэкенда — [ADR-005](../adr/ADR-005-executor-contract.md) (принято): ровно четыре возможности (`Accept`, `Artifacts`, `Status`, `Finish`); терминология Agent/Executor — [ubiquitous-language.md](../domain/ubiquitous-language.md).
+Контракт адаптера технического бэкенда — [ADR-005](../adr/ADR-005-executor-contract.md) (принято): ровно четыре возможности (`Accept`, `Artifacts`, `Status`, `Finish`); терминология Agent/Executor — [ubiquitous-language.md](../domain/ubiquitous-language.md). Способ запуска и изоляции исполнителей — [ADR-006](../adr/ADR-006-agent-execution-environment.md) (принято, v0.6): один Execution — один Docker-контейнер, сетевой allowlist, короткоживущие секреты; реализовано в [agents/claude-code](../../agents/claude-code/README.md) (EPIC-006).
 
 Концептуальный контракт Executor описан в [interfaces.md](interfaces.md).
 
@@ -63,4 +62,4 @@
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-22
