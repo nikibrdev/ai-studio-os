@@ -19,11 +19,13 @@ type Deps struct {
 }
 
 // NewServer builds the HTTP router (docs/api/README.md). Resource routes
-// are added here as their handlers are implemented (TASK-068/069); this
-// task (TASK-067) wires only the health check.
-func NewServer(_ Deps) http.Handler {
+// are added here as their handlers are implemented — Projects/Tasks
+// creation (TASK-068), Work/Result/Completion (TASK-069).
+func NewServer(deps Deps) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
+	registerProjectRoutes(mux, deps)
+	registerTaskCreationRoutes(mux, deps)
 	return mux
 }
 
