@@ -35,6 +35,16 @@
 
 Не зафиксировано (не блокирует текущие этапы, решается при старте соответствующей работы): точная версия Node.js и конфигурация ESLint/Prettier (при создании `apps/dashboard`), unit-фреймворк frontend (v0.4), физическое размещение адаптеров инфраструктуры (этап Infrastructure).
 
+Дополнительно зафиксировано при создании `apps/dashboard` (EPIC-009, v0.8) — то же самое «простейший вариант, необходимый для старта», что и решение о едином `go.mod`, пересмотр новым ADR при реальной необходимости:
+
+| Позиция | Решение |
+| --- | --- |
+| Node.js | **22 LTS** — та же версия, что уже выбрана для Docker-образа исполнения (`docker/execution`, EPIC-006); Next.js 15 требует ≥18.18, актуальная LTS даёт запас без специального обоснования отдельной версии |
+| Язык | **TypeScript** — `create-next-app` по умолчанию с Next.js 15; согласуется со строгой типизацией остального стека (Go) |
+| Linter/Formatter (frontend) | **ESLint** (`next/core-web-vitals` + TypeScript-плагин) + **Prettier** — стандартная связка для Next.js, та же роль, что golangci-lint/gofumpt на бэкенде |
+| Unit-фреймворк frontend | **Vitest** + React Testing Library — быстрее и проще в конфигурации, чем Jest, для проекта на pnpm/ESM |
+| E2E | **Playwright** (уже в stack.md, TASK-описание v0.4) — использование в масштабе QA Engine, не блокирует EPIC-009: компонентные/страничные тесты Dashboard достаточны на Vitest, Playwright подключается по реальной потребности QA-процесса |
+
 ## Последствия
 
 ### Положительные
@@ -50,7 +60,7 @@
 
 ### Влияние на существующие документы и код
 
-`go.mod` (EPIC-002, TASK-001); [coding-standard.md](../development/coding-standard.md) и [stack.md](../../.claude/context/stack.md) — обновлены; Makefile — цели fmt/lint/build наполняются по мере появления кода.
+`go.mod` (EPIC-002, TASK-001); [coding-standard.md](../development/coding-standard.md) и [stack.md](../../.claude/context/stack.md) — обновлены; Makefile — цели fmt/lint/build наполняются по мере появления кода. Frontend-дополнение (2026-07-22) — `apps/dashboard` создаётся [EPIC-009](../roadmap/EPIC-009-dashboard.md); CI (`verify.yml`) дополняется job'ом для pnpm lint/test/build.
 
 ## Связанные материалы
 

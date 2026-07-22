@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.9 API — **завершён** (2026-07-22); следующий — v0.8 Dashboard ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)) ([ROADMAP.md](ROADMAP.md)) |
+| **Version** | v0.8 Dashboard — **в работе** (открыт 2026-07-22); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | Нет открытого эпика — [EPIC-008 API Layer](docs/roadmap/EPIC-008-api-layer.md) закрыт (2026-07-22): `apps/api` реализует весь golden path через REST (ADR-003), без auth (ADR-012, Вариант 1), TASK-064…071 + BUGFIX-003 |
+| **Current Epic** | [EPIC-009 Dashboard](docs/roadmap/EPIC-009-dashboard.md) — **в работе** (открыт 2026-07-22): `apps/dashboard` — Next.js, read-only наблюдение за проектами/задачами через `apps/api`, TASK-072…078 |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -29,7 +29,7 @@
 | Platform (контракты) | Contracts ready |
 | Infrastructure | **Implemented** — PostgreSQL (пять Store, `pgx/v5`, самописные миграции, составной ключ Task — BUGFIX-003), производственный EventBus с журналом, GitHub Repository Provider, Memory Provider (файлы + Qdrant, ADR-018) ([README](internal/infrastructure/README.md)) |
 | API | **Implemented** (EPIC-008, `apps/api` — REST над `internal/application`, ADR-003, весь golden path, 15 операций; без auth — ADR-012 Вариант 1) ([README](apps/api/README.md)) |
-| Dashboard | Not Started (v0.6) |
+| Dashboard | **In Progress** (EPIC-009, v0.8 — `apps/dashboard` Next.js, read-only первая версия) |
 | Developer Engine | **Implemented** — первый реальный адаптер Executor ([agents/claude-code](agents/claude-code/README.md)): Docker-контейнер на Execution, сетевой allowlist, короткоживущие секреты (ADR-005/006); реальный AI-вызов не проверен — нет ключа в этой сессии (честный предел, TASK-056) |
 | Workflow | **Machine реализована** — каноническая state machine (20 переходов, 100% покрытия); Definition/Step — контракты до появления потребителя (v0.4) |
 | Memory | **Implemented** — `platform.MemoryProvider` целиком (Record/Search/Reindex), файлы — источник истины, Qdrant — производный индекс; эмбеддинг наивный (feature hashing, ADR-018), не семантический по сути — честно задокументированное ограничение MVP |
@@ -38,7 +38,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| **Last ADR** | [ADR-012](docs/adr/ADR-012-identity-and-auth.md) (identity/аутентификация — отложены, Вариант 1: доверенная однопользовательская установка) |
+| **Last ADR** | [ADR-009](docs/adr/ADR-009-toolchain.md) дополнен (frontend-толчейн при открытии EPIC-009: Node.js 22 LTS, TypeScript, ESLint+Prettier, Vitest) |
 | **Last Review** | 2026-07-22 — EPIC-008 (TASK-064…071 + BUGFIX-003, PR #80–#87) закрыт целиком; предыдущее ревью — EPIC-007 (TASK-058…063, PR #75–#78) |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 3 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
