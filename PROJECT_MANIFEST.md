@@ -11,9 +11,9 @@
 | Поле | Значение |
 | --- | --- |
 | **Project** | AI Studio OS |
-| **Version** | v0.6 AI Agent Runtime — **завершён** (2026-07-22); следующий — v0.7 Memory System ([ROADMAP.md](ROADMAP.md)) |
+| **Version** | v0.7 Memory System — **в работе** (открыт 2026-07-22); v0.6 AI Agent Runtime — завершён ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-006 AI Agent Runtime](docs/roadmap/EPIC-006-ai-agent-runtime.md) — **закрыт** (2026-07-22): целевая модель исполнения (Docker-контейнер на Execution, ADR-006) + первый реальный адаптер Executor — Claude Code (ADR-005), подтверждён реальным прогоном (TASK-052…057). EPIC-007 (Memory System) — не открыт |
+| **Current Epic** | [EPIC-007 Memory System](docs/roadmap/EPIC-007-memory-system.md) — **в работе** (открыт 2026-07-22): реализация `platform.MemoryProvider` — файловое хранилище + поиск на Qdrant (наивный локальный эмбеддинг, ADR-018) (TASK-058…063) |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -37,7 +37,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| **Last ADR** | [ADR-017](docs/adr/ADR-017-postgresql-driver.md) (драйвер PostgreSQL — `pgx/v5`; миграции — самописный раннер) |
+| **Last ADR** | [ADR-018](docs/adr/ADR-018-memory-embeddings-and-qdrant-schema.md) (эмбеддинги Memory — наивный локальный feature hashing; схема Qdrant — коллекция `memory_entries`) |
 | **Last Review** | 2026-07-22 — Code Review EPIC-006 (TASK-052…057, PR #67–#72); эпик закрыт целиком |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check; `main` защищена; toolchain честно закреплён на Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 4 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) |
