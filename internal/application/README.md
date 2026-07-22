@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-layer.md)): use-case'ы поверх завершённого Domain Layer, не завязанные на конкретную инфраструктуру. Каждый use-case зависит от узкого порта (интерфейса), а не от технологии хранения — реализации портов появляются в EPIC-005 (v0.5).
+Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-layer.md)): use-case'ы поверх завершённого Domain Layer, не завязанные на конкретную инфраструктуру. Каждый use-case зависит от узкого порта (интерфейса), а не от технологии хранения — реализации портов появляются в EPIC-005 (v0.5). Дополнен `ProjectService` в [EPIC-008](../../docs/roadmap/EPIC-008-api-layer.md) (v0.9, TASK-064) — точечное добавление, обоснованное тем, что без него `apps/api` не может создавать проекты.
 
 ## Содержание
 
@@ -13,6 +13,7 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 | `ports.go` | Пять узких портов хранения агрегатов: `ProjectStore`, `TaskStore`, `ExecutorStore`, `ExecutionStore`, `ArtifactStore` (Get/Save); `ErrNotFound` |
 | `event.go` | `Envelope` — оборачивает данные доменных событий в контракт `platform.Event` (ADR-002) перед публикацией |
 | `inmemory/` | Детерминированные фейки портов, `EventBus` и `RepositoryProvider` для тестов этого эпика — не инфраструктурный адаптер |
+| `project.go` | `ProjectService` (TASK-064, EPIC-008) — жизненный цикл Project: `CreateProject`, `ConnectRepository`, `Activate` (guard «≥1 Repository» — целиком в домене) |
 | `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`) |
 | `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution) |
 | `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` |
@@ -54,4 +55,4 @@ Use-case'ы оборачивают доменные события (`Created`, `
 
 ## Последнее обновление
 
-2026-07-21
+2026-07-22
