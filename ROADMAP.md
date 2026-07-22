@@ -71,11 +71,15 @@
 
 **Результат:** состояние платформы видно и управляемо через веб-интерфейс.
 
-### v0.9 API — публичный интерфейс
+**Порядок реализации:** строится после v0.9 API, несмотря на номер версии — `apps/dashboard` структурно зависит от `apps/api` ([module-boundaries.md](docs/architecture/module-boundaries.md), [ADR-003](docs/adr/ADR-003-api-protocol.md)); решение и его причина — [2026-07-22-api-before-dashboard-build-order.md](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md). Номер версии не меняется, чтобы не переписывать уже существующие ссылки.
 
-- REST API ([ADR-003](docs/adr/ADR-003-api-protocol.md)) для внешних потребителей сверх Dashboard.
+### v0.9 API — публичный интерфейс — **В работе** (открыт 2026-07-22)
 
-**Результат:** платформа доступна внешним клиентам, не только собственному UI.
+- [EPIC-008](docs/roadmap/EPIC-008-api-layer.md): REST API ([ADR-003](docs/adr/ADR-003-api-protocol.md)) — тонкий слой доставки над уже готовым `internal/application` (EPIC-004), без auth в первой версии ([ADR-012](docs/adr/ADR-012-identity-and-auth.md), Вариант 1 — доверенная установка).
+
+**Результат:** платформа доступна внешним клиентам, не только собственному UI; Dashboard (v0.8) становится возможным.
+
+**Порядок реализации:** строится до v0.8 Dashboard, вопреки номеру версии — см. выше.
 
 ### v1.0 First Public MVP — первый публичный релиз
 
