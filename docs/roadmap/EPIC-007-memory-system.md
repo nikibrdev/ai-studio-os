@@ -50,7 +50,7 @@
 | Задача | Содержание | Статус |
 | --- | --- | --- |
 | TASK-058 | Формат файлов `memory/` + decision-документ по политике записи/устаревания | done |
-| TASK-059 | Файловое хранилище (durable-часть `internal/infrastructure/memory`) | ready |
+| TASK-059 | Файловое хранилище (durable-часть `internal/infrastructure/memory`) | done |
 | TASK-060 | Naive-эмбеддинг + REST-клиент Qdrant, `docker-compose` сервис | ready |
 | TASK-061 | `MemoryProvider` целиком (Record/Search/Reindex), реальная проверка вживую | ready |
 | TASK-062 | Композиция (`wiring`), CI-интеграция, README | ready |
