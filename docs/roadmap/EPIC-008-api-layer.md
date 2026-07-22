@@ -54,7 +54,7 @@
 | --- | --- | --- |
 | TASK-064 | `ProjectService` (CreateProject/Activate) в `internal/application` | done |
 | TASK-065 | Генерация последовательного `TASK-NNN` на проект (ADR-011) в `internal/infrastructure/postgres` | done |
-| TASK-066 | `docs/api/*.md` — спецификации по ресурсам (Documentation First) | ready |
+| TASK-066 | `docs/api/*.md` — спецификации по ресурсам (Documentation First) | done |
 | TASK-067 | Каркас `apps/api`: `main.go`, сборка через `wiring.System`, маршрутизация, JSON-хелперы, отображение ошибок в HTTP-коды | ready |
 | TASK-068 | Хендлеры Projects/Tasks (CreateProject/Activate, CreateTask/PlanTask, чтение через TaskProjection) | ready |
 | TASK-069 | Хендлеры Work/Result/Completion (StartTask, черновик/публикация Artifact, Succeed/FailExecution, Review/Testing) | ready |
