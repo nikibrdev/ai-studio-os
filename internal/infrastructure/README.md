@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Infrastructure Layer — адаптеры, реализующие контракты `internal/platform` и порты `internal/application` для конкретных технологий: PostgreSQL (персистентность агрегатов, журнал событий), производственный In-Memory Event Bus ([ADR-002](../../docs/adr/ADR-002-event-delivery.md)), GitHub (RepositoryProvider). Реализуется эпиком [EPIC-005](../../docs/roadmap/EPIC-005-infrastructure-layer.md), v0.5.
+Infrastructure Layer — адаптеры, реализующие контракты `internal/platform` и порты `internal/application` для конкретных технологий: PostgreSQL (персистентность агрегатов, журнал событий), производственный In-Memory Event Bus ([ADR-002](../../docs/adr/ADR-002-event-delivery.md)), GitHub (RepositoryProvider). Реализовано эпиком [EPIC-005](../../docs/roadmap/EPIC-005-infrastructure-layer.md), v0.5. Дополнено `platform.MemoryProvider` (файлы + Qdrant) эпиком [EPIC-007](../../docs/roadmap/EPIC-007-memory-system.md), v0.7.
 
 ## Содержание
 
@@ -24,6 +24,7 @@ Infrastructure Layer — адаптеры, реализующие контрак
 | `eventbus/` | Производственный `platform.EventBus` + журнал событий в PostgreSQL | TASK-049 |
 | `github/` | `platform.RepositoryProvider` — GitHub REST API | TASK-050 |
 | `wiring/` | Composition root: собирает `System` из всех адаптеров выше, применяет миграции | TASK-051 |
+| `memory/` | `platform.MemoryProvider` — файловое хранилище (источник истины) + Qdrant (производный индекс) | TASK-059…062 |
 
 ### `postgres` — подключение
 
@@ -78,17 +79,29 @@ docker compose up -d
 
 Юнит-тесты — на `httptest.Server` (без обращения к реальному GitHub): успешный путь и минимум один отказной сценарий на метод, 89.6% покрытия. Интеграционного прогона против настоящего GitHub нет — нужен тестовый репозиторий и секрет в CI, решение об этом не входит в scope EPIC-005 (см. риски эпика).
 
+### `memory` — Memory Provider
+
+`Provider` (TASK-061, ADR-018) реализует `platform.MemoryProvider` над двумя компонентами, каждый — durable-источник истины или его производный индекс (тот же принцип, что `event_journal`/`ReadJournal`, EPIC-005):
+
+- `FileStore` (TASK-059) — `memory/<projectID>/<id>.md` (frontmatter + Markdown), человекочитаемое, аудируемое хранилище; формат и политика записи зафиксированы отдельным decision-документом ([2026-07-22-memory-file-format.md](../../engineering/decisions/2026-07-22-memory-file-format.md)), не ADR (это формат файлов и организационная политика, не выбор технологии).
+- `QdrantClient` (TASK-060) — REST-клиент Qdrant напрямую через `net/http`, без клиентской библиотеки (тот же принцип, что и `github`-адаптер); коллекция `memory_entries` общая на все проекты, `project_id` — поле payload, а не отдельная коллекция.
+
+`embed(text string) []float32` (TASK-060) — наивный детерминированный эмбеддинг (feature hashing, 256 измерений, `hash/fnv` + `math`, ADR-018): без нейросети, без внешних вызовов и секретов; осознанно не семантический (совпадение хешированных токенов, не смысла) — честно задокументированное ограничение MVP, локализованное в одной функции для будущей замены.
+
+`Provider.Record` пишет файл, затем индексирует запись в Qdrant — в этом порядке, чтобы сбой Qdrant не терял данные (файл уже сохранён). `Provider.Search` встраивает запрос и реконструирует записи из самодостаточного payload Qdrant (`project_id`/`kind`/`content`/`source`/`recorded_at`) без обращения к файлам. `Provider.Reindex(ctx, projectID)` перестраивает индекс проекта из файлов с нуля — восстановление после расхождения файла и Qdrant (двухшаговая запись `Record` не атомарна между шагами, известное ограничение).
+
 ### Интеграционные тесты
 
-Тесты, требующие реального PostgreSQL, — за build-тегом `integration` и пропускаются (`t.Skip`), если не задана переменная `TEST_DATABASE_URL` — обычный `go test ./...` (и, следовательно, `make verify`) их не запускает и не видит Docker как зависимость.
+Тесты, требующие реального PostgreSQL или Qdrant, — за build-тегом `integration` и пропускаются (`t.Skip`), если не задана соответствующая переменная (`TEST_DATABASE_URL`/`TEST_QDRANT_URL`) — обычный `go test ./...` (и, следовательно, `make verify`) их не запускает и не видит Docker как зависимость.
 
 ```bash
 docker compose up -d
 export TEST_DATABASE_URL="postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable"
+export TEST_QDRANT_URL="http://localhost:6333"
 go test -tags=integration ./...
 ```
 
-CI-job `integration` (`.github/workflows/verify.yml`, TASK-051) поднимает сервис-контейнер PostgreSQL и запускает эти тесты автоматически на каждый PR — отдельно от обязательного статус-чека `verify`, его падение не блокирует merge (см. риски EPIC-005: решения о хранении секретов вроде GitHub PAT в этот job не входят).
+CI-job `integration` (`.github/workflows/verify.yml`, TASK-051/062) поднимает сервис-контейнеры PostgreSQL и Qdrant и запускает эти тесты автоматически на каждый PR — отдельно от обязательного статус-чека `verify`, его падение не блокирует merge (см. риски EPIC-005: решения о хранении секретов вроде GitHub PAT в этот job не входят).
 
 ### `eventbus` — производственная шина
 

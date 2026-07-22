@@ -35,9 +35,13 @@ func TestGoldenPath_Infrastructure(t *testing.T) {
 	if dsn == "" {
 		t.Skip("TEST_DATABASE_URL not set; run docker compose up and set it to run this test")
 	}
+	// TEST_QDRANT_URL is optional here: this test's scenario does not
+	// touch Memory, and Qdrant's absence must not block it (EPIC-007's
+	// risks) — an empty value simply leaves sys.Memory nil.
+	qdrantURL := os.Getenv("TEST_QDRANT_URL")
 
 	ctx := context.Background()
-	sys, err := New(ctx, dsn)
+	sys, err := New(ctx, dsn, qdrantURL)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
