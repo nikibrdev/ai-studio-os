@@ -58,7 +58,7 @@ flowchart TD
 #### `apps/api`
 
 - **Разрешено:** публичные use-case-сервисы и проекции `internal/application` (команды, чтение — терминология «модули Core» здесь предшествует [ADR-015](../adr/ADR-015-internal-layering.md) и обновлена после EPIC-004: сегодняшний эквивалент «Core» из этого раздела — `internal/application`, не `internal/domain` напрямую); зависимости этих сервисов собираются через `internal/infrastructure/wiring.System`; `pkg/`; HTTP-инфраструктура слоя доставки (после [ADR-003](../adr/ADR-003-api-protocol.md) и [ADR-009](../adr/ADR-009-toolchain.md)).
-- **Запрещено:** доменная логика (правила — только в `internal/domain`, вызываемые исключительно через `internal/application`); прямой доступ к хранилищам в обход `internal/application`/`internal/infrastructure/wiring`; импорт внутренних пакетов `internal/domain`; зависимость от `apps/orchestrator`, `agents/`, `tools/`.
+- **Запрещено:** доменная логика (правила — только в `internal/domain`, вызываемые исключительно через `internal/application`); прямой доступ к хранилищам в обход `internal/application`/`internal/infrastructure/wiring`; импорт внутренних пакетов `internal/domain` для вызова их команд; зависимость от `apps/orchestrator`, `agents/`, `tools/`. **Реализованное узкое исключение** (EPIC-008, [apps/api/README.md](../../apps/api/README.md)): `httpapi/errors.go` импортирует несколько `internal/domain/*` только для сравнения по идентичности с уже публичными sentinel-ошибками при отображении в HTTP-код — не для вызова доменной логики, `internal/application` возвращает эти ошибки как есть, не оборачивая.
 
 #### `apps/dashboard`
 
