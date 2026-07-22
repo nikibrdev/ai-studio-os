@@ -11,7 +11,7 @@
 | Пакет | Содержимое | Задача |
 | --- | --- | --- |
 | (корень) | `main.go` — точка входа: сборка зависимостей через `wiring.System`, запуск HTTP-сервера, graceful shutdown | TASK-067 |
-| `httpapi/` | Маршрутизация, хендлеры, JSON-кодирование, отображение ошибок в HTTP-коды | TASK-067…069 |
+| `httpapi/` | Маршрутизация, хендлеры (`projects.go`, `tasks.go`, `work.go`, `artifacts.go`, `executions.go`, `completion.go`), JSON-кодирование, отображение ошибок в HTTP-коды | TASK-067…070 |
 
 ### Зависимости (module-boundaries.md)
 
@@ -27,7 +27,11 @@
 
 `NewServer(deps Deps) http.Handler` строит маршрутизатор на стандартном `net/http.ServeMux` (Go 1.22+ маршрутизация по методу и пути — отдельная библиотека-роутер не нужна, тот же принцип, что и у REST-клиентов `github`/`qdrant`, EPIC-005/007). Единая функция `writeError`/`statusFor` (`errors.go`) отображает sentinel-ошибки Application/Domain Layer в HTTP-коды по конвенции [docs/api/README.md](../../docs/api/README.md) — ни один хендлер не выбирает код самостоятельно. `writeJSON`/`decodeJSON` (`json.go`) — общие хелперы кодирования.
 
-Сейчас реализован только `GET /healthz` (не обращается ни к одной зависимости) — резолюция ресурсных маршрутов добавляется по мере реализации хендлеров (TASK-068/069), редактированием `NewServer` в том же файле.
+Все 15 операций [docs/api/](../../docs/api/README.md) реализованы (`GET /healthz` + Projects/Tasks/Artifacts/Executions). Задаче-специфичные маршруты вложены под `/projects/{projectId}/tasks/...`, а не `/tasks/{id}/...` (**BUGFIX-003**): публичный `TASK-NNN` уникален только в рамках Project (ADR-011) — живая проверка вскрыла, что при плоском `/tasks/{id}` два разных проекта с одинаковым `TASK-001` молча портили данные друг друга. `/executions/{id}/succeed`/`fail` остались невложенными (Execution ID — глобально уникальный `crypto/rand`), но принимают `projectId` в теле запроса.
+
+### Проверено вживую
+
+`apps/api/httpapi/golden_path_integration_test.go` (TASK-070, тег `integration`) проводит задачу через весь golden path настоящими HTTP-запросами к серверу на реальном PostgreSQL — создание/активация проекта, задача, запуск работы, артефакт, ревью (обе ветки — одобрено/отклонено), тестирование (обе ветки — успех/провал), `Done`. `RepositoryProvider` — фейк EPIC-004 (тот же принцип, что и у `TestGoldenPath_Infrastructure`, EPIC-005): токена GitHub нет во всех окружениях, где это выполняется.
 
 ### Запуск локально
 
@@ -40,7 +44,7 @@ go run ./apps/api
 
 ## Статус
 
-В работе (EPIC-008)
+Завершён (EPIC-008)
 
 ## Последнее обновление
 
