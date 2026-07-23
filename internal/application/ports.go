@@ -21,6 +21,10 @@ var ErrNotFound = errors.New("application: not found")
 type ProjectStore interface {
 	Get(ctx context.Context, id string) (*project.Project, error)
 	Save(ctx context.Context, p *project.Project) error
+	// List returns every Project, ordered by id for a deterministic
+	// result — added in EPIC-009 (TASK-072) for apps/dashboard, which has
+	// no way to show a list of projects otherwise.
+	List(ctx context.Context) ([]*project.Project, error)
 }
 
 // TaskStore persists and retrieves Task aggregates. Get takes projectID

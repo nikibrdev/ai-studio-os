@@ -46,6 +46,36 @@ func (s *ProjectStore) Get(ctx context.Context, id string) (*project.Project, er
 	return project.Restore(gotID, name, repositories, createdAt, project.State(state)), nil
 }
 
+// List returns every Project, ordered by id for a deterministic result
+// (EPIC-009, TASK-072 — apps/dashboard has no other way to enumerate
+// projects).
+func (s *ProjectStore) List(ctx context.Context) ([]*project.Project, error) {
+	const q = `SELECT id, name, repositories, created_at, state FROM projects ORDER BY id`
+
+	rows, err := s.pool.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list projects: %w", err)
+	}
+	defer rows.Close()
+
+	var projects []*project.Project
+	for rows.Next() {
+		var (
+			id, name, state string
+			repositories    []string
+			createdAt       time.Time
+		)
+		if err := rows.Scan(&id, &name, &repositories, &createdAt, &state); err != nil {
+			return nil, fmt.Errorf("postgres: scan project: %w", err)
+		}
+		projects = append(projects, project.Restore(id, name, repositories, createdAt, project.State(state)))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("postgres: list projects: %w", err)
+	}
+	return projects, nil
+}
+
 // Save creates or updates a Project (upsert on id).
 func (s *ProjectStore) Save(ctx context.Context, p *project.Project) error {
 	const q = `

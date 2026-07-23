@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"ai-studio-os/internal/application"
@@ -42,4 +43,17 @@ func (s *Store[T]) Save(_ context.Context, v *T) error {
 	defer s.mu.Unlock()
 	s.items[s.idOf(v)] = v
 	return nil
+}
+
+// List returns every stored aggregate, ordered by id for a deterministic
+// result (EPIC-009, TASK-072).
+func (s *Store[T]) List(_ context.Context) ([]*T, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]*T, 0, len(s.items))
+	for _, v := range s.items {
+		out = append(out, v)
+	}
+	sort.Slice(out, func(i, j int) bool { return s.idOf(out[i]) < s.idOf(out[j]) })
+	return out, nil
 }

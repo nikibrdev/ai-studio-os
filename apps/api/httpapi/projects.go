@@ -11,6 +11,7 @@ import (
 // docs/api/projects.md — required order: create -> connect a repository
 // (at least once) -> activate.
 func registerProjectRoutes(mux *http.ServeMux, deps Deps) {
+	mux.HandleFunc("GET /projects", handleListProjects(deps))
 	mux.HandleFunc("POST /projects", handleCreateProject(deps))
 	mux.HandleFunc("POST /projects/{id}/repositories", handleConnectRepository(deps))
 	mux.HandleFunc("POST /projects/{id}/activate", handleActivateProject(deps))
@@ -26,6 +27,24 @@ type projectResponse struct {
 	Name      string    `json:"name"`
 	State     string    `json:"state"`
 	CreatedAt time.Time `json:"createdAt"`
+}
+
+func handleListProjects(deps Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		projects, err := deps.Projects.ListProjects(r.Context())
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+
+		out := make([]projectResponse, len(projects))
+		for i, proj := range projects {
+			out[i] = projectResponse{
+				ID: proj.ID(), Name: proj.Name(), State: string(proj.State()), CreatedAt: proj.CreatedAt(),
+			}
+		}
+		writeJSON(w, http.StatusOK, out)
+	}
 }
 
 func handleCreateProject(deps Deps) http.HandlerFunc {

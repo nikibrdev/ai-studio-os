@@ -69,3 +69,32 @@ func TestActivateProject_FullSequenceSucceeds(t *testing.T) {
 	// that full sequence explicitly as a scenario.
 	createActiveProject(t, server)
 }
+
+func TestListProjects_ReturnsCreatedProjects(t *testing.T) {
+	server := NewServer(testDeps())
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects",
+		jsonBody(t, createProjectRequest{ID: "proj-b", Name: "B"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects",
+		jsonBody(t, createProjectRequest{ID: "proj-a", Name: "A"})), nil)
+
+	var got []projectResponse
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodGet, "/projects", nil), &got)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if len(got) != 2 || got[0].ID != "proj-a" || got[1].ID != "proj-b" {
+		t.Fatalf("response = %+v, want [proj-a, proj-b] ordered by id", got)
+	}
+}
+
+func TestListProjects_EmptyReturnsEmptyArrayNotNull(t *testing.T) {
+	server := NewServer(testDeps())
+
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodGet, "/projects", nil), nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec.Body.String() != "[]\n" {
+		t.Errorf("body = %q, want an empty JSON array, not null", rec.Body.String())
+	}
+}

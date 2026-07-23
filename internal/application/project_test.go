@@ -162,3 +162,34 @@ func TestActivate_AlreadyActivePropagatesDomainError(t *testing.T) {
 		t.Fatalf("Activate() error = %v, want %v", err, project.ErrAlreadyActive)
 	}
 }
+
+func TestListProjects_ReturnsAllOrderedByID(t *testing.T) {
+	ctx := context.Background()
+	svc, _, _ := newProjectService()
+	if _, err := svc.CreateProject(ctx, application.CreateProjectParams{ID: "proj-b", Name: "B"}); err != nil {
+		t.Fatalf("CreateProject B: %v", err)
+	}
+	if _, err := svc.CreateProject(ctx, application.CreateProjectParams{ID: "proj-a", Name: "A"}); err != nil {
+		t.Fatalf("CreateProject A: %v", err)
+	}
+
+	projects, err := svc.ListProjects(ctx)
+	if err != nil {
+		t.Fatalf("ListProjects: %v", err)
+	}
+	if len(projects) != 2 || projects[0].ID() != "proj-a" || projects[1].ID() != "proj-b" {
+		t.Fatalf("ListProjects() = %v, want [proj-a, proj-b] ordered by id", projects)
+	}
+}
+
+func TestListProjects_EmptyIsNotError(t *testing.T) {
+	svc, _, _ := newProjectService()
+
+	projects, err := svc.ListProjects(context.Background())
+	if err != nil {
+		t.Fatalf("ListProjects: %v", err)
+	}
+	if len(projects) != 0 {
+		t.Errorf("ListProjects() = %v, want empty", projects)
+	}
+}

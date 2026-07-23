@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -128,6 +129,26 @@ func (p *TaskProjection) Get(projectID, id string) (TaskView, bool) {
 	defer p.mu.Unlock()
 	v, ok := p.views[viewKey(projectID, id)]
 	return v, ok
+}
+
+// ListByProject returns every view currently known for projectID, ordered
+// by ID for a deterministic result (EPIC-009, TASK-072 — apps/dashboard
+// has no other way to show a project's task list). TaskView already
+// carries ProjectID, so a linear scan filtering on it is enough — no
+// restructuring of the (ProjectID, ID)-keyed map (BUGFIX-003) into a
+// nested one was needed for this.
+func (p *TaskProjection) ListByProject(projectID string) []TaskView {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	var out []TaskView
+	for _, v := range p.views {
+		if v.ProjectID == projectID {
+			out = append(out, v)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
 }
 
 // Rebuild resets the projection and replays the given event journal

@@ -106,3 +106,41 @@ func TestTaskStore_SameIDDifferentProjectsDoNotCollide(t *testing.T) {
 		t.Errorf("gotA = %+v, gotB = %+v, want each project's own task untouched", gotA, gotB)
 	}
 }
+
+func TestStore_List_ReturnsAllOrderedByID(t *testing.T) {
+	ctx := context.Background()
+	store := inmemory.NewProjectStore()
+	pB, _, err := project.New("proj-b", "B")
+	if err != nil {
+		t.Fatalf("project.New B: %v", err)
+	}
+	if err := store.Save(ctx, pB); err != nil {
+		t.Fatalf("Save B: %v", err)
+	}
+	pA, _, err := project.New("proj-a", "A")
+	if err != nil {
+		t.Fatalf("project.New A: %v", err)
+	}
+	if err := store.Save(ctx, pA); err != nil {
+		t.Fatalf("Save A: %v", err)
+	}
+
+	got, err := store.List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got) != 2 || got[0].ID() != "proj-a" || got[1].ID() != "proj-b" {
+		t.Fatalf("List() = %v, want [proj-a, proj-b] ordered by id", got)
+	}
+}
+
+func TestStore_List_EmptyIsNotError(t *testing.T) {
+	store := inmemory.NewProjectStore()
+	got, err := store.List(context.Background())
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("List() = %v, want empty", got)
+	}
+}
