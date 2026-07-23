@@ -85,13 +85,7 @@ flowchart TB
 
 #### Управляемые проекты (`projects/`)
 
-Каталог проектов, разработкой которых управляет платформа. Формат — Decision Required ([ADR-013](../adr/ADR-013-managed-projects.md)).
-
-### Decision Required
-
-- [ADR-013](../adr/ADR-013-managed-projects.md) — формат `projects/`.
-- [ADR-014](../adr/ADR-014-module-interaction.md) — взаимодействие модулей ядра.
-- [ADR-009](../adr/ADR-009-toolchain.md) — физическое размещение адаптеров инфраструктуры.
+Зарезервированный каталог, фактически не используется ([ADR-013](../adr/ADR-013-managed-projects.md), принята 2026-07-23): метаданные проекта — доменный агрегат `Project` в PostgreSQL (`postgres.ProjectStore`), не файлы; рабочие копии кода — эфемерные, клонируются на время Execution (`agents/claude-code/container`, ADR-006) и никогда не сохраняются в репозитории платформы.
 
 ## Статус
 
