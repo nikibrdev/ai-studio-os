@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"ai-studio-os/internal/application"
@@ -125,7 +126,7 @@ func TestTaskProjection_RebuildFromJournalMatchesIncremental(t *testing.T) {
 
 	liveView, liveOK := live.Get("proj-1", "task-1")
 	rebuiltView, rebuiltOK := rebuilt.Get("proj-1", "task-1")
-	if liveOK != rebuiltOK || liveView != rebuiltView {
+	if liveOK != rebuiltOK || !reflect.DeepEqual(liveView, rebuiltView) {
 		t.Errorf("rebuilt = (%+v, %v), want it to match live = (%+v, %v)", rebuiltView, rebuiltOK, liveView, liveOK)
 	}
 }
@@ -192,5 +193,54 @@ func TestTaskProjection_ListByProject_EmptyIsNotError(t *testing.T) {
 	proj := application.NewTaskProjection()
 	if views := proj.ListByProject("proj-1"); len(views) != 0 {
 		t.Errorf("ListByProject() = %v, want empty", views)
+	}
+}
+
+// TestTaskProjection_CapturesDescriptiveFieldsFromCreation proves TASK-076's
+// TaskView additions: title/type/scope/acceptanceCriteria are set once
+// from TaskCreated and survive later transitions untouched.
+func TestTaskProjection_CapturesDescriptiveFieldsFromCreation(t *testing.T) {
+	ctx := context.Background()
+	projects := inmemory.NewProjectStore()
+	tasks := inmemory.NewTaskStore()
+	bus := inmemory.NewEventBus()
+	newActiveProject(t, projects)
+
+	proj := application.NewTaskProjection()
+	if err := proj.Subscribe(bus); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+
+	planning := &application.TaskPlanningService{Projects: projects, Tasks: tasks, Events: bus, Rules: workflow.Machine{}}
+	if _, err := planning.CreateTask(ctx, application.CreateTaskParams{
+		ID: "task-1", ProjectID: "proj-1", Title: "Заголовок", Type: "feature",
+		Scope: "Описание", AcceptanceCriteria: []string{"критерий"},
+	}); err != nil {
+		t.Fatalf("CreateTask: %v", err)
+	}
+
+	view, ok := proj.Get("proj-1", "task-1")
+	if !ok {
+		t.Fatal("Get() ok = false, want true")
+	}
+	if view.Title != "Заголовок" || view.Type != "feature" || view.Scope != "Описание" {
+		t.Errorf("view = %+v, want Title/Type/Scope from CreateTask", view)
+	}
+	if len(view.AcceptanceCriteria) != 1 || view.AcceptanceCriteria[0] != "критерий" {
+		t.Errorf("AcceptanceCriteria = %v, want [критерий]", view.AcceptanceCriteria)
+	}
+
+	if err := planning.PlanTask(ctx, "proj-1", "task-1", ""); err != nil {
+		t.Fatalf("PlanTask: %v", err)
+	}
+	view, ok = proj.Get("proj-1", "task-1")
+	if !ok {
+		t.Fatal("Get() after PlanTask ok = false, want true")
+	}
+	if view.Title != "Заголовок" {
+		t.Errorf("Title after PlanTask = %q, want unchanged \"Заголовок\"", view.Title)
+	}
+	if view.State != shared.StateReady {
+		t.Errorf("State() = %v, want %v", view.State, shared.StateReady)
 	}
 }

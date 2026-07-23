@@ -68,8 +68,19 @@
 **Ответ:** `200 OK`
 
 ```json
-{ "id": "string", "projectId": "string", "state": "string", "updatedAt": "RFC3339" }
+{
+  "id": "string",
+  "projectId": "string",
+  "state": "string",
+  "updatedAt": "RFC3339",
+  "title": "string",
+  "type": "string",
+  "scope": "string",
+  "acceptanceCriteria": ["string"]
+}
 ```
+
+`title`/`type`/`scope`/`acceptanceCriteria` — записаны один раз при создании (`TaskCreated`) и не меняются последующими переходами (TASK-076, EPIC-009): `TaskProjection` — единственный путь чтения Task (ADR-014), поэтому это единственная форма, в которой клиент вообще может увидеть эти поля — отдельного «полного» ответа с прямым чтением `TaskStore` нет и не будет.
 
 **Ошибки:** `404` — проекция не видела ни одного события по этому (projectId, id) (`TaskProjection.Get` вернул `ok=false`).
 
@@ -85,7 +96,16 @@
 
 ```json
 [
-  { "id": "string", "projectId": "string", "state": "string", "updatedAt": "RFC3339" }
+  {
+    "id": "string",
+    "projectId": "string",
+    "state": "string",
+    "updatedAt": "RFC3339",
+    "title": "string",
+    "type": "string",
+    "scope": "string",
+    "acceptanceCriteria": ["string"]
+  }
 ]
 ```
 

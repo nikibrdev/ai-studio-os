@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -82,6 +83,49 @@ func TestCreateTask_Success(t *testing.T) {
 	}
 	if e.Actor() != "developer:executor-1" {
 		t.Errorf("Actor() = %q", e.Actor())
+	}
+}
+
+// TestCreateTask_PublishesDescriptiveDataForProjection proves TASK-076's
+// wiring: TaskProjection is the only read path for Task (ADR-014), so the
+// task detail page needs title/type/scope/acceptanceCriteria carried on
+// the TaskCreated event itself, not read from TaskStore.
+func TestCreateTask_PublishesDescriptiveDataForProjection(t *testing.T) {
+	ctx := context.Background()
+	svc, projects, bus := newService()
+	newActiveProject(t, projects)
+
+	_, err := svc.CreateTask(ctx, application.CreateTaskParams{
+		ID:                 "task-1",
+		ProjectID:          "proj-1",
+		Title:              "Реализовать use-case",
+		Type:               "feature",
+		Scope:              "Постановка задачи",
+		AcceptanceCriteria: []string{"критерий раз", "критерий два"},
+	})
+	if err != nil {
+		t.Fatalf("CreateTask: %v", err)
+	}
+
+	published := bus.Published()
+	if len(published) != 1 {
+		t.Fatalf("published = %d events, want 1", len(published))
+	}
+	env, ok := published[0].(application.Envelope)
+	if !ok {
+		t.Fatalf("published event is %T, want application.Envelope", published[0])
+	}
+	data := env.Data()
+	if data["title"] != "Реализовать use-case" || data["type"] != "feature" || data["scope"] != "Постановка задачи" {
+		t.Fatalf("event data = %+v, want title/type/scope to match CreateTaskParams", data)
+	}
+
+	var criteria []string
+	if err := json.Unmarshal([]byte(data["acceptanceCriteria"]), &criteria); err != nil {
+		t.Fatalf("unmarshal acceptanceCriteria: %v", err)
+	}
+	if len(criteria) != 2 || criteria[0] != "критерий раз" || criteria[1] != "критерий два" {
+		t.Errorf("acceptanceCriteria = %v, want the two supplied criteria", criteria)
 	}
 }
 
