@@ -57,7 +57,7 @@ Frontend-толчейн, оставленный открытым в [ADR-009](..
 | TASK-074 | Каркас `apps/dashboard`: Next.js 15 + TypeScript, ESLint/Prettier/Vitest, типизированный API-клиент, layout | done |
 | TASK-075 | Страница списка проектов | done |
 | TASK-076 | Страница проекта (список задач) и страница задачи (детали) | done |
-| TASK-077 | CI: job для `apps/dashboard` (pnpm install/lint/test/build) | ready |
+| TASK-077 | CI: job для `apps/dashboard` (pnpm install/lint/test/build) | done |
 | TASK-078 | Синхронизация документации, закрытие эпика | ready |
 
 ## Риски и зависимости
