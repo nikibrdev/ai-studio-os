@@ -43,6 +43,12 @@ func (s *ProjectService) CreateProject(ctx context.Context, p CreateProjectParam
 	return proj, nil
 }
 
+// ListProjects returns every Project, ordered by id (EPIC-009, TASK-072 —
+// apps/dashboard has no other way to show a list of projects).
+func (s *ProjectService) ListProjects(ctx context.Context) ([]*project.Project, error) {
+	return s.Projects.List(ctx)
+}
+
 // ConnectRepository attaches a repository reference to the Project —
 // required before Activate can succeed (spec Structural Invariant 1: at
 // least one repository connected). Publishes RepositoryConnected, unless

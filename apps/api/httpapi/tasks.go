@@ -17,6 +17,7 @@ import (
 // ADR-011 anticipated exactly this ("любой межпроектный контекст обязан
 // использовать полностью квалифицированную пару (Project, ID)").
 func registerTaskCreationRoutes(mux *http.ServeMux, deps Deps) {
+	mux.HandleFunc("GET /projects/{projectId}/tasks", handleListTasks(deps))
 	mux.HandleFunc("POST /projects/{projectId}/tasks", handleCreateTask(deps))
 	mux.HandleFunc("POST /projects/{projectId}/tasks/{id}/plan", handlePlanTask(deps))
 	mux.HandleFunc("GET /projects/{projectId}/tasks/{id}", handleGetTask(deps))
@@ -96,6 +97,18 @@ type taskViewResponse struct {
 	ProjectID string    `json:"projectId"`
 	State     string    `json:"state"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func handleListTasks(deps Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		views := deps.Views.ListByProject(r.PathValue("projectId"))
+
+		out := make([]taskViewResponse, len(views))
+		for i, v := range views {
+			out[i] = taskViewResponse{ID: v.ID, ProjectID: v.ProjectID, State: string(v.State), UpdatedAt: v.UpdatedAt}
+		}
+		writeJSON(w, http.StatusOK, out)
+	}
 }
 
 func handleGetTask(deps Deps) http.HandlerFunc {

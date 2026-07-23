@@ -145,3 +145,59 @@ func TestCreateTask_SameIDDifferentProjectsDoNotCollide(t *testing.T) {
 		t.Errorf("viewA.ProjectID = %q, viewB.ProjectID = %q, want proj-a and proj-b respectively", viewA.ProjectID, viewB.ProjectID)
 	}
 }
+
+func TestListTasks_IsolatesProjects(t *testing.T) {
+	server := NewServer(testDeps())
+
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects",
+		jsonBody(t, createProjectRequest{ID: "proj-a", Name: "A"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-a/repositories",
+		jsonBody(t, connectRepositoryRequest{Repository: "github.com/org/repo"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-a/activate", nil), nil)
+
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects",
+		jsonBody(t, createProjectRequest{ID: "proj-b", Name: "B"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-b/repositories",
+		jsonBody(t, connectRepositoryRequest{Repository: "github.com/org/repo"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-b/activate", nil), nil)
+
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-a/tasks",
+		jsonBody(t, createTaskRequest{Title: "Задача A1", Type: "feature"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-a/tasks",
+		jsonBody(t, createTaskRequest{Title: "Задача A2", Type: "feature"})), nil)
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/proj-b/tasks",
+		jsonBody(t, createTaskRequest{Title: "Задача B1", Type: "feature"})), nil)
+
+	var viewsA []taskViewResponse
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodGet, "/projects/proj-a/tasks", nil), &viewsA)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if len(viewsA) != 2 {
+		t.Fatalf("proj-a tasks = %+v, want exactly 2 (not proj-b's)", viewsA)
+	}
+	for _, v := range viewsA {
+		if v.ProjectID != "proj-a" {
+			t.Errorf("proj-a list contains a task from project %q", v.ProjectID)
+		}
+	}
+
+	var viewsB []taskViewResponse
+	doRequest(t, server, httptest.NewRequest(http.MethodGet, "/projects/proj-b/tasks", nil), &viewsB)
+	if len(viewsB) != 1 || viewsB[0].ProjectID != "proj-b" {
+		t.Fatalf("proj-b tasks = %+v, want exactly 1 task belonging to proj-b", viewsB)
+	}
+}
+
+func TestListTasks_EmptyReturnsEmptyArrayNotNull(t *testing.T) {
+	server := NewServer(testDeps())
+	projectID := createActiveProject(t, server)
+
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodGet, "/projects/"+projectID+"/tasks", nil), nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if rec.Body.String() != "[]\n" {
+		t.Errorf("body = %q, want an empty JSON array, not null", rec.Body.String())
+	}
+}

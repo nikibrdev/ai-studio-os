@@ -5,8 +5,10 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -111,6 +113,57 @@ func TestProjectStore_Save_UpsertsExistingRow(t *testing.T) {
 	}
 	if got.State() != project.StateActive {
 		t.Errorf("Get().State() = %q, want %q (upsert did not apply)", got.State(), project.StateActive)
+	}
+}
+
+// TestProjectStore_List_ReturnsCreatedProjectsInOrder does not assert an
+// exact total count (other tests in this package/run share the same
+// database and leave their own rows behind) — it asserts that two
+// specific, uniquely-suffixed projects both appear, in id order relative
+// to each other, which is what List actually promises.
+func TestProjectStore_List_ReturnsCreatedProjectsInOrder(t *testing.T) {
+	pool := testPool(t)
+	store := NewProjectStore(pool)
+	ctx := context.Background()
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	idA := "proj-list-a-" + suffix
+	idB := "proj-list-b-" + suffix
+
+	pB, _, err := project.New(idB, "B")
+	if err != nil {
+		t.Fatalf("project.New B: %v", err)
+	}
+	if err := store.Save(ctx, pB); err != nil {
+		t.Fatalf("Save B: %v", err)
+	}
+	pA, _, err := project.New(idA, "A")
+	if err != nil {
+		t.Fatalf("project.New A: %v", err)
+	}
+	if err := store.Save(ctx, pA); err != nil {
+		t.Fatalf("Save A: %v", err)
+	}
+
+	all, err := store.List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+
+	indexA, indexB := -1, -1
+	for i, p := range all {
+		switch p.ID() {
+		case idA:
+			indexA = i
+		case idB:
+			indexB = i
+		}
+	}
+	if indexA == -1 || indexB == -1 {
+		t.Fatalf("List() did not contain both created projects: %v", all)
+	}
+	if indexA >= indexB {
+		t.Errorf("List() order: index(%s)=%d, index(%s)=%d, want A before B (ORDER BY id)", idA, indexA, idB, indexB)
 	}
 }
 
