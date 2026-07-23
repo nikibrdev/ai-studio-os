@@ -54,7 +54,7 @@ Frontend-толчейн, оставленный открытым в [ADR-009](..
 | --- | --- | --- |
 | TASK-072 | Списковые операции: `ProjectStore.List`/`ProjectService.ListProjects`/`TaskProjection.ListByProject`, `GET /projects`, `GET /projects/{id}/tasks` | done |
 | TASK-073 | `docs/api/*.md` — спецификации двух новых операций (Documentation First) | done |
-| TASK-074 | Каркас `apps/dashboard`: Next.js 15 + TypeScript, ESLint/Prettier/Vitest, типизированный API-клиент, layout | ready |
+| TASK-074 | Каркас `apps/dashboard`: Next.js 15 + TypeScript, ESLint/Prettier/Vitest, типизированный API-клиент, layout | done |
 | TASK-075 | Страница списка проектов | ready |
 | TASK-076 | Страница проекта (список задач) и страница задачи (детали) | ready |
 | TASK-077 | CI: job для `apps/dashboard` (pnpm install/lint/test/build) | ready |

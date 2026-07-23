@@ -40,7 +40,7 @@ test:
 	go test ./...
 
 md-lint:
-	@if command -v npx >/dev/null 2>&1; then npx --yes markdownlint-cli2 "**/*.md" "#node_modules" "#engineering/metrics/**"; else echo "md-lint: SKIPPED (npx не найден); в CI проверка обязательна"; fi
+	@if command -v npx >/dev/null 2>&1; then npx --yes markdownlint-cli2 "**/*.md" "#**/node_modules/**" "#**/.next/**" "#engineering/metrics/**"; else echo "md-lint: SKIPPED (npx не найден); в CI проверка обязательна"; fi
 
 docs-check:
 	@bash scripts/verify-docs.sh
