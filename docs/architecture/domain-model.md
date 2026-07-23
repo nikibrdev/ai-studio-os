@@ -161,7 +161,7 @@ classDiagram
 - **Ответственность:** представляет подключённый репозиторий и его настройки в платформе.
 - **Жизненный цикл:** Connected → Active → Disconnected.
 - **Связи:** принадлежит Project; содержит Branch; в нём открываются PullRequest.
-- **Ограничения:** доступ к репозиторию — только через контракт Repository Provider ([interfaces.md](interfaces.md)); способ подключения — Decision Required ([ADR-013](../adr/ADR-013-managed-projects.md)).
+- **Ограничения:** доступ к репозиторию — только через контракт Repository Provider ([interfaces.md](interfaces.md)); способ подключения принят ([ADR-013](../adr/ADR-013-managed-projects.md)) — на практике репозитории живут как `[]string` на агрегате `Project`, не как отдельная сущность с собственным жизненным циклом (упрощение, сложившееся при реализации EPIC-003/008, не отражённое здесь до 2026-07-23).
 - **Владелец данных:** модуль `git`.
 
 #### Branch (Ветка)
@@ -240,14 +240,14 @@ classDiagram
 | `git` | Repository, Branch, PullRequest, Review |
 | `identity` | User, Session |
 
-### Decision Required
+### Решённые вопросы (было Decision Required)
 
-Следующие аспекты модели не могут быть зафиксированы без решения архитектора (подробности — в соответствующих ADR):
+На момент написания этого документа (2026-07-19) перечисленные ниже аспекты модели требовали решения архитектора; к 2026-07-23 все решены — раздел сохранён как история вопроса, подробности в соответствующих ADR:
 
-- Источник истины и хранение Task/Epic ([ADR-004](../adr/ADR-004-task-storage.md)) — от этого зависит модель данных модуля `task`.
-- Формат идентификаторов Task/Epic ([ADR-011](../adr/ADR-011-task-identifiers.md)).
-- Объём identity (User, Session) в MVP и модель аутентификации ([ADR-012](../adr/ADR-012-identity-and-auth.md)) — возможно, сущности вводятся позже v0.2.
-- Способ подключения Repository и содержимое `projects/` ([ADR-013](../adr/ADR-013-managed-projects.md)).
+- Источник истины и хранение Task/Epic — [ADR-004](../adr/ADR-004-task-storage.md) (принят: PostgreSQL, `tasks/` — экспорт).
+- Формат идентификаторов Task/Epic — [ADR-011](../adr/ADR-011-task-identifiers.md) (принят: `TASK-NNN`/`EPIC-NNN`, последовательные в рамках Project).
+- Объём identity (User, Session) в MVP и модель аутентификации — [ADR-012](../adr/ADR-012-identity-and-auth.md) (принят: отложены до появления внешнего потребителя — сущности User/Session не введены).
+- Способ подключения Repository и содержимое `projects/` — [ADR-013](../adr/ADR-013-managed-projects.md) (принят: метаданные в PostgreSQL на агрегате `Project`, `projects/` не используется).
 
 ## Статус
 
@@ -255,4 +255,4 @@ classDiagram
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-23
