@@ -33,9 +33,13 @@ jobs:
 
       # apps/dashboard's own pinned version (ADR-009) — set up before
       # actions/setup-node's cache: 'pnpm' so it can find pnpm on PATH to
-      # compute the cache key.
+      # compute the cache key. package_json_file points at apps/dashboard
+      # (not the repo root, which has no package.json of its own) so the
+      # action can read the pinned version from its "packageManager" field.
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/dashboard/package.json
 
       - name: Set up Node
         uses: actions/setup-node@v7
