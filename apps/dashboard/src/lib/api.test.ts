@@ -23,10 +23,7 @@ describe("listProjects", () => {
       }),
     );
 
-    // TEMPORARY: intentionally wrong expectation to prove CI's dashboard
-    // test step actually fails red, not silently passes (TASK-077
-    // acceptance criterion). Reverted before merge — see the task's Отчёт.
-    await expect(listProjects()).resolves.toEqual([]);
+    await expect(listProjects()).resolves.toEqual(projects);
   });
 
   it("throws ApiError with the response status on failure", async () => {
