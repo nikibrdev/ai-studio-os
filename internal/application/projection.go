@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
 	"sync"
 	"time"
@@ -20,6 +21,18 @@ type TaskView struct {
 	ProjectID string
 	State     shared.TaskState
 	UpdatedAt time.Time
+
+	// Title, Type, Scope and AcceptanceCriteria are captured once, from
+	// TaskCreated's Envelope.WithData (EPIC-009, TASK-076) — the task
+	// detail page needs them, and TaskProjection is the only read path
+	// for Task (ADR-014). They never change afterwards: no later event
+	// in taskProjectionEvents revises them (Task's own SetScope/
+	// SetAcceptanceCriteria only run before the first save, inside
+	// CreateTask, so nothing publishes a revision event for them).
+	Title              string
+	Type               string
+	Scope              string
+	AcceptanceCriteria []string
 }
 
 // taskProjectionEvents are the event types TaskProjection subscribes to —
@@ -86,9 +99,33 @@ func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 	if to, ok := targetState(e); ok {
 		v.State = to
 	}
+	if e.Type() == event.TaskCreated {
+		applyCreatedData(&v, e)
+	}
 	v.UpdatedAt = e.OccurredAt()
 	p.views[key] = v
 	return nil
+}
+
+// applyCreatedData populates v's immutable descriptive fields from
+// TaskCreated's attached data — a no-op (fields stay zero) if e is not an
+// Envelope or carries no data, which keeps Handle safe against any
+// platform.Event implementation, not just this package's own.
+func applyCreatedData(v *TaskView, e platform.Event) {
+	env, ok := e.(Envelope)
+	if !ok {
+		return
+	}
+	data := env.Data()
+	v.Title = data["title"]
+	v.Type = data["type"]
+	v.Scope = data["scope"]
+	if raw := data["acceptanceCriteria"]; raw != "" {
+		var criteria []string
+		if err := json.Unmarshal([]byte(raw), &criteria); err == nil {
+			v.AcceptanceCriteria = criteria
+		}
+	}
 }
 
 // targetState derives the Task state an event moves the projection to.

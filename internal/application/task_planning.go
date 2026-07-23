@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"ai-studio-os/internal/domain/event"
@@ -50,7 +52,11 @@ type CreateTaskParams struct {
 
 // CreateTask registers a Task inside the given Project (spec Project
 // Behavioral Invariant 4: only an Active project accepts new content) and
-// records its scope and acceptance criteria. Publishes TaskCreated.
+// records its scope and acceptance criteria. Publishes TaskCreated with
+// title/type/scope/acceptanceCriteria attached via Envelope.WithData
+// (EPIC-009, TASK-076) — TaskProjection is the only read path for Task
+// (ADR-014), so the task detail page needs these fields from the event,
+// not a direct TaskStore read.
 func (s *TaskPlanningService) CreateTask(ctx context.Context, p CreateTaskParams) (*task.Task, error) {
 	proj, err := s.Projects.Get(ctx, p.ProjectID)
 	if err != nil {
@@ -86,7 +92,19 @@ func (s *TaskPlanningService) CreateTask(ctx context.Context, p CreateTaskParams
 	if err := s.Tasks.Save(ctx, t); err != nil {
 		return nil, err
 	}
-	if err := s.publish(ctx, event.TaskCreated, p.Actor, p.ProjectID, t.ID(), created.At); err != nil {
+
+	acceptanceCriteriaJSON, err := json.Marshal(t.AcceptanceCriteria())
+	if err != nil {
+		return nil, fmt.Errorf("application: encode acceptance criteria: %w", err)
+	}
+	e := NewEvent(event.TaskCreated, "task", p.Actor, p.ProjectID, t.ID(), created.At).
+		WithData(map[string]string{
+			"title":              t.Title(),
+			"type":               t.Type(),
+			"scope":              t.Scope(),
+			"acceptanceCriteria": string(acceptanceCriteriaJSON),
+		})
+	if err := s.Events.Publish(ctx, e); err != nil {
 		return nil, err
 	}
 	return t, nil

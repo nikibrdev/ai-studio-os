@@ -92,11 +92,27 @@ func handlePlanTask(deps Deps) http.HandlerFunc {
 	}
 }
 
+// taskViewResponse mirrors application.TaskView, including the
+// descriptive fields captured from TaskCreated (EPIC-009, TASK-076):
+// TaskProjection is the only read path for Task (ADR-014), so this is the
+// entire shape a client can ever see — there is no separate "full task"
+// response.
 type taskViewResponse struct {
-	ID        string    `json:"id"`
-	ProjectID string    `json:"projectId"`
-	State     string    `json:"state"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID                 string    `json:"id"`
+	ProjectID          string    `json:"projectId"`
+	State              string    `json:"state"`
+	UpdatedAt          time.Time `json:"updatedAt"`
+	Title              string    `json:"title"`
+	Type               string    `json:"type"`
+	Scope              string    `json:"scope"`
+	AcceptanceCriteria []string  `json:"acceptanceCriteria"`
+}
+
+func taskViewResponseFrom(v application.TaskView) taskViewResponse {
+	return taskViewResponse{
+		ID: v.ID, ProjectID: v.ProjectID, State: string(v.State), UpdatedAt: v.UpdatedAt,
+		Title: v.Title, Type: v.Type, Scope: v.Scope, AcceptanceCriteria: v.AcceptanceCriteria,
+	}
 }
 
 func handleListTasks(deps Deps) http.HandlerFunc {
@@ -105,7 +121,7 @@ func handleListTasks(deps Deps) http.HandlerFunc {
 
 		out := make([]taskViewResponse, len(views))
 		for i, v := range views {
-			out[i] = taskViewResponse{ID: v.ID, ProjectID: v.ProjectID, State: string(v.State), UpdatedAt: v.UpdatedAt}
+			out[i] = taskViewResponseFrom(v)
 		}
 		writeJSON(w, http.StatusOK, out)
 	}
@@ -118,8 +134,6 @@ func handleGetTask(deps Deps) http.HandlerFunc {
 			writeError(w, application.ErrNotFound)
 			return
 		}
-		writeJSON(w, http.StatusOK, taskViewResponse{
-			ID: view.ID, ProjectID: view.ProjectID, State: string(view.State), UpdatedAt: view.UpdatedAt,
-		})
+		writeJSON(w, http.StatusOK, taskViewResponseFrom(view))
 	}
 }

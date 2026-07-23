@@ -79,6 +79,32 @@ func TestGetTask_ReflectsCreatedState(t *testing.T) {
 	}
 }
 
+// TestGetTask_ReturnsDescriptiveFields proves TASK-076's addition:
+// TaskProjection is the only read path for Task (ADR-014), so title/type/
+// scope/acceptanceCriteria must reach the client through this endpoint,
+// not a separate one backed directly by TaskStore.
+func TestGetTask_ReturnsDescriptiveFields(t *testing.T) {
+	server := NewServer(testDeps())
+	projectID := createActiveProject(t, server)
+
+	var created taskResponse
+	doRequest(t, server, httptest.NewRequest(http.MethodPost, "/projects/"+projectID+"/tasks",
+		jsonBody(t, createTaskRequest{
+			Title: "Заголовок", Type: "feature", Scope: "Описание",
+			AcceptanceCriteria: []string{"критерий раз", "критерий два"},
+		})), &created)
+
+	var view taskViewResponse
+	doRequest(t, server, httptest.NewRequest(http.MethodGet, "/projects/"+projectID+"/tasks/"+created.ID, nil), &view)
+
+	if view.Title != "Заголовок" || view.Type != "feature" || view.Scope != "Описание" {
+		t.Errorf("view = %+v, want Title/Type/Scope from creation", view)
+	}
+	if len(view.AcceptanceCriteria) != 2 || view.AcceptanceCriteria[0] != "критерий раз" || view.AcceptanceCriteria[1] != "критерий два" {
+		t.Errorf("AcceptanceCriteria = %v, want the two supplied criteria", view.AcceptanceCriteria)
+	}
+}
+
 func TestPlanTask_TransitionsToReady(t *testing.T) {
 	server := NewServer(testDeps())
 	projectID := createActiveProject(t, server)

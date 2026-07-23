@@ -18,6 +18,10 @@ export interface TaskView {
   projectId: string;
   state: string;
   updatedAt: string;
+  title: string;
+  type: string;
+  scope: string;
+  acceptanceCriteria: string[];
 }
 
 export class ApiError extends Error {

@@ -14,11 +14,11 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 | `event.go` | `Envelope` — оборачивает данные доменных событий в контракт `platform.Event` (ADR-002) перед публикацией |
 | `inmemory/` | Детерминированные фейки портов, `EventBus` и `RepositoryProvider` для тестов этого эпика — не инфраструктурный адаптер |
 | `project.go` | `ProjectService` (TASK-064, EPIC-008) — жизненный цикл Project: `CreateProject`, `ConnectRepository`, `Activate` (guard «≥1 Repository» — целиком в домене); `ListProjects` (TASK-072, EPIC-009) — тонкая обёртка над `ProjectStore.List` |
-| `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`); опциональный порт `IDs TaskIDGenerator` (TASK-065, EPIC-008) — генерирует `TASK-NNN` (ADR-011), если `CreateTaskParams.ID` не задан вызывающим |
+| `task_planning.go` | `TaskPlanningService` (TASK-041) — «Постановка задачи»: `CreateTask` (в границе Active-проекта, с scope/AC), `PlanTask` (Backlog → Ready через `workflow.Rules`); опциональный порт `IDs TaskIDGenerator` (TASK-065, EPIC-008) — генерирует `TASK-NNN` (ADR-011), если `CreateTaskParams.ID` не задан вызывающим; `CreateTask` прикрепляет title/type/scope/acceptanceCriteria к `TaskCreated` через `Envelope.WithData` (TASK-076, EPIC-009) — единственный способ донести их до `TaskProjection` |
 | `work.go` | `WorkService` (TASK-042) — «Запуск работы»: `StartTask` (Ready → In Progress, guard доступности Executor, порождение и немедленный Accept Execution); `StartTaskParams.ProjectID` — BUGFIX-003 |
 | `result.go` | `ResultService` (TASK-043) — «Производство результата»: `RecordDraftArtifact`/`UpdateArtifactDraft`/`PublishArtifact`, `SucceedExecution`/`FailExecution` (оба принимают `projectID` — BUGFIX-003) |
 | `completion.go` | `CompletionService` (TASK-044) — «Завершение задачи»: `RequestReview`, `CompleteReview`, `CompleteTesting` (все принимают/несут `projectID` — BUGFIX-003) — реализует ADR-008 (merge — код-гейт перед Done, порядок TestsPassed → MergeCompleted → TaskCompleted) |
-| `projection.go` | `TaskProjection` (TASK-045) — read-модель статуса задачи, построенная только из событий (ADR-014); ключ — пара (ProjectID, ID), не голый ID (BUGFIX-003); `Rebuild` доказывает пересобираемость с нуля из журнала; `ListByProject` (TASK-072, EPIC-009) — линейный проход `views` с фильтром по `ProjectID`, без перестройки ключа карты |
+| `projection.go` | `TaskProjection` (TASK-045) — read-модель статуса задачи, построенная только из событий (ADR-014); ключ — пара (ProjectID, ID), не голый ID (BUGFIX-003); `Rebuild` доказывает пересобираемость с нуля из журнала; `ListByProject` (TASK-072, EPIC-009) — линейный проход `views` с фильтром по `ProjectID`, без перестройки ключа карты; `TaskView.Title/Type/Scope/AcceptanceCriteria` (TASK-076, EPIC-009) — заполняются один раз из данных `TaskCreated`, не меняются последующими событиями (единственный путь чтения этих полей, ADR-014 — `apps/api` не читает `TaskStore` напрямую) |
 | `id.go` | `NewID()` — общий генератор идентификаторов (`crypto/rand`, без внешней UUID-зависимости) для сущностей, порождаемых как побочный эффект use-case (Execution, здесь же переиспользуется), а не именованных явной командой |
 | `e2e_test.go` | Сквозной тест golden path целиком (`docs/architecture/golden-path.md`) через все четыре сервиса, включая ветки «changes requested» и «tests failed» — состояние проверяется только через `TaskProjection` |
 
@@ -26,7 +26,7 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 
 ### Envelope.WithData — данные, специфичные для события
 
-`platform.Event` (ADR-002) несёт только общие поля. Когда одному имени события соответствуют разные исходы (`ReviewCompleted` → Testing или обратно в In Progress), `CompletionService` прикрепляет исход через `Envelope.WithData(map[string]string{"to": ...})` — метод сверх контракта `platform.Event`, не изменение самого контракта; читается обратно только через type assertion на конкретный тип `Envelope` (см. `projection.go`, `targetState`).
+`platform.Event` (ADR-002) несёт только общие поля. Когда одному имени события соответствуют разные исходы (`ReviewCompleted` → Testing или обратно в In Progress), `CompletionService` прикрепляет исход через `Envelope.WithData(map[string]string{"to": ...})` — метод сверх контракта `platform.Event`, не изменение самого контракта; читается обратно только через type assertion на конкретный тип `Envelope` (см. `projection.go`, `targetState`). Тот же механизм переиспользован для описательных полей задачи: `TaskPlanningService.CreateTask` прикрепляет `title`/`type`/`scope`/`acceptanceCriteria` (последнее — JSON-строкой, `WithData` несёт только `map[string]string`) к `TaskCreated`, `TaskProjection.Handle` читает их обратно только для этого типа события (TASK-076, EPIC-009).
 
 ### ADR-008 в коде
 
@@ -59,4 +59,4 @@ Use-case'ы оборачивают доменные события (`Created`, `
 
 ## Последнее обновление
 
-2026-07-22
+2026-07-23
