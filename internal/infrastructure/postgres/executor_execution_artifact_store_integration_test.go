@@ -5,7 +5,9 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/domain/artifact"
@@ -51,6 +53,61 @@ func TestExecutorStore_Get_NotFound(t *testing.T) {
 	_, err := store.Get(context.Background(), "does-not-exist")
 	if !errors.Is(err, application.ErrNotFound) {
 		t.Fatalf("Get() error = %v, want application.ErrNotFound", err)
+	}
+}
+
+// TestExecutorStore_List_ReturnsCreatedExecutorsInOrder mirrors
+// TestProjectStore_List_ReturnsCreatedProjectsInOrder: the test database
+// is shared and accumulates rows from other tests, so this asserts on the
+// relative order of two specific, uniquely-suffixed executors rather than
+// on the whole result — that relative order is what ORDER BY id actually
+// promises.
+func TestExecutorStore_List_ReturnsCreatedExecutorsInOrder(t *testing.T) {
+	pool := testPool(t)
+	store := NewExecutorStore(pool)
+	ctx := context.Background()
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	idA := "exec-list-a-" + suffix
+	idB := "exec-list-b-" + suffix
+
+	eB, _, err := executor.New(idB, "claude-code", []shared.Role{shared.RoleDeveloper})
+	if err != nil {
+		t.Fatalf("executor.New B: %v", err)
+	}
+	if err := store.Save(ctx, eB); err != nil {
+		t.Fatalf("Save B: %v", err)
+	}
+	eA, _, err := executor.New(idA, "claude-code", []shared.Role{shared.RoleDeveloper})
+	if err != nil {
+		t.Fatalf("executor.New A: %v", err)
+	}
+	if err := store.Save(ctx, eA); err != nil {
+		t.Fatalf("Save A: %v", err)
+	}
+
+	all, err := store.List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+
+	indexA, indexB := -1, -1
+	for i, e := range all {
+		switch e.ID() {
+		case idA:
+			indexA = i
+			if !e.HasRole(shared.RoleDeveloper) {
+				t.Errorf("List() entry %s lost its roles: %v", idA, e.Roles())
+			}
+		case idB:
+			indexB = i
+		}
+	}
+	if indexA == -1 || indexB == -1 {
+		t.Fatalf("List() did not contain both created executors: %v", all)
+	}
+	if indexA >= indexB {
+		t.Errorf("List() order: index(%s)=%d, index(%s)=%d, want A before B (ORDER BY id)", idA, indexA, idB, indexB)
 	}
 }
 

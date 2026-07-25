@@ -63,6 +63,34 @@ ON CONFLICT (id) DO UPDATE SET
 	return nil
 }
 
+// List returns every Executor, ordered by id.
+func (s *ExecutorStore) List(ctx context.Context) ([]*executor.Executor, error) {
+	const q = `SELECT id, backend, roles, registered_at, state FROM executors ORDER BY id`
+
+	rows, err := s.pool.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("postgres: list executors: %w", err)
+	}
+	defer rows.Close()
+
+	var executors []*executor.Executor
+	for rows.Next() {
+		var (
+			id, backend, state string
+			roles              []string
+			registeredAt       time.Time
+		)
+		if err := rows.Scan(&id, &backend, &roles, &registeredAt, &state); err != nil {
+			return nil, fmt.Errorf("postgres: scan executor: %w", err)
+		}
+		executors = append(executors, executor.Restore(id, backend, toRoles(roles), registeredAt, executor.State(state)))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("postgres: list executors: %w", err)
+	}
+	return executors, nil
+}
+
 func toRoles(raw []string) []shared.Role {
 	out := make([]shared.Role, len(raw))
 	for i, r := range raw {
