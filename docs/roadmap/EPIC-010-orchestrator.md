@@ -50,10 +50,10 @@
 
 - [x] `ExecutorService` (Register/Activate) и `ExecutorStore.List` реализованы и покрыты тестами — TASK-079.
 - [x] Порт `EventJournal.Since` и его реализация (`eventbus.Journal`) покрыты тестами; интеграционный тест подтверждает курсорную выборку на реальном PostgreSQL, включая регрессию на потерю событий при курсоре по времени — TASK-080.
-- [ ] `apps/orchestrator` при старте идемпотентно регистрирует и активирует один Developer-исполнитель.
+- [x] `apps/orchestrator` при старте идемпотентно регистрирует и активирует один Developer-исполнитель — TASK-081, подтверждено вживую в БД (повторный запуск не добавил ни записи, ни событий).
 - [ ] `apps/orchestrator` на событие `TaskPlanned` автоматически проводит задачу Ready → In Progress → Review через реальный `agents/claude-code` (создание ветки, запуск контейнера, сбор коммитов как Artifact, открытие Pull Request), без вызова `apps/api` человеком.
 - [ ] Сценарий подтверждён вживую на реальной инфраструктуре (PostgreSQL + Docker); ограничение по отсутствию реального `ANTHROPIC_API_KEY` явно задокументировано, если применимо на момент проверки.
-- [ ] `docs/architecture/orchestrator.md`, `module-boundaries.md`, `components.md` синхронизированы с реализацией.
+- [x] `docs/architecture/orchestrator.md` (новый), `module-boundaries.md`, `components.md`, `golden-path.md` синхронизированы с реализацией — TASK-082 (границы) и TASK-084 (остальное).
 - [ ] PROJECT_MANIFEST/PROJECT_HEALTH/ROADMAP/CHANGELOG синхронизированы при закрытии.
 
 ## Декомпозиция
@@ -62,10 +62,10 @@
 | --- | --- | --- |
 | TASK-079 | `ExecutorService` (Register/Activate), `ExecutorStore.List`, порт `EventJournal.Since` в `internal/application` | done |
 | TASK-080 | Курсор журнала по `seq` (миграция 0007), `eventbus.Journal`, подключение в `wiring.System` | done |
-| TASK-081 | Каркас `apps/orchestrator`: `main.go`, бутстрап Developer-исполнителя, цикл опроса журнала с курсором | ready |
-| TASK-082 | Диспетчеризация Developer: `TaskPlanned` → выбор исполнителя → `StartTask` → ветка → `Executor.Accept` | ready |
-| TASK-083 | Слежение за исполнением: опрос `Status`, сбор `Artifacts`, Pull Request, `SucceedExecution`/`FailExecution`, `RequestReview`, `Finish` | ready |
-| TASK-084 | `apps/orchestrator/README.md`, `docs/architecture/orchestrator.md`, синхронизация `module-boundaries.md`/`components.md` | ready |
+| TASK-081 | Каркас `apps/orchestrator`: `main.go`, бутстрап Developer-исполнителя, цикл опроса журнала с курсором | done |
+| TASK-082 | Диспетчеризация Developer: `TaskPlanned` → выбор исполнителя → ветка → `StartTask` → `Executor.Accept` (порядок исправлен по итогам живой проверки) | done |
+| TASK-083 | Слежение за исполнением: опрос `Status`, сбор `Artifacts`, Pull Request, `SucceedExecution`/`FailExecution`, `RequestReview`, `Finish` | done |
+| TASK-084 | `apps/orchestrator/README.md`, `docs/architecture/orchestrator.md`, синхронизация `module-boundaries.md`/`components.md`/`golden-path.md` | done |
 | TASK-085 | Живая проверка на реальной инфраструктуре, закрытие эпика | ready |
 
 ## Риски и зависимости
@@ -75,6 +75,12 @@
 - **Наследуется ограничение EPIC-006**: реальный вызов AI-провайдера требует `ANTHROPIC_API_KEY`, которого может не быть в среде проверки — тот же принятый разрыв между «механика подтверждена» и «качество ответа проверено».
 - **Опрос вместо подписки — временное решение**, явно привязанное к будущему шагу ADR-002 (настоящая шина сообщений); переход на неё, если/когда потребуется несколько подписчиков или доставка в реальном времени, — самостоятельная задача, не расширение этого эпика.
 - Зависит от: EPIC-004 (Application Layer, ResultService/CompletionService/WorkService), EPIC-005 (Infrastructure Layer, EventBus/PostgreSQL), EPIC-006 (agents/claude-code), ADR-007 (принят при открытии v1.0).
+- **Реализованные риски — два дефекта в уже закрытых эпиках, найденные этим эпиком и исправленные до его закрытия.** Оба жили в швах между слоями и были невидимы, потому что каждая сторона тестировалась своими данными:
+  - [BUGFIX-004](../../tasks/done/BUGFIX-004-projection-rebuild-loses-envelope-data.md) — пересборка `TaskProjection` из журнала теряла все данные `Envelope.WithData` (приведение к конкретному типу вместо структурного). Блокировал эпик: Orchestrator наполняет проекцию из журнала и собрал бы агенту пустой промпт.
+  - [BUGFIX-005](../../tasks/done/BUGFIX-005-github-repo-identifier-format.md) — GitHub-адаптер строил неверный путь API из принятого в проекте формата идентификатора репозитория. Заодно закрыт формат, который [ADR-013](../adr/ADR-013-managed-projects.md) должна была зафиксировать и не зафиксировала.
+
+  Это ожидаемо, а не отклонение: TASK-082 — первый код проекта, который проходит весь стек до внешних систем не в тесте. Урок для будущих адаптеров: тест должен подавать в адаптер **то же значение, которое реально хранит платформа**.
+- **Порядок шагов диспетчеризации исправлен по итогам живой проверки** (TASK-082): ветка создаётся до `StartTask`, иначе отказ `CreateBranch` оставлял задачу In Progress с живым Execution и без ветки, без возможности повтора. Обнаружено только вживую — на фейках `CreateBranch` не падает.
 
 ## Статус
 
