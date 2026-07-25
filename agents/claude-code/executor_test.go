@@ -3,6 +3,7 @@ package claudecode
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"ai-studio-os/agents/claude-code/container"
@@ -19,6 +20,11 @@ type fakeSandbox struct {
 
 	execOut string
 	execErr error
+
+	// execCmds records every command Exec received; execFunc, when set,
+	// answers per command instead of execOut.
+	execCmds [][]string
+	execFunc func(cmd []string) (string, error)
 
 	stopErr   error
 	stopCalls int
@@ -39,8 +45,27 @@ func (f *fakeSandbox) Status(_ context.Context, _ *container.Handle) (container.
 	return f.status, f.statusErr
 }
 
-func (f *fakeSandbox) Exec(_ context.Context, _ *container.Handle, _ []string) (string, error) {
+// Exec records every command it was given, so a test can assert which git
+// invocation the adapter actually issued — not just what it did with the
+// output. Before BUGFIX-007 this fake ignored the command entirely, which is
+// precisely why `git log` reporting inherited history went unnoticed.
+//
+// execFunc, when set, answers per command; otherwise execOut answers all of
+// them (the shape existing tests rely on).
+func (f *fakeSandbox) Exec(_ context.Context, _ *container.Handle, cmd []string) (string, error) {
+	f.execCmds = append(f.execCmds, cmd)
+	if f.execFunc != nil {
+		return f.execFunc(cmd)
+	}
 	return f.execOut, f.execErr
+}
+
+// lastExecCmd returns the most recent command, for assertions.
+func (f *fakeSandbox) lastExecCmd() []string {
+	if len(f.execCmds) == 0 {
+		return nil
+	}
+	return f.execCmds[len(f.execCmds)-1]
 }
 
 func (f *fakeSandbox) Stop(_ context.Context, _ *container.Handle) error {
@@ -117,8 +142,19 @@ func TestFinish_BeforeAccept_ReturnsError(t *testing.T) {
 	}
 }
 
+// producedOnly answers the two commands Artifacts issues: the base commit
+// recorded at clone time, then the commit range after it.
+func producedOnly(base, gitLog string) func(cmd []string) (string, error) {
+	return func(cmd []string) (string, error) {
+		if len(cmd) > 0 && cmd[0] == "cat" {
+			return base + "\n", nil
+		}
+		return gitLog, nil
+	}
+}
+
 func TestArtifacts_ParsesCommitsFromGitLog(t *testing.T) {
-	sb := &fakeSandbox{execOut: "abc123\nfeat: add thing\ndef456\nfix: correct bug\n"}
+	sb := &fakeSandbox{execFunc: producedOnly("base000", "abc123\nfeat: add thing\ndef456\nfix: correct bug\n")}
 	e := newTestExecutor(sb)
 	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
 		t.Fatalf("Accept: %v", err)
@@ -133,6 +169,62 @@ func TestArtifacts_ParsesCommitsFromGitLog(t *testing.T) {
 	}
 	if artifacts[0].ID != "abc123" || artifacts[0].Type != "Commit" || string(artifacts[0].Payload) != "feat: add thing" {
 		t.Errorf("Artifacts()[0] = %+v", artifacts[0])
+	}
+}
+
+// TestArtifacts_AsksOnlyForCommitsAfterTheBase is the regression test for
+// BUGFIX-007: a plain `git log` returns the branch's inherited history, so
+// commits made by other people were reported as produced by this execution.
+// Only the range after the clone's HEAD may be requested.
+func TestArtifacts_AsksOnlyForCommitsAfterTheBase(t *testing.T) {
+	sb := &fakeSandbox{execFunc: producedOnly("base000", "")}
+	e := newTestExecutor(sb)
+	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+		t.Fatalf("Accept: %v", err)
+	}
+	if _, err := e.Artifacts(context.Background()); err != nil {
+		t.Fatalf("Artifacts: %v", err)
+	}
+
+	cmd := strings.Join(sb.lastExecCmd(), " ")
+	if !strings.Contains(cmd, "base000..HEAD") {
+		t.Errorf("git command = %q, want it limited to the range base000..HEAD", cmd)
+	}
+	// The unbounded form is the defect itself; it must not be what we issue.
+	if strings.HasSuffix(cmd, "git log --format=%H%n%s -n 20") {
+		t.Errorf("git command = %q, want a range, not the whole branch history", cmd)
+	}
+}
+
+// An execution that committed nothing must report nothing — not the history
+// it inherited from the base branch.
+func TestArtifacts_EmptyRangeReportsNoArtifacts(t *testing.T) {
+	sb := &fakeSandbox{execFunc: producedOnly("base000", "")}
+	e := newTestExecutor(sb)
+	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+		t.Fatalf("Accept: %v", err)
+	}
+
+	artifacts, err := e.Artifacts(context.Background())
+	if err != nil {
+		t.Fatalf("Artifacts() error = %v, want nil — producing nothing is a valid outcome", err)
+	}
+	if len(artifacts) != 0 {
+		t.Errorf("Artifacts() = %+v, want none", artifacts)
+	}
+}
+
+// If the base file is absent or empty the clone never completed; that is a
+// reportable error, not silently "no artifacts".
+func TestArtifacts_MissingBaseCommitIsAnError(t *testing.T) {
+	sb := &fakeSandbox{execFunc: producedOnly("", "")}
+	e := newTestExecutor(sb)
+	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+		t.Fatalf("Accept: %v", err)
+	}
+
+	if _, err := e.Artifacts(context.Background()); err == nil {
+		t.Fatal("Artifacts() error = nil, want an error when the base commit is unknown")
 	}
 }
 

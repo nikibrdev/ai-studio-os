@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"ai-studio-os/agents/claude-code/container"
 	"ai-studio-os/internal/platform"
@@ -90,12 +91,33 @@ func (e *Executor) Artifacts(ctx context.Context) ([]platform.Artifact, error) {
 	if e.handle == nil {
 		return nil, ErrNotAccepted
 	}
-	out, err := e.sandbox.Exec(ctx, e.handle, []string{"git", "log", "--format=%H%n%s", "-n", "20"})
+
+	// Only commits made after the clone count as produced. Asking git for
+	// plain `git log` returned the branch's inherited history — on any
+	// repository with commits, someone else's work was reported as produced
+	// by this execution (BUGFIX-007, found by the first live end-to-end run).
+	baseOut, err := e.sandbox.Exec(ctx, e.handle, []string{"cat", container.BaseSHAFile})
+	if err != nil {
+		return nil, fmt.Errorf("claudecode: read base commit: %w", err)
+	}
+	base := strings.TrimSpace(baseOut)
+	if base == "" {
+		return nil, fmt.Errorf("claudecode: base commit is empty — the clone did not complete")
+	}
+
+	// maxReportedCommits is a safety bound on output size, not the selection
+	// itself: the range already limits results to this execution's work.
+	out, err := e.sandbox.Exec(ctx, e.handle,
+		[]string{"git", "log", "--format=%H%n%s", "-n", maxReportedCommits, base + "..HEAD"})
 	if err != nil {
 		return nil, fmt.Errorf("claudecode: list artifacts: %w", err)
 	}
 	return parseCommitArtifacts(out), nil
 }
+
+// maxReportedCommits caps how many produced commits are reported at once —
+// a guard against a runaway agent, not a correctness mechanism.
+const maxReportedCommits = "100"
 
 // Status implements platform.Executor.
 func (e *Executor) Status(ctx context.Context) (platform.ExecutionStatus, error) {
