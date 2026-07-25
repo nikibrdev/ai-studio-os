@@ -3,12 +3,14 @@ package application
 import (
 	"context"
 	"errors"
+	"time"
 
 	"ai-studio-os/internal/domain/artifact"
 	"ai-studio-os/internal/domain/execution"
 	"ai-studio-os/internal/domain/executor"
 	"ai-studio-os/internal/domain/project"
 	"ai-studio-os/internal/domain/task"
+	"ai-studio-os/internal/platform"
 )
 
 // ErrNotFound is returned by a Store's Get when no aggregate exists for
@@ -40,6 +42,11 @@ type TaskStore interface {
 type ExecutorStore interface {
 	Get(ctx context.Context, id string) (*executor.Executor, error)
 	Save(ctx context.Context, e *executor.Executor) error
+	// List returns every Executor, ordered by id for a deterministic
+	// result — added in EPIC-010 (TASK-079) so a caller (apps/orchestrator)
+	// can find an available Executor for a role without already knowing
+	// its id, the same reason ProjectStore.List was added in EPIC-009.
+	List(ctx context.Context) ([]*executor.Executor, error)
 }
 
 // ExecutionStore persists and retrieves Execution aggregates.
@@ -60,4 +67,21 @@ type ArtifactStore interface {
 // next number itself.
 type TaskIDGenerator interface {
 	NextID(ctx context.Context, projectID string) (string, error)
+}
+
+// EventJournal reads previously published events back from durable
+// storage, in delivery order. Added in EPIC-010 (TASK-079): the
+// production EventBus (internal/infrastructure/eventbus) delivers only
+// to subscribers within its own process (ADR-002), so a separate process
+// (apps/orchestrator) cannot use Subscribe — it polls Since with an
+// advancing cursor instead. Implementation is infrastructure (TASK-080);
+// this port exists so apps/orchestrator depends only on
+// internal/application, never directly on internal/infrastructure
+// (module-boundaries.md: "apps/orchestrator" — прямой доступ к
+// хранилищам запрещён).
+type EventJournal interface {
+	// Since returns every event with OccurredAt strictly after the given
+	// time, ordered by OccurredAt — the same semantics ReadJournalSince
+	// implements.
+	Since(ctx context.Context, after time.Time) ([]platform.Event, error)
 }
