@@ -8,12 +8,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	claudecode "ai-studio-os/agents/claude-code"
 	"ai-studio-os/internal/application"
+	"ai-studio-os/internal/domain/workflow"
+	"ai-studio-os/internal/infrastructure/github"
 	"ai-studio-os/internal/infrastructure/wiring"
 	"ai-studio-os/internal/platform"
 )
@@ -59,10 +63,30 @@ func run() error {
 		logger.Printf("warning: %s is empty — sandboxes will start but the AI provider will not be called", providerAPIKeyEnv)
 	}
 
+	if sys.Repository == nil {
+		return fmt.Errorf("orchestrator: %s is not set — a repository provider is required to create task branches", github.TokenEnv)
+	}
+
+	dispatcher := &Dispatcher{
+		Projects:  sys.Projects,
+		Executors: sys.Executors,
+		Work: &application.WorkService{
+			Tasks: sys.Tasks, Executors: sys.Executors, Executions: sys.Executions,
+			Events: sys.Events, Rules: workflow.Machine{},
+		},
+		Views: application.NewTaskProjection(),
+		Repos: sys.Repository,
+		NewExecutor: func() (platform.Executor, error) {
+			return claudecode.New(cfg.ExecutionImage, cfg.GitToken, cfg.ProviderAPIKey)
+		},
+		Log: logger,
+	}
+
 	poller := &Poller{
 		Journal:  sys.EventJournal,
 		Interval: cfg.PollInterval,
-		Handle:   logHandler(logger),
+		Seed:     dispatcher.Observe,
+		Handle:   dispatcher.Handle,
 		Log:      logger,
 	}
 	if err := poller.Start(ctx); err != nil {
@@ -71,14 +95,4 @@ func run() error {
 
 	logger.Printf("polling event journal every %s", cfg.PollInterval)
 	return poller.Run(ctx)
-}
-
-// logHandler is the placeholder Handler for TASK-081: it proves the loop
-// observes real events. Dispatching Developer work on TaskPlanned is
-// TASK-082, which replaces this.
-func logHandler(logger *log.Logger) Handler {
-	return func(_ context.Context, e platform.Event) error {
-		logger.Printf("event %s (%s) project=%q subject=%q", e.Type(), e.ID(), e.ProjectID(), e.SubjectID())
-		return nil
-	}
 }

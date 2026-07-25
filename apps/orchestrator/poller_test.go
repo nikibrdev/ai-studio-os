@@ -230,3 +230,74 @@ func TestPollerRun_SurvivesJournalErrors(t *testing.T) {
 		t.Error("Run never polled the journal")
 	}
 }
+
+// Seed must receive existing history so read models are current before
+// dispatching begins, while Handle must not: a task created before startup
+// and planned after it needs its title, but finished work must not re-run
+// (TASK-082).
+func TestPollerStart_SeedsHistoryWithoutHandlingIt(t *testing.T) {
+	journal := &fakeJournal{responses: [][]application.JournalEntry{
+		{entry(3, "TaskCreated"), entry(8, "TaskPlanned")},
+	}}
+	var seeded, handled []string
+	p := newPoller(journal, func(_ context.Context, e platform.Event) error {
+		handled = append(handled, e.Type())
+		return nil
+	})
+	p.Seed = func(_ context.Context, e platform.Event) error {
+		seeded = append(seeded, e.Type())
+		return nil
+	}
+
+	if err := p.Start(context.Background()); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	if len(seeded) != 2 || seeded[0] != "TaskCreated" || seeded[1] != "TaskPlanned" {
+		t.Errorf("seeded = %v, want both historical events", seeded)
+	}
+	if len(handled) != 0 {
+		t.Errorf("handled = %v, want nothing — history must not re-run side effects", handled)
+	}
+	if p.cursor != 8 {
+		t.Errorf("cursor = %d, want 8", p.cursor)
+	}
+}
+
+// A single unreplayable historical event must not prevent startup.
+func TestPollerStart_SeedErrorDoesNotBlockStartup(t *testing.T) {
+	journal := &fakeJournal{responses: [][]application.JournalEntry{
+		{entry(1, "TaskCreated"), entry(2, "TaskPlanned")},
+	}}
+	p := newPoller(journal, func(context.Context, platform.Event) error { return nil })
+	var seen int
+	p.Seed = func(_ context.Context, _ platform.Event) error {
+		seen++
+		return errors.New("cannot replay")
+	}
+
+	if err := p.Start(context.Background()); err != nil {
+		t.Fatalf("Start() error = %v, want nil — a seed failure is logged, not fatal", err)
+	}
+	if seen != 2 {
+		t.Errorf("Seed called %d times, want 2 — one failure must not skip the rest", seen)
+	}
+	if p.cursor != 2 {
+		t.Errorf("cursor = %d, want 2", p.cursor)
+	}
+}
+
+// Start must work with no Seed set at all (TASK-081's shape).
+func TestPollerStart_WithoutSeedStillPositionsCursor(t *testing.T) {
+	journal := &fakeJournal{responses: [][]application.JournalEntry{
+		{entry(5, "TaskCreated")},
+	}}
+	p := newPoller(journal, func(context.Context, platform.Event) error { return nil })
+
+	if err := p.Start(context.Background()); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if p.cursor != 5 {
+		t.Errorf("cursor = %d, want 5", p.cursor)
+	}
+}

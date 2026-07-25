@@ -26,6 +26,17 @@ type Poller struct {
 	Handle   Handler
 	Log      *log.Logger
 
+	// Seed, when set, receives every event already in the journal during
+	// Start. Read models this process maintains must be current before
+	// dispatching begins — a task created before startup and planned after
+	// it would otherwise have no title or scope to hand an Executor
+	// (ADR-014: the projection is the only read path for Task, and this
+	// process cannot subscribe to the bus apps/api publishes through).
+	//
+	// Deliberately separate from Handle: history must update read models
+	// without re-running side effects for work that already happened.
+	Seed Handler
+
 	// cursor is the seq of the last entry handled. Held in memory only:
 	// a restart resumes from the journal's tip, skipping whatever happened
 	// while the process was down — the accepted v1.0 limitation
@@ -46,6 +57,19 @@ func (p *Poller) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("orchestrator: read journal tip: %w", err)
 	}
+
+	for _, e := range entries {
+		if p.Seed == nil {
+			break
+		}
+		if err := p.Seed(ctx, e.Event); err != nil {
+			// A single unreplayable historical event must not stop startup:
+			// the read model loses that one fact, which is strictly better
+			// than refusing to run at all.
+			p.Log.Printf("seeding %s (%s, seq %d) failed: %v", e.Event.Type(), e.Event.ID(), e.Seq, err)
+		}
+	}
+
 	if len(entries) > 0 {
 		p.cursor = entries[len(entries)-1].Seq
 	}
