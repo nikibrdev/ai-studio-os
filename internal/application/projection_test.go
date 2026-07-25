@@ -4,12 +4,15 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/application/inmemory"
+	"ai-studio-os/internal/domain/event"
 	"ai-studio-os/internal/domain/project"
 	"ai-studio-os/internal/domain/shared"
 	"ai-studio-os/internal/domain/workflow"
+	"ai-studio-os/internal/platform"
 )
 
 func TestTaskProjection_IncrementalUpdatesTrackState(t *testing.T) {
@@ -242,5 +245,75 @@ func TestTaskProjection_CapturesDescriptiveFieldsFromCreation(t *testing.T) {
 	}
 	if view.State != shared.StateReady {
 		t.Errorf("State() = %v, want %v", view.State, shared.StateReady)
+	}
+}
+
+// journalLikeEvent mimics an event reconstructed from the durable journal
+// (internal/infrastructure/eventbus): it carries WithData's payload through
+// a Data() method but is NOT an application.Envelope.
+//
+// BUGFIX-004: applyCreatedData and targetState used to assert the concrete
+// Envelope type, so replaying a real journal silently dropped every
+// payload — descriptive fields came back empty and ReviewCompleted lost its
+// target state. This fake is deliberately a foreign type: it is the only
+// thing that distinguishes the bug from the fix, since bus.Published()
+// returns genuine Envelopes on which the old assertion worked.
+type journalLikeEvent struct {
+	typ, projectID, subjectID string
+	data                      map[string]string
+}
+
+func (e journalLikeEvent) ID() string              { return "evt-" + e.typ }
+func (e journalLikeEvent) Type() string            { return e.typ }
+func (e journalLikeEvent) SchemaVersion() int      { return 1 }
+func (e journalLikeEvent) OccurredAt() time.Time   { return time.Now() }
+func (e journalLikeEvent) Source() string          { return "task" }
+func (e journalLikeEvent) Actor() string           { return "" }
+func (e journalLikeEvent) ProjectID() string       { return e.projectID }
+func (e journalLikeEvent) SubjectID() string       { return e.subjectID }
+func (e journalLikeEvent) Data() map[string]string { return e.data }
+
+func TestTaskProjection_RebuildFromNonEnvelopeEventsKeepsAttachedData(t *testing.T) {
+	ctx := context.Background()
+	proj := application.NewTaskProjection()
+
+	journal := []platform.Event{
+		journalLikeEvent{
+			typ: event.TaskCreated, projectID: "proj-1", subjectID: "task-1",
+			data: map[string]string{
+				"title": "Заголовок", "type": "feature", "scope": "Описание",
+				"acceptanceCriteria": `["критерий"]`,
+			},
+		},
+		journalLikeEvent{typ: event.TaskPlanned, projectID: "proj-1", subjectID: "task-1"},
+		journalLikeEvent{typ: event.TaskStarted, projectID: "proj-1", subjectID: "task-1"},
+		journalLikeEvent{typ: event.ReviewRequested, projectID: "proj-1", subjectID: "task-1"},
+		journalLikeEvent{
+			typ: event.ReviewCompleted, projectID: "proj-1", subjectID: "task-1",
+			data: map[string]string{"to": string(shared.StateTesting)},
+		},
+	}
+
+	if err := proj.Rebuild(ctx, journal); err != nil {
+		t.Fatalf("Rebuild: %v", err)
+	}
+
+	view, ok := proj.Get("proj-1", "task-1")
+	if !ok {
+		t.Fatal("Get() ok = false, want true")
+	}
+
+	// The descriptive fields the orchestrator needs to build a
+	// platform.ExecutorTask (EPIC-010, TASK-082).
+	if view.Title != "Заголовок" || view.Type != "feature" || view.Scope != "Описание" {
+		t.Errorf("view = %+v, want Title/Type/Scope recovered from journal data", view)
+	}
+	if len(view.AcceptanceCriteria) != 1 || view.AcceptanceCriteria[0] != "критерий" {
+		t.Errorf("AcceptanceCriteria = %v, want [критерий]", view.AcceptanceCriteria)
+	}
+
+	// ReviewCompleted is ambiguous without its attached target state.
+	if view.State != shared.StateTesting {
+		t.Errorf("State = %v, want %v — ReviewCompleted's target must survive replay", view.State, shared.StateTesting)
 	}
 }

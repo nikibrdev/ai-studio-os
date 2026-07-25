@@ -153,6 +153,25 @@ func TestGoldenPath_Infrastructure(t *testing.T) {
 		t.Fatalf("Rebuild: %v", err)
 	}
 	requireState(t, rebuilt, "proj-1", "task-1", shared.StateDone)
+
+	// The descriptive fields must survive replay too, not just the state.
+	// Checking only the state is exactly what let BUGFIX-004 hide: Done is
+	// reached via TaskCompleted, whose target needs no attached data, so
+	// this test passed while every Envelope.WithData payload was being
+	// dropped on replay.
+	view, ok := rebuilt.Get("proj-1", "task-1")
+	if !ok {
+		t.Fatal("rebuilt.Get() ok = false, want true")
+	}
+	if view.Title != "Golden path на реальной инфраструктуре" || view.Type != "feature" {
+		t.Errorf("rebuilt view = {Title:%q Type:%q}, want the values CreateTask was given", view.Title, view.Type)
+	}
+	if view.Scope != "Сквозной сценарий Infrastructure Layer" {
+		t.Errorf("rebuilt Scope = %q, want the value CreateTask was given", view.Scope)
+	}
+	if len(view.AcceptanceCriteria) != 1 || view.AcceptanceCriteria[0] != "задача доходит до Done" {
+		t.Errorf("rebuilt AcceptanceCriteria = %v, want [задача доходит до Done]", view.AcceptanceCriteria)
+	}
 }
 
 func newActiveProject(ctx context.Context, t *testing.T, store application.ProjectStore) {
