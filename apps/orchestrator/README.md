@@ -4,7 +4,7 @@
 
 Координатор ([EPIC-010](../../docs/roadmap/EPIC-010-orchestrator.md), v1.0): реагирует на события жизненного цикла задачи и сам запускает исполнителей через контракт Executor — без участия человека в рутинном шаге «взять задачу в работу». Доменных правил и durable-состояния не содержит ([module-boundaries.md](../../docs/architecture/module-boundaries.md)): решения о допустимости переходов принимают модули `task`/`workflow`, вызываемые только через `internal/application`.
 
-Полное архитектурное описание механизма (`docs/architecture/orchestrator.md`) появится в TASK-084 — ссылка здесь будет добавлена вместе с ним.
+Полное архитектурное описание механизма — [docs/architecture/orchestrator.md](../../docs/architecture/orchestrator.md).
 
 ## Содержание
 
