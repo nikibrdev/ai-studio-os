@@ -15,12 +15,31 @@
 | `main.go` | Точка входа: конфигурация, сборка через `wiring.System`, бутстрап исполнителя, запуск цикла опроса, завершение по сигналу | TASK-081 |
 | `config.go` | `Config`/`FromEnv` — переменные окружения и значения по умолчанию | TASK-081 |
 | `bootstrap.go` | `EnsureDeveloperExecutor` — идемпотентная регистрация и активация одного Developer-исполнителя | TASK-081 |
-| `poller.go` | `Poller` — курсорный опрос журнала событий, передача каждого события `Handler` | TASK-081 |
+| `poller.go` | `Poller` — курсорный опрос журнала событий, передача каждого события `Handler`; `Seed` — применение истории к read-моделям при старте | TASK-081, TASK-082 |
+| `dispatch.go` | `Dispatcher` — обновление проекции и диспетчеризация Developer-работы на `TaskPlanned` | TASK-082 |
 
 ### Зависимости (module-boundaries.md)
 
-- **Разрешено:** `internal/application` (use-case-сервисы, порт `EventJournal`); `internal/infrastructure/wiring` (только в `main.go`, для сборки `System`); контракт `platform.Executor` и его адаптер `agents/claude-code`; `pkg/`; стандартная библиотека.
+- **Разрешено:** `internal/application` (use-case-сервисы, проекция, порт `EventJournal`); `internal/infrastructure/wiring` (только в `main.go`, для сборки `System`); контракт `platform.Executor`; `pkg/`; стандартная библиотека.
 - **Запрещено:** доменные правила (решения о допустимости переходов — у модулей `task`/`workflow`); хранение доменного состояния; прямой доступ к хранилищам в обход `internal/application`; зависимость от `apps/api`.
+- **Узкое исключение:** `main.go` как composition root импортирует конкретный адаптер `agents/claude-code`, чтобы его создать — сконструировать реализацию должен кто-то. `Dispatcher` при этом знает только `platform.Executor`: адаптер приходит через поле-фабрику `NewExecutor func() (platform.Executor, error)` и в логике диспетчеризации не назван. То же разделение, что в `apps/api`, где `main.go` знает инфраструктуру, а `httpapi` — нет.
+
+### Диспетчеризация Developer (TASK-082)
+
+На событие `TaskPlanned`:
+
+1. Прочитать представление задачи из `TaskProjection` (заголовок, тип, scope, критерии приёмки).
+2. Выбрать Active-исполнителя с ролью Developer (`ExecutorStore.List`, фильтр в памяти; `List` упорядочен по id, поэтому выбор детерминирован).
+3. Определить репозиторий — первый подключённый к проекту.
+4. `WorkService.StartTask` — переход Ready → In Progress и создание Execution **через Application Layer**, а не в обход state machine.
+5. `RepositoryProvider.CreateBranch` — ветка `feature/<task-id>-<slug>` от `main` ([git-workflow.md](../../docs/development/git-workflow.md)). Ветка создаётся **до** `Accept`: адаптер клонирует уже существующую ветку, а не создаёт её.
+6. `platform.ExecutorTask` → `Executor.Accept`.
+
+**Slug имени ветки.** Заголовки задач в проекте русские, а наивный ASCII-slug из русского заголовка пуст. Вместо выдуманной таблицы транслитерации в этом случае используется просто `feature/<task-id>` — этого достаточно: `TASK-NNN` уникален в рамках проекта ([ADR-011](../../docs/adr/ADR-011-task-identifiers.md)).
+
+**Наполнение проекции.** Orchestrator не подписан на шину `apps/api` (она внутрипроцессная), поэтому свою `TaskProjection` он наполняет из журнала: `Poller.Seed` применяет историю при старте, `Dispatcher.Observe` — каждое новое событие, до диспетчеризации. Без истории у задачи, созданной до запуска процесса и запланированной после, не было бы ни заголовка, ни scope (этот путь чтения — единственный, [ADR-014](../../docs/adr/ADR-014-module-interaction.md)).
+
+**Промежуточное состояние.** После `Accept` эта версия не следит за исполнением и не вызывает `Finish` — песочница остаётся запущенной. Слежение, сбор артефактов, открытие Pull Request и запрос ревью — TASK-083; таково запланированное разбиение эпика, а не забытый шаг.
 
 ### Переменные окружения
 
@@ -54,7 +73,7 @@ DATABASE_URL="postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?s
 
 ## Статус
 
-В работе — TASK-081 (каркас, бутстрап, цикл опроса). Диспетчеризация Developer — TASK-082, слежение за исполнением — TASK-083.
+В работе — TASK-081 (каркас, бутстрап, цикл опроса), TASK-082 (диспетчеризация Developer). Слежение за исполнением, артефакты, Pull Request и запрос ревью — TASK-083.
 
 ## Последнее обновление
 
