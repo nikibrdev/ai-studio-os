@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"errors"
-	"time"
 
 	"ai-studio-os/internal/domain/artifact"
 	"ai-studio-os/internal/domain/execution"
@@ -69,19 +68,33 @@ type TaskIDGenerator interface {
 	NextID(ctx context.Context, projectID string) (string, error)
 }
 
+// JournalEntry is one journaled event together with its position in the
+// journal. Seq is the cursor value a poller stores to resume after this
+// entry — returned explicitly because the caller, not the journal, owns
+// the cursor.
+type JournalEntry struct {
+	Seq   int64
+	Event platform.Event
+}
+
 // EventJournal reads previously published events back from durable
-// storage, in delivery order. Added in EPIC-010 (TASK-079): the
-// production EventBus (internal/infrastructure/eventbus) delivers only
-// to subscribers within its own process (ADR-002), so a separate process
-// (apps/orchestrator) cannot use Subscribe — it polls Since with an
-// advancing cursor instead. Implementation is infrastructure (TASK-080);
-// this port exists so apps/orchestrator depends only on
-// internal/application, never directly on internal/infrastructure
-// (module-boundaries.md: "apps/orchestrator" — прямой доступ к
-// хранилищам запрещён).
+// storage, in the order they were written. Added in EPIC-010 (TASK-079):
+// the production EventBus (internal/infrastructure/eventbus) delivers
+// only to subscribers within its own process (ADR-002), so a separate
+// process (apps/orchestrator) cannot use Subscribe — it polls Since with
+// an advancing cursor instead. This port exists so apps/orchestrator
+// depends only on internal/application, never directly on
+// internal/infrastructure (module-boundaries.md: "apps/orchestrator" —
+// прямой доступ к хранилищам запрещён).
+//
+// The cursor is a monotonic insertion sequence, not a timestamp
+// (TASK-080, migration 0007). An event's OccurredAt is stamped by the
+// domain before the row is written, so it does not order rows by the
+// moment they became readable: under concurrency a row can appear with an
+// OccurredAt earlier than one already read, and a time-based cursor would
+// skip it silently. Sequence order is write order.
 type EventJournal interface {
-	// Since returns every event with OccurredAt strictly after the given
-	// time, ordered by OccurredAt — the same semantics ReadJournalSince
-	// implements.
-	Since(ctx context.Context, after time.Time) ([]platform.Event, error)
+	// Since returns every entry with Seq strictly greater than afterSeq,
+	// ordered by Seq. Pass 0 to read the journal from the beginning.
+	Since(ctx context.Context, afterSeq int64) ([]JournalEntry, error)
 }

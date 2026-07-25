@@ -21,7 +21,7 @@ Infrastructure Layer — адаптеры, реализующие контрак
 | Пакет | Содержимое | Задача |
 | --- | --- | --- |
 | `postgres/` | Подключение (`pgxpool.Pool`), раннер миграций, Store-адаптеры пяти агрегатов | TASK-046 (каркас), TASK-047 (Project+Task), TASK-048 (Executor+Execution+Artifact) |
-| `eventbus/` | Производственный `platform.EventBus` + журнал событий в PostgreSQL | TASK-049 |
+| `eventbus/` | Производственный `platform.EventBus` + журнал событий в PostgreSQL; `Journal` — курсорное чтение журнала (`application.EventJournal`, TASK-080) | TASK-049, TASK-080 |
 | `github/` | `platform.RepositoryProvider` — GitHub REST API | TASK-050 |
 | `wiring/` | Composition root: собирает `System` из всех адаптеров выше, применяет миграции | TASK-051 |
 | `memory/` | `platform.MemoryProvider` — файловое хранилище (источник истины) + Qdrant (производный индекс) | TASK-059…062 |
@@ -117,11 +117,19 @@ CI-job `integration` (`.github/workflows/verify.yml`, TASK-051/062) подним
 
 Сами адаптеры доменных событий не порождают — события создаются use-case'ами `internal/application`.
 
-`eventbus.ReadJournal(ctx, pool)` (TASK-051) читает `event_journal` целиком и восстанавливает значения `platform.Event` (включая `dataCarrier`-данные) — назначение журнала из ADR-002/event-model.md («перестроение проекций») доведено до работающего кода: `TaskProjection.Rebuild` может строиться из реальной БД, не только из живой шины.
+`eventbus.ReadJournal(ctx, pool)` (TASK-051) читает `event_journal` целиком и восстанавливает значения `platform.Event` (включая `dataCarrier`-данные) — назначение журнала из ADR-002/event-model.md («перестроение проекций») доведено до работающего кода: `TaskProjection.Rebuild` может строиться из реальной БД, не только из живой шины. С TASK-080 порядок — по `seq` (порядок записи), а не по `occurred_at`: пересборка проекции должна воспроизводить события в причинном порядке, а доменный штамп времени его не задаёт (см. ниже).
+
+#### `Journal` — курсорное чтение журнала (TASK-080, EPIC-010)
+
+`Journal` реализует порт `application.EventJournal`: `Since(ctx, afterSeq)` отдаёт записи со `seq` строго больше курсора, в порядке `seq`. Существует потому, что `Bus.Subscribe` доставляет только внутри своего процесса (ADR-002), а `apps/orchestrator` — отдельный процесс: он опрашивает журнал по курсору.
+
+**Курсор — по `seq` (`BIGSERIAL`, миграция 0007), не по `occurred_at`.** `occurred_at` заполняется доменным `time.Now()` **до** записи строки, поэтому он не упорядочивает строки по моменту, когда их стало видно читателю: при двух параллельных запросах строка может появиться со штампом более ранним, чем уже прочитанная, и курсор по времени перешагнёт её навсегда — **бесшумно**, без единой ошибки (задача просто останется в Ready). `seq` выдаётся в момент `INSERT`, поэтому порядок курсора и есть порядок записи. Регрессионный тест на этот дефект — `TestJournal_Since_DoesNotSkipRowWrittenWithEarlierOccurredAt`.
+
+`Journal` покрыт интеграционными тестами на реальном PostgreSQL, а не фейком: `pgx.Rows` — интерфейс из девяти методов, и подделка его проверяла бы в основном саму подделку, тогда как ценность здесь — в реальном поведении `BIGSERIAL`/`JSONB`/`TIMESTAMPTZ` и курсора. Тесты фильтруют результат по собственному уникальному суффиксу событий: журнал в тестовой БД общий и пополняется параллельно тестами других пакетов.
 
 ### `wiring` — composition root
 
-`wiring.New(ctx, dsn)` (TASK-051) подключается к PostgreSQL, применяет миграции и собирает `System`: пять Store, производственный `EventBus`, `RepositoryProvider` (nil, если `GITHUB_TOKEN` не задан — GitHub-адаптер не зависит от PostgreSQL и его отсутствие не должно ломать остальное). Не поднимает HTTP-сервер и ничего не доставляет наружу — это задача v0.9 (API); `System` существует, чтобы одни и те же сервисы `internal/application` могли работать на реальной инфраструктуре в тестах уже сейчас и за будущим API-слоем позже.
+`wiring.New(ctx, dsn)` (TASK-051) подключается к PostgreSQL, применяет миграции и собирает `System`: пять Store, производственный `EventBus`, `EventJournal` (курсорное чтение журнала, TASK-080 — поле типа порта `application.EventJournal`, поэтому присваивание и есть проверка соответствия на этапе компиляции, как у `Events`/`Repository`/`Memory`), `RepositoryProvider` (nil, если `GITHUB_TOKEN` не задан — GitHub-адаптер не зависит от PostgreSQL и его отсутствие не должно ломать остальное). Не поднимает HTTP-сервер и ничего не доставляет наружу — это задача v0.9 (API); `System` существует, чтобы одни и те же сервисы `internal/application` могли работать на реальной инфраструктуре в тестах уже сейчас и за будущим API-слоем позже.
 
 Интеграционный тест `TestGoldenPath_Infrastructure` — тот же сценарий, что и `TestGoldenPath_Application` (EPIC-004), на реальных адаптерах: ни `internal/application`, ни `internal/domain` не изменены ни на строку. Единственное исключение — `RepositoryProvider`: используется тот же in-memory фейк EPIC-004, поскольку реального GitHub-токена в этой среде нет (см. Open Question TASK-050).
 

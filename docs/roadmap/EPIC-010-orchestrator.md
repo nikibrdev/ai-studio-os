@@ -12,7 +12,9 @@
 
 - **Продуктивная шина событий — только внутрипроцессная.** `internal/infrastructure/eventbus.Bus` (ADR-002) — «synchronous, in-process bus... plus a durable journal»: `Subscribe` регистрирует обработчик в памяти конкретного процесса; `apps/api` и будущий `apps/orchestrator` — разные процессы (разные `wiring.System`), поэтому подписка Orchestrator'а на шину `apps/api` физически невозможна без общей памяти. Журнал (`event_journal`, PostgreSQL) уже существует, но его текущее назначение — восстановление проекций (`ReadJournal` вычитывает всё целиком), не потоковая доставка новым процессам.
 
-  Решение архитектора: `apps/orchestrator` **опрашивает журнал по курсору** (новый `ReadJournalSince(ctx, pool, after time.Time)` в `internal/infrastructure/eventbus`), а не подписывается на `Bus.Subscribe`. Это не новая архитектура, а прямое продолжение уже принятого ADR-002 («интерфейс стабилен, позже — Redis Streams/NATS»): опрос журнала — временный, объяснимый шаг между «только in-process» и настоящей шиной сообщений, не требующий новой ADR и не вводящий внешней зависимости. Курсор хранится в памяти процесса Orchestrator'а (без сохранения между перезапусками) — осознанное ограничение v1.0 (см. «Риски»), тот же принцип прагматизма, что уже применялся в ADR-012/018.
+  Решение архитектора: `apps/orchestrator` **опрашивает журнал по курсору** (`Journal.Since` в `internal/infrastructure/eventbus`), а не подписывается на `Bus.Subscribe`. Это не новая архитектура, а прямое продолжение уже принятого ADR-002 («интерфейс стабилен, позже — Redis Streams/NATS»): опрос журнала — временный, объяснимый шаг между «только in-process» и настоящей шиной сообщений, не требующий новой ADR и не вводящий внешней зависимости. Курсор хранится в памяти процесса Orchestrator'а (без сохранения между перезапусками) — осознанное ограничение v1.0 (см. «Риски»), тот же принцип прагматизма, что уже применялся в ADR-012/018.
+
+  **Уточнение решения при реализации (TASK-080, 2026-07-25, подтверждено владельцем проекта).** Изначально курсор предполагался по времени (`after time.Time`). При разборе схемы перед реализацией обнаружено, что такой курсор **бесшумно теряет события**: `occurred_at` заполняется доменным `time.Now()` до записи строки, поэтому при двух параллельных запросах строка может стать видимой со штампом более ранним, чем уже прочитанная, — курсор по времени перешагнёт её навсегда, не сообщив ни об одной ошибке (задача останется в Ready). Курсор переведён на монотонную последовательность вставки (`seq BIGSERIAL`, миграция 0007): `seq` выдаётся в момент `INSERT`, поэтому порядок курсора и есть порядок записи. Порт — `Since(ctx, afterSeq int64) ([]JournalEntry, error)`. Регрессионный тест на исходный дефект — `TestJournal_Since_DoesNotSkipRowWrittenWithEarlierOccurredAt`. Побочный эффект: `ReadJournal` (пересборка проекций) тоже переведён на `ORDER BY seq` — воспроизведение истории в причинном порядке, а не в порядке доменных штампов.
 
   Чтобы не открывать `apps/orchestrator` прямой доступ к `internal/infrastructure` (`module-boundaries.md`: «Запрещено: прямой доступ к хранилищам»), опрос курсора оборачивается новым узким портом `internal/application` (`EventJournal.Since`), реализация которого подключается через `wiring.System` — тот же паттерн, что все остальные порты Application Layer.
 
@@ -26,8 +28,8 @@
 
 ### Входит
 
-- `internal/application`: `ExecutorService` (Register/Activate, по образцу `ProjectService`), `ExecutorStore.List` (запрос), новый порт `EventJournal.Since(ctx, after time.Time) ([]platform.Event, error)`.
-- `internal/infrastructure/eventbus`: `ReadJournalSince` — курсорный запрос к `event_journal`; подключение в `wiring.System` как реализация `EventJournal`.
+- `internal/application`: `ExecutorService` (Register/Activate, по образцу `ProjectService`), `ExecutorStore.List` (запрос), новый порт `EventJournal.Since(ctx, afterSeq int64) ([]JournalEntry, error)` (курсор по последовательности — см. уточнение в «Контексте»).
+- `internal/infrastructure`: миграция `0007_event_journal_seq.sql` (`seq BIGSERIAL` + индекс); `eventbus.Journal` — курсорный запрос к `event_journal`; подключение в `wiring.System` как реализация `EventJournal`.
 - `apps/orchestrator`: каркас (`main.go`, сборка через `wiring.System`, конфигурация — образ контейнера, GitHub-токен, ключ AI-провайдера, репозиторий проекта — переменные окружения, по образцу `apps/api`), идемпотентный бутстрап одного Developer-исполнителя (`agents/claude-code`) через `ExecutorService`, цикл опроса `EventJournal.Since` с курсором в памяти.
 - `apps/orchestrator`: диспетчеризация Developer — на `TaskPlanned`: выбор Active Developer-исполнителя (`ExecutorStore.List`), `WorkService.StartTask`, `RepositoryProvider.CreateBranch`, построение `platform.ExecutorTask` из полей Task (Title/Type/Scope/AcceptanceCriteria — уже в `TaskView`, TASK-076), `Executor.Accept` (реальный `agents/claude-code.New`).
 - `apps/orchestrator`: слежение за исполнением — опрос `Executor.Status` до терминального состояния; при успехе — `Executor.Artifacts` → `ResultService.RecordDraftArtifact`/`PublishArtifact` для каждого, `RepositoryProvider.OpenPullRequest`, `ResultService.SucceedExecution`, `CompletionService.RequestReview`; при неудаче — `FailExecution`; `Executor.Finish` — всегда, независимо от исхода.
@@ -46,8 +48,8 @@
 
 ## Критерии завершения
 
-- [ ] `ExecutorService` (Register/Activate) и `ExecutorStore.List` реализованы и покрыты тестами.
-- [ ] Порт `EventJournal.Since` и его реализация (`ReadJournalSince`) покрыты тестами; интеграционный тест подтверждает курсорную выборку на реальном PostgreSQL.
+- [x] `ExecutorService` (Register/Activate) и `ExecutorStore.List` реализованы и покрыты тестами — TASK-079.
+- [x] Порт `EventJournal.Since` и его реализация (`eventbus.Journal`) покрыты тестами; интеграционный тест подтверждает курсорную выборку на реальном PostgreSQL, включая регрессию на потерю событий при курсоре по времени — TASK-080.
 - [ ] `apps/orchestrator` при старте идемпотентно регистрирует и активирует один Developer-исполнитель.
 - [ ] `apps/orchestrator` на событие `TaskPlanned` автоматически проводит задачу Ready → In Progress → Review через реальный `agents/claude-code` (создание ветки, запуск контейнера, сбор коммитов как Artifact, открытие Pull Request), без вызова `apps/api` человеком.
 - [ ] Сценарий подтверждён вживую на реальной инфраструктуре (PostgreSQL + Docker); ограничение по отсутствию реального `ANTHROPIC_API_KEY` явно задокументировано, если применимо на момент проверки.
@@ -58,8 +60,8 @@
 
 | Задача | Содержание | Статус |
 | --- | --- | --- |
-| TASK-079 | `ExecutorService` (Register/Activate), `ExecutorStore.List`, порт `EventJournal.Since` в `internal/application` | ready |
-| TASK-080 | `ReadJournalSince` в `internal/infrastructure/eventbus`, подключение в `wiring.System` | ready |
+| TASK-079 | `ExecutorService` (Register/Activate), `ExecutorStore.List`, порт `EventJournal.Since` в `internal/application` | done |
+| TASK-080 | Курсор журнала по `seq` (миграция 0007), `eventbus.Journal`, подключение в `wiring.System` | done |
 | TASK-081 | Каркас `apps/orchestrator`: `main.go`, бутстрап Developer-исполнителя, цикл опроса журнала с курсором | ready |
 | TASK-082 | Диспетчеризация Developer: `TaskPlanned` → выбор исполнителя → `StartTask` → ветка → `Executor.Accept` | ready |
 | TASK-083 | Слежение за исполнением: опрос `Status`, сбор `Artifacts`, Pull Request, `SucceedExecution`/`FailExecution`, `RequestReview`, `Finish` | ready |
@@ -68,7 +70,7 @@
 
 ## Риски и зависимости
 
-- **Курсор опроса журнала — в памяти, не сохраняется между перезапусками Orchestrator'а.** Перезапуск во время простоя пропускает события, случившиеся за это время (задача останется в Ready, пока её не запустят вручную через `apps/api`). Принятый риск v1.0 — самостоятельная эксплуатация с одним долгоживущим процессом делает это редким; устойчивый курсор (таблица позиции в PostgreSQL) — решение по реальной потребности, не раньше.
+- **Курсор опроса журнала — в памяти, не сохраняется между перезапусками Orchestrator'а.** Перезапуск во время простоя пропускает события, случившиеся за это время (задача останется в Ready, пока её не запустят вручную через `apps/api`). Принятый риск v1.0 — самостоятельная эксплуатация с одним долгоживущим процессом делает это редким; устойчивый курсор — решение по реальной потребности, не раньше. Важно: этот риск **операционно виден** (оператор знает, что перезапустил процесс), в отличие от бесшумной потери событий, которую снял переход на курсор по `seq` (TASK-080). После этого перехода устойчивое хранение курсора становится тривиальным — одно целое число.
 - **Единственный Developer-исполнитель, бутстрап жёстко задан.** Подходит для доверенной однопользовательской установки (тот же принцип, что ADR-012); масштабирование на несколько исполнителей одной роли — не в этом эпике.
 - **Наследуется ограничение EPIC-006**: реальный вызов AI-провайдера требует `ANTHROPIC_API_KEY`, которого может не быть в среде проверки — тот же принятый разрыв между «механика подтверждена» и «качество ответа проверено».
 - **Опрос вместо подписки — временное решение**, явно привязанное к будущему шагу ADR-002 (настоящая шина сообщений); переход на неё, если/когда потребуется несколько подписчиков или доставка в реальном времени, — самостоятельная задача, не расширение этого эпика.
@@ -80,4 +82,4 @@
 
 ## Последнее обновление
 
-2026-07-23
+2026-07-25
