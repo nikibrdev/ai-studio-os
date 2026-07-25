@@ -27,6 +27,16 @@ const exitCodeFile = "/tmp/ai-studio-os-exit-code"
 // creates this subdirectory, it does not already exist in the image).
 const workspaceDir = "/workspace/repo"
 
+// BaseSHAFile holds the commit the working copy was at immediately after
+// cloning — the boundary between history the execution inherited and
+// whatever it produces (BUGFIX-007). Exported because the adapter reads it
+// back to ask git for that range only; without it, `git log` reported the
+// branch's inherited commits as produced artifacts.
+//
+// Written inside the clone's && chain, so a failed clone leaves no file and
+// the adapter can tell "nothing was produced" from "the clone never ran".
+const BaseSHAFile = "/tmp/ai-studio-os-base-sha"
+
 // cloneAndRunScript builds the shell script executed inside the
 // execution container: set up a GIT_ASKPASS reading the token from the
 // GIT_TOKEN environment variable (never placed in argv — unlike
@@ -68,6 +78,7 @@ func cloneAndRunScript(repository, branch string, command []string) (string, err
 	b.WriteString("  git clone --branch " + shellQuote(branch) + " " +
 		shellQuote("https://x-access-token@github.com/"+repoPath+".git") + " " + workspaceDir + " &&\n")
 	b.WriteString("  cd " + workspaceDir + " &&\n")
+	b.WriteString("  git rev-parse HEAD > " + BaseSHAFile + " &&\n")
 	b.WriteString("  " + strings.Join(quoted, " ") + "\n")
 	b.WriteString(")\n")
 	b.WriteString("echo $? > " + exitCodeFile + "\n")
