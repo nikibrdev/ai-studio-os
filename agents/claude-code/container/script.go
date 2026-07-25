@@ -1,6 +1,21 @@
 package container
 
-import "strings"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
+// ErrInvalidRepository is returned when a repository identifier cannot be
+// reduced to GitHub's "owner/name" for the clone URL (BUGFIX-006).
+// Reported before the container starts: previously a malformed identifier
+// produced a nonsense clone URL and surfaced only as "exit code 128" from
+// inside git, saying nothing about the cause.
+var ErrInvalidRepository = errors.New("container: repository identifier must be owner/name, optionally prefixed with a host")
+
+// hostPrefixes are the leading forms stripped from the platform's stored
+// repository identifier before it becomes part of the clone URL.
+var hostPrefixes = []string{"https://", "http://", "github.com/", "www.github.com/"}
 
 // exitCodeFile is where cloneAndRunScript records the clone-and-command
 // exit code inside the container, and how Status reads it back.
@@ -30,7 +45,16 @@ const workspaceDir = "/workspace/repo"
 // captured to exitCodeFile before the idle sleep so Status does not have
 // to rely on Docker's own (now unreliable, since the container stays
 // running either way) State.Running.
-func cloneAndRunScript(repository, branch string, command []string) string {
+// repository arrives in the platform's canonical stored form,
+// "<host>/<owner>/<name>" (platform.RepositoryProvider) — the clone URL
+// already carries the host, so it is stripped here (BUGFIX-006). Returns an
+// error rather than building a URL that cannot work.
+func cloneAndRunScript(repository, branch string, command []string) (string, error) {
+	repoPath, err := normalizeRepository(repository)
+	if err != nil {
+		return "", err
+	}
+
 	quoted := make([]string, len(command))
 	for i, arg := range command {
 		quoted[i] = shellQuote(arg)
@@ -42,13 +66,41 @@ func cloneAndRunScript(repository, branch string, command []string) string {
 	b.WriteString("export GIT_ASKPASS=/tmp/git-askpass.sh GIT_TERMINAL_PROMPT=0\n")
 	b.WriteString("(\n")
 	b.WriteString("  git clone --branch " + shellQuote(branch) + " " +
-		shellQuote("https://x-access-token@github.com/"+repository+".git") + " " + workspaceDir + " &&\n")
+		shellQuote("https://x-access-token@github.com/"+repoPath+".git") + " " + workspaceDir + " &&\n")
 	b.WriteString("  cd " + workspaceDir + " &&\n")
 	b.WriteString("  " + strings.Join(quoted, " ") + "\n")
 	b.WriteString(")\n")
 	b.WriteString("echo $? > " + exitCodeFile + "\n")
 	b.WriteString("sleep 300\n")
-	return b.String()
+	return b.String(), nil
+}
+
+// normalizeRepository reduces a repository identifier to "owner/name".
+//
+// The same translation internal/infrastructure/github performs for API
+// paths (BUGFIX-005) is needed here for the clone URL: the platform stores
+// the host, and both the URL template and the API path supply their own.
+// Duplicating a few lines rather than sharing them is deliberate —
+// agents/ may not import internal/ (module-boundaries.md), and a shared
+// helper in pkg/ for two call sites would be a public contract invented
+// ahead of need.
+func normalizeRepository(repository string) (string, error) {
+	s := strings.TrimSpace(repository)
+	for changed := true; changed; {
+		changed = false
+		for _, prefix := range hostPrefixes {
+			if len(s) >= len(prefix) && strings.EqualFold(s[:len(prefix)], prefix) {
+				s, changed = s[len(prefix):], true
+			}
+		}
+	}
+	s = strings.TrimSuffix(strings.Trim(s, "/"), ".git")
+
+	owner, name, found := strings.Cut(s, "/")
+	if !found || owner == "" || name == "" || strings.Contains(name, "/") {
+		return "", fmt.Errorf("%w: %q", ErrInvalidRepository, repository)
+	}
+	return owner + "/" + name, nil
 }
 
 // shellQuote wraps s in single quotes, safe for embedding in a POSIX

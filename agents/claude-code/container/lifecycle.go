@@ -82,6 +82,14 @@ func (m *Manager) Start(ctx context.Context, p StartParams) (*Handle, error) {
 
 	allowlist := append([]string{"github.com", "api.github.com"}, p.Allowlist...)
 
+	// Built before any Docker resource exists: an unusable repository
+	// identifier must fail without leaving a network and a proxy behind
+	// (BUGFIX-006).
+	script, err := cloneAndRunScript(p.Repository, p.Branch, p.Command)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := ensureNetwork(ctx, m.run, h.networkName, true); err != nil {
 		return nil, err
 	}
@@ -90,7 +98,6 @@ func (m *Manager) Start(ctx context.Context, p StartParams) (*Handle, error) {
 		return nil, err
 	}
 
-	script := cloneAndRunScript(p.Repository, p.Branch, p.Command)
 	proxyURL := fmt.Sprintf("http://%s:%s", h.proxyName, proxyPort)
 
 	args := []string{

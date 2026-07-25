@@ -30,7 +30,10 @@ func TestRenderSquidConf_NormalizesLeadingDot(t *testing.T) {
 }
 
 func TestCloneAndRunScript_TokenOnlyViaEnvNotArgv(t *testing.T) {
-	script := cloneAndRunScript("org/repo", "feature/x", []string{"echo", "hi"})
+	script, err := cloneAndRunScript("org/repo", "feature/x", []string{"echo", "hi"})
+	if err != nil {
+		t.Fatalf("cloneAndRunScript: %v", err)
+	}
 
 	if strings.Contains(script, "GIT_TOKEN=") && !strings.Contains(script, `echo "$GIT_TOKEN"`) {
 		t.Errorf("script should only reference $GIT_TOKEN via the askpass helper, got:\n%s", script)
@@ -50,7 +53,10 @@ func TestCloneAndRunScript_TokenOnlyViaEnvNotArgv(t *testing.T) {
 }
 
 func TestCloneAndRunScript_CapturesExitCodeAndStaysAlive(t *testing.T) {
-	script := cloneAndRunScript("org/repo", "main", []string{"false"})
+	script, err := cloneAndRunScript("org/repo", "main", []string{"false"})
+	if err != nil {
+		t.Fatalf("cloneAndRunScript: %v", err)
+	}
 
 	if !strings.Contains(script, "echo $? > "+exitCodeFile) {
 		t.Errorf("expected the exit code to be captured to %s, got:\n%s", exitCodeFile, script)
