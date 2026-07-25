@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/infrastructure/eventbus"
 	"ai-studio-os/internal/infrastructure/github"
 	"ai-studio-os/internal/infrastructure/memory"
@@ -37,6 +38,14 @@ type System struct {
 
 	Events platform.EventBus
 
+	// EventJournal reads published events back by cursor — how a process
+	// that cannot subscribe to the in-process Bus learns about them
+	// (apps/orchestrator, EPIC-010/TASK-080). Typed as the port, not the
+	// concrete *eventbus.Journal, so the assignment below is itself the
+	// compile-time conformance check — the same way Events/Repository/Memory
+	// are typed.
+	EventJournal application.EventJournal
+
 	Repository platform.RepositoryProvider
 	Memory     platform.MemoryProvider
 }
@@ -58,13 +67,14 @@ func New(ctx context.Context, dsn, qdrantURL string) (*System, error) {
 	}
 
 	sys := &System{
-		Pool:       pool,
-		Projects:   postgres.NewProjectStore(pool),
-		Tasks:      postgres.NewTaskStore(pool),
-		Executors:  postgres.NewExecutorStore(pool),
-		Executions: postgres.NewExecutionStore(pool),
-		Artifacts:  postgres.NewArtifactStore(pool),
-		Events:     eventbus.New(pool),
+		Pool:         pool,
+		Projects:     postgres.NewProjectStore(pool),
+		Tasks:        postgres.NewTaskStore(pool),
+		Executors:    postgres.NewExecutorStore(pool),
+		Executions:   postgres.NewExecutionStore(pool),
+		Artifacts:    postgres.NewArtifactStore(pool),
+		Events:       eventbus.New(pool),
+		EventJournal: eventbus.NewJournal(pool),
 	}
 
 	if repo, err := github.New(); err == nil {
