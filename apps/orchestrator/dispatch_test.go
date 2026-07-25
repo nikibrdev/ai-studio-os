@@ -11,6 +11,7 @@ import (
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/application/inmemory"
 	"ai-studio-os/internal/domain/event"
+	"ai-studio-os/internal/domain/execution"
 	"ai-studio-os/internal/domain/executor"
 	"ai-studio-os/internal/domain/project"
 	"ai-studio-os/internal/domain/shared"
@@ -26,6 +27,19 @@ type fakeBackend struct {
 	// order appends a marker per observable step, shared with fakeRepos so a
 	// test can assert the branch is created before the agent clones it.
 	order *[]string
+
+	// statuses is returned one per Status call; the last value repeats once
+	// exhausted. Defaults to a single "succeeded" so a test that only cares
+	// about dispatch does not have to describe an execution's whole life.
+	statuses  []platform.ExecutionStatus
+	statusErr error
+	statusN   int
+
+	artifacts    []platform.Artifact
+	artifactsErr error
+
+	finished  int
+	finishErr error
 }
 
 func (b *fakeBackend) Accept(_ context.Context, t platform.ExecutorTask) error {
@@ -35,20 +49,47 @@ func (b *fakeBackend) Accept(_ context.Context, t platform.ExecutorTask) error {
 	}
 	return b.acceptErr
 }
-func (b *fakeBackend) Artifacts(context.Context) ([]platform.Artifact, error) { return nil, nil }
-func (b *fakeBackend) Status(context.Context) (platform.ExecutionStatus, error) {
-	return platform.ExecutionStatus{}, nil
+
+func (b *fakeBackend) Artifacts(context.Context) ([]platform.Artifact, error) {
+	if b.artifactsErr != nil {
+		return nil, b.artifactsErr
+	}
+	return b.artifacts, nil
 }
-func (b *fakeBackend) Finish(context.Context) error { return nil }
+
+func (b *fakeBackend) Status(context.Context) (platform.ExecutionStatus, error) {
+	if b.statusErr != nil {
+		return platform.ExecutionStatus{}, b.statusErr
+	}
+	if len(b.statuses) == 0 {
+		return platform.ExecutionStatus{State: statusSucceeded}, nil
+	}
+	i := b.statusN
+	if i >= len(b.statuses) {
+		i = len(b.statuses) - 1
+	}
+	b.statusN++
+	return b.statuses[i], nil
+}
+
+func (b *fakeBackend) Finish(context.Context) error {
+	b.finished++
+	if b.order != nil {
+		*b.order = append(*b.order, "Finish")
+	}
+	return b.finishErr
+}
 
 // branchCall is one recorded CreateBranch invocation.
 type branchCall struct{ repo, branch, base string }
 
-// fakeRepos records branch creation and the order of calls relative to
-// Accept. inmemory.RepositoryProvider's CreateBranch is a no-op that records
-// nothing, and these assertions need the arguments and the ordering — so
-// this test keeps its own fake rather than widening a shared fixture other
-// packages depend on.
+// prCall is one recorded OpenPullRequest invocation.
+type prCall struct{ repo, branch, title, body string }
+
+// fakeRepos records branch and pull-request creation, and the order of calls
+// relative to Accept. inmemory.RepositoryProvider records none of that, and
+// these assertions need the arguments and the ordering — so this test keeps
+// its own fake rather than widening a shared fixture other packages depend on.
 type fakeRepos struct {
 	inmemory.RepositoryProvider
 	branches        []branchCall
@@ -56,6 +97,22 @@ type fakeRepos struct {
 	// order appends a marker per observable step, so a test can assert the
 	// branch exists before the agent is told to clone it.
 	order *[]string
+
+	pullRequests     []prCall
+	openPRErr        error
+	requestReviewErr error
+}
+
+func (r *fakeRepos) OpenPullRequest(_ context.Context, repo, branch, title, body string) (string, error) {
+	if r.openPRErr != nil {
+		return "", r.openPRErr
+	}
+	r.pullRequests = append(r.pullRequests, prCall{repo: repo, branch: branch, title: title, body: body})
+	return "1", nil
+}
+
+func (r *fakeRepos) RequestReview(_ context.Context, _, _ string) error {
+	return r.requestReviewErr
 }
 
 func (r *fakeRepos) CreateBranch(_ context.Context, repo, branch, base string) error {
@@ -87,8 +144,30 @@ type dispatchFixture struct {
 	tasks      application.TaskStore
 	views      *application.TaskProjection
 	bus        *inmemory.EventBus
+	executions application.ExecutionStore
+	artifacts  application.ArtifactStore
 	// order records observable steps so tests can assert their sequence.
 	order []string
+}
+
+// lastExecution returns the Execution the dispatch created — found through
+// the event bus, since its identifier is generated inside WorkService.
+func (f *dispatchFixture) lastExecution(t *testing.T) *execution.Execution {
+	t.Helper()
+	var id string
+	for _, e := range f.bus.Published() {
+		if e.Type() == event.ExecutionQueued {
+			id = e.SubjectID()
+		}
+	}
+	if id == "" {
+		t.Fatal("no ExecutionQueued event was published — no execution was created")
+	}
+	run, err := f.executions.Get(context.Background(), id)
+	if err != nil {
+		t.Fatalf("Get execution %s: %v", id, err)
+	}
+	return run
 }
 
 // nowForTest is a fixed timestamp: these tests assert on identity and
@@ -135,17 +214,33 @@ func newDispatchFixture(t *testing.T, repositories []string, executors ...*execu
 	backend := &fakeBackend{order: &f.order}
 	repos := &fakeRepos{order: &f.order}
 
+	executions := inmemory.NewExecutionStore()
+	artifacts := inmemory.NewArtifactStore()
+	f.executions = executions
+	f.artifacts = artifacts
+
 	d := &Dispatcher{
 		Projects:  projects,
 		Executors: executorStore,
 		Work: &application.WorkService{
-			Tasks: tasks, Executors: executorStore, Executions: inmemory.NewExecutionStore(),
+			Tasks: tasks, Executors: executorStore, Executions: executions,
 			Events: bus, Rules: workflow.Machine{},
+		},
+		Results: &application.ResultService{
+			Projects: projects, Tasks: tasks, Executions: executions,
+			Artifacts: artifacts, Events: bus,
+		},
+		Completion: &application.CompletionService{
+			Tasks: tasks, Repositories: repos, Events: bus, Rules: workflow.Machine{},
 		},
 		Views:       views,
 		Repos:       repos,
 		NewExecutor: func() (platform.Executor, error) { return backend, nil },
 		Log:         log.New(io.Discard, "", 0),
+		// Small enough that watching an execution costs no real time; the
+		// defaults are minutes.
+		StatusPollInterval: time.Millisecond,
+		ExecutionTimeout:   2 * time.Second,
 	}
 	f.dispatcher = d
 	f.backend = backend
@@ -233,19 +328,21 @@ func TestDispatch_TaskPlannedStartsWorkAndAcceptsTask(t *testing.T) {
 	if base := f.repos.branches[0].base; base != baseBranch {
 		t.Errorf("branch cut from %q, want %q", base, baseBranch)
 	}
-	// The branch must exist before the agent is told to clone it.
-	if len(f.order) != 2 || f.order[0] != "CreateBranch" || f.order[1] != "Accept" {
-		t.Errorf("call order = %v, want [CreateBranch Accept]", f.order)
+	// The branch must exist before the agent is told to clone it, and the
+	// sandbox must always be torn down (TASK-083).
+	if len(f.order) != 3 || f.order[0] != "CreateBranch" || f.order[1] != "Accept" || f.order[2] != "Finish" {
+		t.Errorf("call order = %v, want [CreateBranch Accept Finish]", f.order)
 	}
 
 	// The task must have moved through the Application Layer, not been
-	// dispatched behind the state machine's back.
+	// dispatched behind the state machine's back. With monitoring (TASK-083)
+	// the default fake reports success, so the full path ends in Review.
 	task, err := f.tasks.Get(ctx, "proj-1", "TASK-001")
 	if err != nil {
 		t.Fatalf("Get task: %v", err)
 	}
-	if task.State() != shared.StateInProgress {
-		t.Errorf("task state = %v, want %v", task.State(), shared.StateInProgress)
+	if task.State() != shared.StateReview {
+		t.Errorf("task state = %v, want %v", task.State(), shared.StateReview)
 	}
 }
 
