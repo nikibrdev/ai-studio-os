@@ -272,3 +272,110 @@ func TestAPIError_MessageIncludesContext(t *testing.T) {
 		t.Errorf("Error() = %q, want it to mention status, path and body", msg)
 	}
 }
+
+func TestNormalizeRepo(t *testing.T) {
+	tests := []struct {
+		name, in, want string
+	}{
+		// The form the platform actually stores — the one that used to build
+		// /repos/github.com/owner/name/... and come back 404 (BUGFIX-005).
+		{name: "stored form with host", in: "github.com/nikibrdev/ai-studio-os", want: "nikibrdev/ai-studio-os"},
+		{name: "already short", in: "org/repo", want: "org/repo"},
+		{name: "https url", in: "https://github.com/org/repo", want: "org/repo"},
+		{name: "http url", in: "http://github.com/org/repo", want: "org/repo"},
+		{name: "url with .git", in: "https://github.com/org/repo.git", want: "org/repo"},
+		{name: "www host", in: "www.github.com/org/repo", want: "org/repo"},
+		{name: "trailing slash", in: "github.com/org/repo/", want: "org/repo"},
+		{name: "surrounding spaces", in: "  github.com/org/repo  ", want: "org/repo"},
+		{name: "mixed case host", in: "GitHub.com/org/repo", want: "org/repo"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := normalizeRepo(tt.in)
+			if err != nil {
+				t.Fatalf("normalizeRepo(%q) error = %v", tt.in, err)
+			}
+			if got != tt.want {
+				t.Errorf("normalizeRepo(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNormalizeRepo_Invalid(t *testing.T) {
+	// Each of these would previously have been pasted into the path and come
+	// back as an opaque 404.
+	for _, in := range []string{
+		"",
+		"repo",                      // no owner
+		"github.com/repo",           // host stripped leaves one segment
+		"org/",                      // empty name
+		"/repo",                     // empty owner
+		"github.com/org/repo/extra", // too many segments
+	} {
+		if got, err := normalizeRepo(in); !errors.Is(err, ErrInvalidRepository) {
+			t.Errorf("normalizeRepo(%q) = (%q, %v), want ErrInvalidRepository", in, got, err)
+		}
+	}
+}
+
+// TestCreateBranch_AcceptsStoredHostPrefixedForm is the regression test for
+// BUGFIX-005: the identifier the platform stores must produce GitHub's
+// expected /repos/owner/name/... path. Every other adapter test uses the
+// short form, which is exactly why the defect went unnoticed.
+func TestCreateBranch_AcceptsStoredHostPrefixedForm(t *testing.T) {
+	var paths []string
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/repos/nikibrdev/ai-studio-os/git/ref/heads/main":
+			writeJSON(t, w, http.StatusOK, map[string]any{"object": map[string]string{"sha": "abc123"}})
+		case r.Method == http.MethodPost && r.URL.Path == "/repos/nikibrdev/ai-studio-os/git/refs":
+			writeJSON(t, w, http.StatusCreated, nil)
+		default:
+			t.Errorf("unexpected request path: %s %s", r.Method, r.URL.Path)
+			writeJSON(t, w, http.StatusNotFound, map[string]string{"message": "Not Found"})
+		}
+	})
+
+	err := p.CreateBranch(context.Background(), "github.com/nikibrdev/ai-studio-os", "feature/TASK-001", "main")
+	if err != nil {
+		t.Fatalf("CreateBranch with the stored host-prefixed form: %v", err)
+	}
+	for _, path := range paths {
+		if strings.Contains(path, "github.com") {
+			t.Errorf("request path %q still carries the host — normalization did not apply", path)
+		}
+	}
+}
+
+// A malformed identifier must fail before any HTTP request, so the error
+// names the real cause instead of surfacing as a 404.
+func TestOperations_RejectInvalidRepositoryWithoutCallingAPI(t *testing.T) {
+	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("no HTTP request expected, got %s %s", r.Method, r.URL.Path)
+		writeJSON(t, w, http.StatusOK, nil)
+	})
+	ctx := context.Background()
+	const bad = "not-a-repo"
+
+	if err := p.CreateBranch(ctx, bad, "b", "main"); !errors.Is(err, ErrInvalidRepository) {
+		t.Errorf("CreateBranch error = %v, want ErrInvalidRepository", err)
+	}
+	if _, err := p.OpenPullRequest(ctx, bad, "b", "t", "body"); !errors.Is(err, ErrInvalidRepository) {
+		t.Errorf("OpenPullRequest error = %v, want ErrInvalidRepository", err)
+	}
+	if err := p.RequestReview(ctx, bad, "1"); !errors.Is(err, ErrInvalidRepository) {
+		t.Errorf("RequestReview error = %v, want ErrInvalidRepository", err)
+	}
+	if err := p.MergePullRequest(ctx, bad, "1"); !errors.Is(err, ErrInvalidRepository) {
+		t.Errorf("MergePullRequest error = %v, want ErrInvalidRepository", err)
+	}
+	if err := p.ClosePullRequest(ctx, bad, "1"); !errors.Is(err, ErrInvalidRepository) {
+		t.Errorf("ClosePullRequest error = %v, want ErrInvalidRepository", err)
+	}
+	if _, err := p.PullRequestState(ctx, bad, "1"); !errors.Is(err, ErrInvalidRepository) {
+		t.Errorf("PullRequestState error = %v, want ErrInvalidRepository", err)
+	}
+}
