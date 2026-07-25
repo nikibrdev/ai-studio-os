@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/domain/event"
@@ -39,11 +40,19 @@ const baseBranch = "main"
 // asks the task/workflow modules whether a transition is legal
 // (module-boundaries.md).
 type Dispatcher struct {
-	Projects  application.ProjectStore
-	Executors application.ExecutorStore
-	Work      *application.WorkService
-	Views     *application.TaskProjection
-	Repos     platform.RepositoryProvider
+	Projects   application.ProjectStore
+	Executors  application.ExecutorStore
+	Work       *application.WorkService
+	Results    *application.ResultService
+	Completion *application.CompletionService
+	Views      *application.TaskProjection
+	Repos      platform.RepositoryProvider
+
+	// StatusPollInterval and ExecutionTimeout override the defaults for
+	// watching an execution (monitor.go). Zero means use the default; tests
+	// set them small so they do not wait minutes.
+	StatusPollInterval time.Duration
+	ExecutionTimeout   time.Duration
 
 	// NewExecutor builds the Executor for one Execution's Accept -> Finish
 	// lifecycle. A factory rather than a single value because
@@ -145,7 +154,18 @@ func (d *Dispatcher) dispatchTaskPlanned(ctx context.Context, e platform.Event) 
 	}
 
 	d.Log.Printf("dispatched %s/%s to %s: execution %s, branch %s", projectID, taskID, executorID, run.ID(), branch)
-	return nil
+
+	// Accept only starts the work; watching it through to a Pull Request and
+	// Review is monitorExecution, which also guarantees the sandbox is torn
+	// down (TASK-083).
+	return d.monitorExecution(ctx, backend, executionContext{
+		executionID: run.ID(),
+		projectID:   projectID,
+		taskID:      taskID,
+		repository:  repo,
+		branch:      branch,
+		view:        view,
+	})
 }
 
 // pickDeveloperExecutor returns the id of an Active Executor holding the

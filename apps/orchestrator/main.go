@@ -74,6 +74,13 @@ func run() error {
 			Tasks: sys.Tasks, Executors: sys.Executors, Executions: sys.Executions,
 			Events: sys.Events, Rules: workflow.Machine{},
 		},
+		Results: &application.ResultService{
+			Projects: sys.Projects, Tasks: sys.Tasks, Executions: sys.Executions,
+			Artifacts: sys.Artifacts, Events: sys.Events,
+		},
+		Completion: &application.CompletionService{
+			Tasks: sys.Tasks, Repositories: sys.Repository, Events: sys.Events, Rules: workflow.Machine{},
+		},
 		Views: application.NewTaskProjection(),
 		Repos: sys.Repository,
 		NewExecutor: func() (platform.Executor, error) {
