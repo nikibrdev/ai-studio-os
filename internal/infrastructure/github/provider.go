@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"ai-studio-os/internal/platform"
@@ -23,9 +24,25 @@ const defaultBaseURL = "https://api.github.com"
 // ErrTokenNotSet is returned by New when TokenEnv is empty.
 var ErrTokenNotSet = errors.New("github: " + TokenEnv + " is not set")
 
+// ErrInvalidRepository is returned when a repository identifier cannot be
+// reduced to GitHub's "owner/name" (BUGFIX-005). Reported before any HTTP
+// call: a malformed identifier used to reach the API as a nonsense path and
+// come back as a bare 404, which said nothing about the real cause.
+var ErrInvalidRepository = errors.New("github: repository identifier must be owner/name, optionally prefixed with a host")
+
+// hostPrefixes are the leading forms stripped from a stored repository
+// identifier before it is used as a GitHub API path segment.
+var hostPrefixes = []string{"https://", "http://", "github.com/", "www.github.com/"}
+
 // Provider implements platform.RepositoryProvider against the GitHub REST
-// API. repo is always "owner/name" (the format already fixed by the
-// platform.RepositoryProvider contract).
+// API.
+//
+// Repository identifiers arrive in the platform's canonical stored form,
+// "<host>/<owner>/<name>" (platform.RepositoryProvider) — that is what
+// ProjectService.ConnectRepository records. GitHub's API needs bare
+// "owner/name" in /repos/{...}, so normalizeRepo translates: knowing that
+// GitHub wants no host belongs to this adapter, not to the domain, which
+// stays provider-agnostic. The short "owner/name" form is accepted too.
 type Provider struct {
 	baseURL string
 	token   string
@@ -62,9 +79,51 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("github: %s %s: unexpected status %d: %s", e.Method, e.Path, e.StatusCode, e.Body)
 }
 
+// normalizeRepo reduces a repository identifier to GitHub's "owner/name".
+//
+// It strips a URL scheme, a host prefix and a trailing ".git", then requires
+// exactly two non-empty segments. The validation is the point as much as the
+// stripping: before BUGFIX-005 an identifier carrying its host was pasted
+// straight into the path, producing /repos/github.com/owner/name/... and a
+// 404 that looked like a missing repository or a bad token.
+func normalizeRepo(repo string) (string, error) {
+	s := strings.TrimSpace(repo)
+	// Scheme and host are separate prefixes ("https://github.com/o/n" has
+	// both), so keep stripping until nothing matches.
+	for changed := true; changed; {
+		changed = false
+		for _, prefix := range hostPrefixes {
+			if trimmed, ok := cutPrefixFold(s, prefix); ok {
+				s, changed = trimmed, true
+			}
+		}
+	}
+	s = strings.TrimSuffix(strings.Trim(s, "/"), ".git")
+
+	owner, name, found := strings.Cut(s, "/")
+	if !found || owner == "" || name == "" || strings.Contains(name, "/") {
+		return "", fmt.Errorf("%w: %q", ErrInvalidRepository, repo)
+	}
+	return owner + "/" + name, nil
+}
+
+// cutPrefixFold removes prefix from s case-insensitively, reporting whether
+// it was present — host and scheme casing is not significant.
+func cutPrefixFold(s, prefix string) (string, bool) {
+	if len(s) >= len(prefix) && strings.EqualFold(s[:len(prefix)], prefix) {
+		return s[len(prefix):], true
+	}
+	return s, false
+}
+
 // CreateBranch implements platform.RepositoryProvider: it resolves base's
 // current commit SHA and creates branch pointing at it.
 func (p *Provider) CreateBranch(ctx context.Context, repo, branch, base string) error {
+	repo, err := normalizeRepo(repo)
+	if err != nil {
+		return err
+	}
+
 	var ref struct {
 		Object struct {
 			SHA string `json:"sha"`
@@ -86,6 +145,11 @@ func (p *Provider) CreateBranch(ctx context.Context, repo, branch, base string) 
 // ("opens a pull request from the branch into the main branch"), matching
 // this project's git-workflow (every branch merges into main).
 func (p *Provider) OpenPullRequest(ctx context.Context, repo, branch, title, body string) (string, error) {
+	repo, err := normalizeRepo(repo)
+	if err != nil {
+		return "", err
+	}
+
 	reqBody := map[string]string{"title": title, "body": body, "head": branch, "base": "main"}
 
 	var resp struct {
@@ -104,6 +168,11 @@ func (p *Provider) OpenPullRequest(ctx context.Context, repo, branch, title, bod
 // so there is no GitHub reviewer to assign here. This posts a visible PR
 // comment marking the request instead of silently doing nothing.
 func (p *Provider) RequestReview(ctx context.Context, repo, prID string) error {
+	repo, err := normalizeRepo(repo)
+	if err != nil {
+		return err
+	}
+
 	body := map[string]string{"body": "Запрошено ревью."}
 	if err := p.do(ctx, http.MethodPost, fmt.Sprintf("/repos/%s/issues/%s/comments", repo, prID), body, nil); err != nil {
 		return fmt.Errorf("github: request review on PR %s: %w", prID, err)
@@ -114,6 +183,11 @@ func (p *Provider) RequestReview(ctx context.Context, repo, prID string) error {
 // MergePullRequest implements platform.RepositoryProvider: merge commit,
 // per ADR-008 (not squash, not rebase).
 func (p *Provider) MergePullRequest(ctx context.Context, repo, prID string) error {
+	repo, err := normalizeRepo(repo)
+	if err != nil {
+		return err
+	}
+
 	body := map[string]string{"merge_method": "merge"}
 	path := fmt.Sprintf("/repos/%s/pulls/%s/merge", repo, prID)
 	if err := p.do(ctx, http.MethodPut, path, body, nil); err != nil {
@@ -124,6 +198,11 @@ func (p *Provider) MergePullRequest(ctx context.Context, repo, prID string) erro
 
 // ClosePullRequest implements platform.RepositoryProvider.
 func (p *Provider) ClosePullRequest(ctx context.Context, repo, prID string) error {
+	repo, err := normalizeRepo(repo)
+	if err != nil {
+		return err
+	}
+
 	body := map[string]string{"state": "closed"}
 	path := fmt.Sprintf("/repos/%s/pulls/%s", repo, prID)
 	if err := p.do(ctx, http.MethodPatch, path, body, nil); err != nil {
@@ -134,6 +213,11 @@ func (p *Provider) ClosePullRequest(ctx context.Context, repo, prID string) erro
 
 // PullRequestState implements platform.RepositoryProvider.
 func (p *Provider) PullRequestState(ctx context.Context, repo, prID string) (platform.PullRequestState, error) {
+	repo, err := normalizeRepo(repo)
+	if err != nil {
+		return "", err
+	}
+
 	var resp struct {
 		State  string `json:"state"`
 		Merged bool   `json:"merged"`

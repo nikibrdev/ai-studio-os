@@ -20,10 +20,17 @@ const (
 // Contract constraints:
 //   - the provider executes operations and reports state; it never makes
 //     process decisions (when to merge is decided by the workflow process);
-//   - merge policies are fixed by ADR-008 (Decision Required) and belong to
-//     the caller, not to this contract;
-//   - repository identifiers are strings until ADR-013 fixes the managed
-//     project connection format.
+//   - merge policies are fixed by ADR-008 (accepted: merge commit, merge
+//     after Testing) and belong to the caller, not to this contract;
+//   - repo is the platform's canonical stored repository identifier,
+//     "<host>/<owner>/<name>" (e.g. "github.com/nikibrdev/ai-studio-os") —
+//     what project.Project holds and ProjectService.ConnectRepository
+//     records. Keeping the host makes the identifier say which hosting it
+//     refers to, so the domain need not assume a single provider;
+//     translating it into whatever shape a hosting API wants is each
+//     adapter's job (BUGFIX-005 — internal/infrastructure/github reduces it
+//     to GitHub's bare "owner/name"). This fixes the format ADR-013 was
+//     expected to settle and did not.
 type RepositoryProvider interface {
 	// CreateBranch creates a branch from the base branch.
 	CreateBranch(ctx context.Context, repo, branch, base string) error
