@@ -107,16 +107,31 @@ func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 	return nil
 }
 
+// dataCarrier is satisfied by any event that attaches event-type-specific
+// data beyond the fixed platform.Event fields — Envelope via its
+// WithData/Data methods, and equally an event reconstructed from the
+// durable journal (internal/infrastructure/eventbus).
+//
+// Matched structurally, not by asserting the concrete Envelope type
+// (BUGFIX-004): a journal row comes back as eventbus's own event type, so
+// a concrete assertion silently dropped every WithData payload on replay —
+// descriptive fields came back empty and ReviewCompleted lost its target
+// state, defeating Rebuild's whole purpose. The eventbus package already
+// reads this data the same structural way on its side of the boundary.
+type dataCarrier interface {
+	Data() map[string]string
+}
+
 // applyCreatedData populates v's immutable descriptive fields from
-// TaskCreated's attached data — a no-op (fields stay zero) if e is not an
-// Envelope or carries no data, which keeps Handle safe against any
-// platform.Event implementation, not just this package's own.
+// TaskCreated's attached data — a no-op (fields stay zero) if e carries no
+// data at all, which keeps Handle safe against any platform.Event
+// implementation, not just this package's own.
 func applyCreatedData(v *TaskView, e platform.Event) {
-	env, ok := e.(Envelope)
+	carrier, ok := e.(dataCarrier)
 	if !ok {
 		return
 	}
-	data := env.Data()
+	data := carrier.Data()
 	v.Title = data["title"]
 	v.Type = data["type"]
 	v.Scope = data["scope"]
@@ -144,8 +159,8 @@ func targetState(e platform.Event) (shared.TaskState, bool) {
 	case event.ReviewRequested:
 		return shared.StateReview, true
 	case event.ReviewCompleted:
-		if env, ok := e.(Envelope); ok {
-			if to, ok := env.Data()["to"]; ok {
+		if carrier, ok := e.(dataCarrier); ok {
+			if to, ok := carrier.Data()["to"]; ok {
 				return shared.TaskState(to), true
 			}
 		}
