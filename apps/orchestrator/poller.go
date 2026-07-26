@@ -58,6 +58,10 @@ func (p *Poller) Start(ctx context.Context) error {
 		return fmt.Errorf("orchestrator: read journal tip: %w", err)
 	}
 
+	// Seeding replays all history into read models; the cursor below still
+	// starts at the tip. These are deliberately different questions
+	// (BUGFIX-010): the read model must know everything that ever happened,
+	// while re-dispatching finished work would start executions a second time.
 	for _, e := range entries {
 		if p.Seed == nil {
 			break
