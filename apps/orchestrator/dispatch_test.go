@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -235,7 +236,7 @@ func newDispatchFixture(t *testing.T, repositories []string, executors ...*execu
 		},
 		Views:       views,
 		Repos:       repos,
-		NewExecutor: func() (platform.Executor, error) { return backend, nil },
+		NewExecutor: func(shared.Role) (platform.Executor, error) { return backend, nil },
 		Log:         log.New(io.Discard, "", 0),
 		// Small enough that watching an execution costs no real time; the
 		// defaults are minutes.
@@ -246,6 +247,15 @@ func newDispatchFixture(t *testing.T, repositories []string, executors ...*execu
 	f.backend = backend
 	f.repos = repos
 	return f
+}
+
+// ownDeveloper is the registry entry this orchestrator owns for the Developer
+// role — the one dispatch looks up by derived identifier (TASK-086). Most
+// tests want this; activeDeveloper with an arbitrary id builds a foreign
+// record, used to prove foreign records cannot influence the choice.
+func ownDeveloper(t *testing.T) *executor.Executor {
+	t.Helper()
+	return activeDeveloper(t, developerID)
 }
 
 func activeDeveloper(t *testing.T, id string) *executor.Executor {
@@ -295,7 +305,7 @@ func mustProjects(f *dispatchFixture) application.ProjectStore { return f.dispat
 
 func TestDispatch_TaskPlannedStartsWorkAndAcceptsTask(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/nikibrdev/ai-studio-os"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/nikibrdev/ai-studio-os"}, ownDeveloper(t))
 	planned := seedPlannedTask(t, f, "Заголовок задачи")
 
 	if err := f.dispatcher.Handle(ctx, planned); err != nil {
@@ -348,7 +358,7 @@ func TestDispatch_TaskPlannedStartsWorkAndAcceptsTask(t *testing.T) {
 
 func TestDispatch_IgnoresEventsOtherThanTaskPlanned(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 
 	created := application.NewEvent(event.TaskCreated, "task", "human", "proj-1", "TASK-001", nowForTest()).
 		WithData(map[string]string{"title": "Заголовок", "type": "feature"})
@@ -369,8 +379,8 @@ func TestDispatch_IgnoresEventsOtherThanTaskPlanned(t *testing.T) {
 
 func TestDispatch_NoActiveDeveloperExecutorLeavesTaskInReady(t *testing.T) {
 	ctx := context.Background()
-	// Registered but never activated: not assignable.
-	idle, _, err := executor.New("exec-idle", "claude-code", []shared.Role{shared.RoleDeveloper})
+	// This orchestrator's own entry exists but was never activated.
+	idle, _, err := executor.New(developerID, "claude-code", []shared.Role{shared.RoleDeveloper})
 	if err != nil {
 		t.Fatalf("executor.New: %v", err)
 	}
@@ -378,8 +388,8 @@ func TestDispatch_NoActiveDeveloperExecutorLeavesTaskInReady(t *testing.T) {
 	planned := seedPlannedTask(t, f, "Заголовок")
 
 	err = f.dispatcher.Handle(ctx, planned)
-	if !errors.Is(err, ErrNoDeveloperExecutor) {
-		t.Fatalf("Handle() error = %v, want %v", err, ErrNoDeveloperExecutor)
+	if !errors.Is(err, ErrExecutorNotUsable) {
+		t.Fatalf("Handle() error = %v, want %v", err, ErrExecutorNotUsable)
 	}
 	if len(f.backend.accepted) != 0 {
 		t.Errorf("Accept called despite no available executor")
@@ -394,8 +404,43 @@ func TestDispatch_NoActiveDeveloperExecutorLeavesTaskInReady(t *testing.T) {
 	}
 }
 
-// An executor holding only a non-Developer role must not be picked.
-func TestDispatch_SkipsExecutorWithoutDeveloperRole(t *testing.T) {
+// TestDispatch_ForeignActiveDeveloperRecordIsNotUsed is the regression test
+// for TASK-086, reproducing exactly what the live run of TASK-085 hit: the
+// registry also holds a foreign Active record with the Developer role and a
+// lower id (exec-store-1, left behind by integration tests). The old
+// "first Active with this role" scan picked it, so the events named that
+// executor while this orchestrator's own backend did the work.
+func TestDispatch_ForeignActiveDeveloperRecordIsNotUsed(t *testing.T) {
+	ctx := context.Background()
+	// "exec-store-1" sorts before "executor-claude-code-developer", so an
+	// id-ordered scan would reach it first — the actual live-run failure.
+	foreign := activeDeveloper(t, "exec-store-1")
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, foreign, ownDeveloper(t))
+	planned := seedPlannedTask(t, f, "Заголовок")
+
+	if err := f.dispatcher.Handle(ctx, planned); err != nil {
+		t.Fatalf("Handle: %v", err)
+	}
+
+	// The executor named in the events must be the one whose backend ran.
+	var started string
+	for _, e := range f.bus.Published() {
+		if e.Type() == event.ExecutionStarted {
+			started = e.Actor()
+		}
+	}
+	run := f.lastExecution(t)
+	if run.ExecutorID() != developerID {
+		t.Errorf("execution executor = %q, want this orchestrator's own %q (not the foreign record)", run.ExecutorID(), developerID)
+	}
+	if started == "" {
+		t.Error("no ExecutionStarted event was published")
+	}
+}
+
+// A foreign record holding a different role is likewise irrelevant — but the
+// point is that its role never even gets examined: the identifier decides.
+func TestDispatch_MissingOwnEntryIsReportedEvenWhenOthersExist(t *testing.T) {
 	ctx := context.Background()
 	qa, _, err := executor.New("exec-qa", "claude-code", []shared.Role{shared.RoleQA})
 	if err != nil {
@@ -407,14 +452,19 @@ func TestDispatch_SkipsExecutorWithoutDeveloperRole(t *testing.T) {
 	f := newDispatchFixture(t, []string{"github.com/org/repo"}, qa)
 	planned := seedPlannedTask(t, f, "Заголовок")
 
-	if err := f.dispatcher.Handle(ctx, planned); !errors.Is(err, ErrNoDeveloperExecutor) {
-		t.Fatalf("Handle() error = %v, want %v", err, ErrNoDeveloperExecutor)
+	err = f.dispatcher.Handle(ctx, planned)
+	if !errors.Is(err, ErrNoExecutorForRole) {
+		t.Fatalf("Handle() error = %v, want %v", err, ErrNoExecutorForRole)
+	}
+	// The error must name the entry that was expected, so an operator can act.
+	if !strings.Contains(err.Error(), developerID) {
+		t.Errorf("error = %q, want it to name the expected entry %q", err, developerID)
 	}
 }
 
 func TestDispatch_ProjectWithoutRepositoryReportsError(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, nil, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, nil, ownDeveloper(t))
 
 	// CreateTask requires an Active project, which requires a repository —
 	// so drive the projection directly to reach the dispatch path.
@@ -435,7 +485,7 @@ func TestDispatch_ProjectWithoutRepositoryReportsError(t *testing.T) {
 
 func TestDispatch_UnknownTaskReportsError(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 
 	// TaskPlanned for a task the projection never saw created.
 	planned := application.NewEvent(event.TaskPlanned, "task", "pm", "proj-1", "TASK-404", nowForTest())
@@ -451,7 +501,7 @@ func TestDispatch_UnknownTaskReportsError(t *testing.T) {
 
 func TestDispatch_AcceptErrorPropagates(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	wantErr := errors.New("docker daemon unreachable")
 	f.backend.acceptErr = wantErr
 	planned := seedPlannedTask(t, f, "Заголовок")
@@ -515,7 +565,7 @@ func TestBranchName_LongTitleIsTruncated(t *testing.T) {
 // running Execution and nowhere to commit.
 func TestDispatch_BranchFailureLeavesTaskInReady(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	wantErr := errors.New("github: 404 Not Found")
 	f.repos.createBranchErr = wantErr
 	planned := seedPlannedTask(t, f, "Заголовок")

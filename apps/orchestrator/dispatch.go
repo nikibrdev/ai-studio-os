@@ -19,9 +19,13 @@ import (
 // the task simply stays in Ready — where a human can still start it
 // through apps/api. Retries are deliberately outside EPIC-010's scope.
 var (
-	// ErrNoDeveloperExecutor is returned when no Active Executor holds the
-	// Developer role at dispatch time (e.g. it was disabled after startup).
-	ErrNoDeveloperExecutor = errors.New("orchestrator: no active developer executor available")
+	// ErrNoExecutorForRole is returned when this orchestrator's own registry
+	// entry for the role does not exist (e.g. bootstrap never ran).
+	ErrNoExecutorForRole = errors.New("orchestrator: no registry entry for this role")
+
+	// ErrExecutorNotUsable is returned when the entry exists but cannot take
+	// work — not Active, or no longer holding the role.
+	ErrExecutorNotUsable = errors.New("orchestrator: registry entry cannot take work")
 
 	// ErrNoRepository is returned when the task's Project has no repository
 	// connected — there is nowhere to create a branch.
@@ -59,7 +63,12 @@ type Dispatcher struct {
 	// agents/claude-code explicitly serves exactly one Execution per value
 	// — and because it lets tests substitute a fake for the real Docker
 	// sandbox.
-	NewExecutor func() (platform.Executor, error)
+	//
+	// Takes the role so the backend that runs corresponds to the registry
+	// entry that was selected (TASK-086): the entry's identifier is derived
+	// from the same role, which is what keeps the two from diverging. One
+	// adapter serves every role, differing only by prompt (ADR-007).
+	NewExecutor func(role shared.Role) (platform.Executor, error)
 
 	Log *log.Logger
 }
@@ -102,7 +111,7 @@ func (d *Dispatcher) dispatchTaskPlanned(ctx context.Context, e platform.Event) 
 		return fmt.Errorf("%w: %s/%s", ErrTaskNotInProjection, projectID, taskID)
 	}
 
-	executorID, err := d.pickDeveloperExecutor(ctx)
+	executorID, err := d.executorForRole(ctx, shared.RoleDeveloper)
 	if err != nil {
 		return err
 	}
@@ -133,7 +142,7 @@ func (d *Dispatcher) dispatchTaskPlanned(ctx context.Context, e platform.Event) 
 		return fmt.Errorf("orchestrator: start task %s/%s: %w", projectID, taskID, err)
 	}
 
-	backend, err := d.NewExecutor()
+	backend, err := d.NewExecutor(shared.RoleDeveloper)
 	if err != nil {
 		return fmt.Errorf("orchestrator: build executor for %s/%s: %w", projectID, taskID, err)
 	}
@@ -168,22 +177,40 @@ func (d *Dispatcher) dispatchTaskPlanned(ctx context.Context, e platform.Event) 
 	})
 }
 
-// pickDeveloperExecutor returns the id of an Active Executor holding the
-// Developer role. List is ordered by id, so the choice is deterministic
-// rather than dependent on map iteration order. Filtering happens here in
-// memory: at one-executor-per-role scale (EPIC-010's accepted limitation)
-// that is cheaper than a parameterised query.
-func (d *Dispatcher) pickDeveloperExecutor(ctx context.Context) (string, error) {
+// executorForRole returns the id of this orchestrator's own registry entry
+// for the role, verifying it is usable.
+//
+// It looks the entry up by exact identifier rather than scanning for "the
+// first Active executor holding this role" (TASK-086). That earlier form was
+// not a choice at all but an accident of id ordering: the live run of
+// TASK-085 selected exec-store-1 — a record left behind by integration
+// tests — while actually running this orchestrator's own backend, so the
+// events named one executor and a different one did the work. Looking up by
+// derived identifier makes foreign records unable to influence the choice at
+// all, rather than merely unlikely to.
+//
+// A present-but-unusable entry is an error, never a silent fallback to some
+// other record: falling back is exactly how the two could diverge again.
+func (d *Dispatcher) executorForRole(ctx context.Context, role shared.Role) (string, error) {
+	want := executorIDForRole(role)
+
 	all, err := d.Executors.List(ctx)
 	if err != nil {
 		return "", fmt.Errorf("orchestrator: list executors: %w", err)
 	}
 	for _, e := range all {
-		if e.AvailableForAssignment() && e.HasRole(shared.RoleDeveloper) {
-			return e.ID(), nil
+		if e.ID() != want {
+			continue
 		}
+		if !e.AvailableForAssignment() {
+			return "", fmt.Errorf("%w: %s is %s, not active", ErrExecutorNotUsable, want, e.State())
+		}
+		if !e.HasRole(role) {
+			return "", fmt.Errorf("%w: %s does not hold the %s role", ErrExecutorNotUsable, want, role)
+		}
+		return e.ID(), nil
 	}
-	return "", ErrNoDeveloperExecutor
+	return "", fmt.Errorf("%w: expected registry entry %s", ErrNoExecutorForRole, want)
 }
 
 // repositoryOf returns the repository a task's work belongs in: the

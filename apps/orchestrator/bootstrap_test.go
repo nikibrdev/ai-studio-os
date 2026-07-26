@@ -11,25 +11,30 @@ import (
 	"ai-studio-os/internal/domain/shared"
 )
 
+// developerID is the identifier this orchestrator owns for the Developer
+// role — derived from the role, not a separate constant, which is what keeps
+// the registry entry and the launched backend consistent (TASK-086).
+var developerID = executorIDForRole(shared.RoleDeveloper)
+
 func newBootstrapDeps() (*application.ExecutorService, application.ExecutorStore, *inmemory.EventBus) {
 	store := inmemory.NewExecutorStore()
 	bus := inmemory.NewEventBus()
 	return &application.ExecutorService{Executors: store, Events: bus}, store, bus
 }
 
-func TestEnsureDeveloperExecutor_RegistersAndActivatesWhenAbsent(t *testing.T) {
+func TestEnsureExecutor_RegistersAndActivatesWhenAbsent(t *testing.T) {
 	ctx := context.Background()
 	svc, store, bus := newBootstrapDeps()
 
-	id, err := EnsureDeveloperExecutor(ctx, svc, store)
+	id, err := EnsureExecutor(ctx, svc, store, shared.RoleDeveloper)
 	if err != nil {
-		t.Fatalf("EnsureDeveloperExecutor: %v", err)
+		t.Fatalf("EnsureExecutor: %v", err)
 	}
-	if id != developerExecutorID {
-		t.Errorf("id = %q, want %q", id, developerExecutorID)
+	if id != developerID {
+		t.Errorf("id = %q, want %q", id, developerID)
 	}
 
-	e, err := store.Get(ctx, developerExecutorID)
+	e, err := store.Get(ctx, developerID)
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -39,8 +44,8 @@ func TestEnsureDeveloperExecutor_RegistersAndActivatesWhenAbsent(t *testing.T) {
 	if !e.HasRole(shared.RoleDeveloper) {
 		t.Error("HasRole(Developer) = false, want true")
 	}
-	if e.Backend() != developerExecutorBackend {
-		t.Errorf("Backend() = %q, want %q", e.Backend(), developerExecutorBackend)
+	if e.Backend() != executorBackend {
+		t.Errorf("Backend() = %q, want %q", e.Backend(), executorBackend)
 	}
 
 	published := bus.Published()
@@ -51,16 +56,16 @@ func TestEnsureDeveloperExecutor_RegistersAndActivatesWhenAbsent(t *testing.T) {
 
 // Restarting the process must not add a second registry entry — the fixed
 // identifier is the whole idempotency mechanism.
-func TestEnsureDeveloperExecutor_IsIdempotentAcrossRestarts(t *testing.T) {
+func TestEnsureExecutor_IsIdempotentAcrossRestarts(t *testing.T) {
 	ctx := context.Background()
 	svc, store, bus := newBootstrapDeps()
 
-	if _, err := EnsureDeveloperExecutor(ctx, svc, store); err != nil {
+	if _, err := EnsureExecutor(ctx, svc, store, shared.RoleDeveloper); err != nil {
 		t.Fatalf("first call: %v", err)
 	}
 	publishedAfterFirst := len(bus.Published())
 
-	if _, err := EnsureDeveloperExecutor(ctx, svc, store); err != nil {
+	if _, err := EnsureExecutor(ctx, svc, store, shared.RoleDeveloper); err != nil {
 		t.Fatalf("second call: %v", err)
 	}
 
@@ -76,11 +81,11 @@ func TestEnsureDeveloperExecutor_IsIdempotentAcrossRestarts(t *testing.T) {
 	}
 }
 
-func TestEnsureDeveloperExecutor_ActivatesExistingDisabledEntry(t *testing.T) {
+func TestEnsureExecutor_ActivatesExistingDisabledEntry(t *testing.T) {
 	ctx := context.Background()
 	svc, store, _ := newBootstrapDeps()
 
-	e, _, err := executor.New(developerExecutorID, developerExecutorBackend, []shared.Role{shared.RoleDeveloper})
+	e, _, err := executor.New(developerID, executorBackend, []shared.Role{shared.RoleDeveloper})
 	if err != nil {
 		t.Fatalf("executor.New: %v", err)
 	}
@@ -94,11 +99,11 @@ func TestEnsureDeveloperExecutor_ActivatesExistingDisabledEntry(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	if _, err := EnsureDeveloperExecutor(ctx, svc, store); err != nil {
-		t.Fatalf("EnsureDeveloperExecutor: %v", err)
+	if _, err := EnsureExecutor(ctx, svc, store, shared.RoleDeveloper); err != nil {
+		t.Fatalf("EnsureExecutor: %v", err)
 	}
 
-	got, err := store.Get(ctx, developerExecutorID)
+	got, err := store.Get(ctx, developerID)
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -110,11 +115,11 @@ func TestEnsureDeveloperExecutor_ActivatesExistingDisabledEntry(t *testing.T) {
 // Retired is terminal in the domain. Quietly registering a replacement
 // under a different id would leave two entries and override an operator's
 // decision to decommission this backend — so this reports an error instead.
-func TestEnsureDeveloperExecutor_RefusesRetiredEntry(t *testing.T) {
+func TestEnsureExecutor_RefusesRetiredEntry(t *testing.T) {
 	ctx := context.Background()
 	svc, store, _ := newBootstrapDeps()
 
-	e, _, err := executor.New(developerExecutorID, developerExecutorBackend, []shared.Role{shared.RoleDeveloper})
+	e, _, err := executor.New(developerID, executorBackend, []shared.Role{shared.RoleDeveloper})
 	if err != nil {
 		t.Fatalf("executor.New: %v", err)
 	}
@@ -125,14 +130,14 @@ func TestEnsureDeveloperExecutor_RefusesRetiredEntry(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	if _, err := EnsureDeveloperExecutor(ctx, svc, store); err == nil {
+	if _, err := EnsureExecutor(ctx, svc, store, shared.RoleDeveloper); err == nil {
 		t.Fatal("EnsureDeveloperExecutor() error = nil, want an error for a retired executor")
 	}
 }
 
 // Another project's executors must not be mistaken for this one: the lookup
 // matches on the fixed id, not on role or backend.
-func TestEnsureDeveloperExecutor_IgnoresUnrelatedExecutors(t *testing.T) {
+func TestEnsureExecutor_IgnoresUnrelatedExecutors(t *testing.T) {
 	ctx := context.Background()
 	svc, store, _ := newBootstrapDeps()
 
@@ -144,8 +149,8 @@ func TestEnsureDeveloperExecutor_IgnoresUnrelatedExecutors(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	if _, err := EnsureDeveloperExecutor(ctx, svc, store); err != nil {
-		t.Fatalf("EnsureDeveloperExecutor: %v", err)
+	if _, err := EnsureExecutor(ctx, svc, store, shared.RoleDeveloper); err != nil {
+		t.Fatalf("EnsureExecutor: %v", err)
 	}
 
 	all, err := store.List(ctx)
@@ -155,7 +160,7 @@ func TestEnsureDeveloperExecutor_IgnoresUnrelatedExecutors(t *testing.T) {
 	if len(all) != 2 {
 		t.Fatalf("List() returned %d executors, want 2 (the unrelated one plus ours)", len(all))
 	}
-	ours, err := store.Get(ctx, developerExecutorID)
+	ours, err := store.Get(ctx, developerID)
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
