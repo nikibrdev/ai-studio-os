@@ -1,11 +1,32 @@
 package claudecode
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
+	"ai-studio-os/agents/claude-code/container"
+	"ai-studio-os/internal/domain/shared"
 	"ai-studio-os/internal/platform"
 )
+
+// ErrUnsupportedRole is returned when a task names a role this adapter has
+// no instructions for.
+//
+// An error rather than a neutral fallback (TASK-087): PM and QA are
+// deliberately not dispatched yet — their outputs are exactly the human
+// checkpoints ADR-007 names, so they wait for the confirmation mechanism.
+// Inventing their instructions now would build something untestable, and
+// quietly reusing the Developer block would tell an agent to commit code
+// when it was asked to plan or verify. Reported before the sandbox starts,
+// so an accidental dispatch fails loudly instead of spending a container.
+var ErrUnsupportedRole = errors.New("claudecode: no prompt instructions for this role")
+
+// baseBranchName is the branch a task branch is cut from and compared
+// against (docs/development/git-workflow.md). The orchestrator uses the same
+// value when creating the branch; the adapter needs it only to phrase the
+// diff for a reviewer.
+const baseBranchName = "main"
 
 // claudeCommand builds the Claude Code CLI invocation for task, run
 // non-interactively inside the sandbox (container.Manager already placed
@@ -20,11 +41,25 @@ import (
 // Code CLI in TASK-056 — this task's own verification is limited to the
 // sandbox itself (TASK-054), not a real AI-provider call (see TASK-056's
 // Open Question on credential availability).
-func claudeCommand(task platform.ExecutorTask) []string {
-	return []string{"claude", "--print", "--permission-mode", "bypassPermissions", buildPrompt(task)}
+func claudeCommand(task platform.ExecutorTask) ([]string, error) {
+	prompt, err := buildPrompt(task)
+	if err != nil {
+		return nil, err
+	}
+	return []string{"claude", "--print", "--permission-mode", "bypassPermissions", prompt}, nil
 }
 
-func buildPrompt(task platform.ExecutorTask) string {
+// buildPrompt assembles the prompt: the task's content, which is the same
+// for every role, followed by instructions specific to the role.
+//
+// One adapter and one image serve all roles, differing only here (ADR-007) —
+// not separate adapters or images per role.
+func buildPrompt(task platform.ExecutorTask) (string, error) {
+	instructions, err := roleInstructions(task.Role)
+	if err != nil {
+		return "", err
+	}
+
 	var b strings.Builder
 	fmt.Fprintf(&b, "Роль: %s\n", task.Role)
 	fmt.Fprintf(&b, "Задача: %s (%s)\n", task.Title, task.Type)
@@ -37,6 +72,33 @@ func buildPrompt(task platform.ExecutorTask) string {
 			fmt.Fprintf(&b, "- %s\n", c)
 		}
 	}
-	b.WriteString("Работай в текущей директории — это уже клонированный репозиторий на нужной ветке. Закоммить изменения по завершении работы.\n")
-	return b.String()
+	b.WriteString(instructions)
+	return b.String(), nil
+}
+
+// roleInstructions returns what the agent is being asked to do. Only roles
+// the platform actually dispatches have instructions; see ErrUnsupportedRole
+// on why the rest are an error rather than a default.
+func roleInstructions(role string) (string, error) {
+	switch shared.Role(role) {
+	case shared.RoleDeveloper:
+		return "Работай в текущей директории — это уже клонированный репозиторий на нужной ветке. " +
+			"Закоммить изменения по завершении работы.\n", nil
+
+	case shared.RoleReviewer:
+		// origin/main, not the clone's HEAD: for a reviewer the clone already
+		// contains the developer's commits, so HEAD as a base would compare
+		// the branch against itself. The clone is not --single-branch, so
+		// origin/main is present (see container.cloneAndRunScript).
+		return "Ты ревьюер. Изучи изменения этой ветки относительно основной: " +
+			"`git diff origin/" + baseBranchName + "...HEAD` и `git log origin/" + baseBranchName + "..HEAD`. " +
+			"Оцени соответствие критериям приёмки выше, корректность и качество.\n" +
+			"Ничего не коммить и не изменять в репозитории.\n" +
+			"Запиши вердикт в файл " + container.VerdictFile + ": первая строка — ровно одно слово, " +
+			verdictApproved + " (изменения можно принять) или " + verdictChangesRequested + " (нужны правки); " +
+			"со второй строки — пояснение для человека.\n", nil
+
+	default:
+		return "", fmt.Errorf("%w: %q", ErrUnsupportedRole, role)
+	}
 }

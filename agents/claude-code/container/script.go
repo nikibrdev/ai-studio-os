@@ -37,6 +37,18 @@ const workspaceDir = "/workspace/repo"
 // the adapter can tell "nothing was produced" from "the clone never ran".
 const BaseSHAFile = "/tmp/ai-studio-os-base-sha"
 
+// VerdictFile is where a role that produces a decision rather than code
+// writes it (Reviewer — TASK-087), and where the adapter reads it back.
+//
+// Deliberately in /tmp rather than the working copy: inside the repository
+// it would show up in `git status` as an untracked file and could end up
+// committed, putting a verdict about the branch into the branch itself.
+// Exec runs with --workdir on the clone, but an absolute path reads fine.
+//
+// A verdict is not an Artifact and is not reported through Artifacts: the
+// Executor contract's four capabilities (ADR-005) stay as they are.
+const VerdictFile = "/tmp/ai-studio-os-verdict"
+
 // cloneAndRunScript builds the shell script executed inside the
 // execution container: set up a GIT_ASKPASS reading the token from the
 // GIT_TOKEN environment variable (never placed in argv — unlike

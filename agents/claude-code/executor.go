@@ -66,6 +66,13 @@ func New(image, gitToken, providerAPIKey string) (*Executor, error) {
 // task's branch and launches Claude Code non-interactively against a
 // prompt built from the task's planning content.
 func (e *Executor) Accept(ctx context.Context, task platform.ExecutorTask) error {
+	// Built before the sandbox starts: an unsupported role must fail loudly
+	// without spending a container (TASK-087).
+	command, err := claudeCommand(task)
+	if err != nil {
+		return err
+	}
+
 	h, err := e.sandbox.Start(ctx, container.StartParams{
 		ExecutionID:    e.executionID,
 		Repository:     task.Repository,
@@ -73,7 +80,7 @@ func (e *Executor) Accept(ctx context.Context, task platform.ExecutorTask) error
 		GitToken:       e.gitToken,
 		ProviderAPIKey: e.providerAPIKey,
 		Allowlist:      []string{"api.anthropic.com"},
-		Command:        claudeCommand(task),
+		Command:        command,
 	})
 	if err != nil {
 		return fmt.Errorf("claudecode: accept task %s: %w", task.TaskID, err)
@@ -118,6 +125,31 @@ func (e *Executor) Artifacts(ctx context.Context) ([]platform.Artifact, error) {
 // maxReportedCommits caps how many produced commits are reported at once —
 // a guard against a runaway agent, not a correctness mechanism.
 const maxReportedCommits = "100"
+
+// Verdict returns the decision a reviewing agent wrote (TASK-087).
+//
+// Not part of platform.Executor: ADR-005 fixes exactly four capabilities,
+// and a verdict is neither an artifact nor a status. It is a method on this
+// concrete adapter, reached by the caller that dispatched a reviewing role —
+// the same shape as the platform's other "data from the agent, decision by
+// the platform" seam (container.BaseSHAFile).
+//
+// Returns ErrNoVerdict when the agent wrote nothing and
+// ErrUnrecognizedVerdict when it wrote something unreadable; both leave the
+// decision to a human, and neither is turned into a default verdict.
+func (e *Executor) Verdict(ctx context.Context) (Verdict, error) {
+	if e.handle == nil {
+		return Verdict{}, ErrNotAccepted
+	}
+
+	out, err := e.sandbox.Exec(ctx, e.handle, []string{"cat", container.VerdictFile})
+	if err != nil {
+		// A missing file surfaces as a failing `cat`, which is the ordinary
+		// case of "the agent never wrote one" — not an infrastructure fault.
+		return Verdict{}, fmt.Errorf("%w: %v", ErrNoVerdict, err)
+	}
+	return parseVerdict(out)
+}
 
 // Status implements platform.Executor.
 func (e *Executor) Status(ctx context.Context) (platform.ExecutionStatus, error) {

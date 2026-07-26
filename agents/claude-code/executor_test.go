@@ -115,7 +115,7 @@ func TestAccept_PropagatesSandboxError(t *testing.T) {
 	sb := &fakeSandbox{startErr: wantErr}
 	e := newTestExecutor(sb)
 
-	err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"})
+	err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("Accept() error = %v, want wrapping %v", err, wantErr)
 	}
@@ -156,7 +156,7 @@ func producedOnly(base, gitLog string) func(cmd []string) (string, error) {
 func TestArtifacts_ParsesCommitsFromGitLog(t *testing.T) {
 	sb := &fakeSandbox{execFunc: producedOnly("base000", "abc123\nfeat: add thing\ndef456\nfix: correct bug\n")}
 	e := newTestExecutor(sb)
-	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+	if err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"}); err != nil {
 		t.Fatalf("Accept: %v", err)
 	}
 
@@ -179,7 +179,7 @@ func TestArtifacts_ParsesCommitsFromGitLog(t *testing.T) {
 func TestArtifacts_AsksOnlyForCommitsAfterTheBase(t *testing.T) {
 	sb := &fakeSandbox{execFunc: producedOnly("base000", "")}
 	e := newTestExecutor(sb)
-	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+	if err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"}); err != nil {
 		t.Fatalf("Accept: %v", err)
 	}
 	if _, err := e.Artifacts(context.Background()); err != nil {
@@ -201,7 +201,7 @@ func TestArtifacts_AsksOnlyForCommitsAfterTheBase(t *testing.T) {
 func TestArtifacts_EmptyRangeReportsNoArtifacts(t *testing.T) {
 	sb := &fakeSandbox{execFunc: producedOnly("base000", "")}
 	e := newTestExecutor(sb)
-	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+	if err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"}); err != nil {
 		t.Fatalf("Accept: %v", err)
 	}
 
@@ -219,7 +219,7 @@ func TestArtifacts_EmptyRangeReportsNoArtifacts(t *testing.T) {
 func TestArtifacts_MissingBaseCommitIsAnError(t *testing.T) {
 	sb := &fakeSandbox{execFunc: producedOnly("", "")}
 	e := newTestExecutor(sb)
-	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+	if err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"}); err != nil {
 		t.Fatalf("Accept: %v", err)
 	}
 
@@ -242,7 +242,7 @@ func TestStatus_MapsRunningSucceededFailed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sb := &fakeSandbox{status: tt.status}
 			e := newTestExecutor(sb)
-			if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+			if err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"}); err != nil {
 				t.Fatalf("Accept: %v", err)
 			}
 
@@ -260,7 +260,7 @@ func TestStatus_MapsRunningSucceededFailed(t *testing.T) {
 func TestFinish_StopsSandbox(t *testing.T) {
 	sb := &fakeSandbox{}
 	e := newTestExecutor(sb)
-	if err := e.Accept(context.Background(), platform.ExecutorTask{TaskID: "task-1"}); err != nil {
+	if err := e.Accept(context.Background(), platform.ExecutorTask{Role: "developer", TaskID: "task-1"}); err != nil {
 		t.Fatalf("Accept: %v", err)
 	}
 
