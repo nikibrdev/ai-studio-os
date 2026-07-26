@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.8 Dashboard — завершён (2026-07-23); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)); v1.0 First Public MVP — **в работе** (открыт 2026-07-23, декомпозирован на 4 эпика) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | Нет открытого эпика — [EPIC-010 Orchestrator](docs/roadmap/EPIC-010-orchestrator.md) закрыт (2026-07-25): первый из 4 эпиков декомпозиции v1.0, автоматический запуск Developer-исполнителя на `TaskPlanned`, TASK-079…085. Следующий — «Роли PM/QA» |
+| **Current Epic** | [EPIC-011 Роли исполнителей](docs/roadmap/EPIC-011-executor-roles.md) — второй из 4 эпиков декомпозиции v1.0: role-aware промпты (один адаптер на все роли, ADR-007) и автоматизация Reviewer, TASK-086…090. Диспетчеризация PM/QA сознательно перенесена в эпик после механизма подтверждения — они и есть контрольные точки человека по ADR-007 |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
