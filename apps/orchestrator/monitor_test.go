@@ -30,7 +30,7 @@ func runDispatch(t *testing.T, f *dispatchFixture) error {
 
 func TestMonitor_SuccessRecordsArtifactsOpensPRAndRequestsReview(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	f.backend.statuses = []platform.ExecutionStatus{
 		{State: statusRunning},
 		{State: statusSucceeded},
@@ -91,7 +91,7 @@ func TestMonitor_SuccessRecordsArtifactsOpensPRAndRequestsReview(t *testing.T) {
 // Execution records the failure and the sandbox is torn down.
 func TestMonitor_ExecutorReportedFailureFailsExecutionWithoutPullRequest(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	f.backend.statuses = []platform.ExecutionStatus{{State: statusFailed, Message: "exit code 1"}}
 
 	if err := runDispatch(t, f); err != nil {
@@ -121,7 +121,7 @@ func TestMonitor_ExecutorReportedFailureFailsExecutionWithoutPullRequest(t *test
 }
 
 func TestMonitor_TimeoutFailsExecution(t *testing.T) {
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	// Never terminal — the guard against a hung sandbox.
 	f.backend.statuses = []platform.ExecutionStatus{{State: statusRunning}}
 	f.dispatcher.ExecutionTimeout = 20 * time.Millisecond
@@ -140,7 +140,7 @@ func TestMonitor_TimeoutFailsExecution(t *testing.T) {
 
 // A transient Status error must be retried, not treated as failure.
 func TestMonitor_TransientStatusErrorIsRetried(t *testing.T) {
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	f.backend.statusErr = errors.New("docker daemon busy")
 	f.dispatcher.ExecutionTimeout = 20 * time.Millisecond
 
@@ -155,7 +155,7 @@ func TestMonitor_TransientStatusErrorIsRetried(t *testing.T) {
 }
 
 func TestMonitor_ArtifactsErrorFailsExecution(t *testing.T) {
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	wantErr := errors.New("git log failed")
 	f.backend.artifactsErr = wantErr
 
@@ -175,7 +175,7 @@ func TestMonitor_ArtifactsErrorFailsExecution(t *testing.T) {
 
 func TestMonitor_PullRequestErrorFailsExecution(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	wantErr := errors.New("github unavailable")
 	f.repos.openPRErr = wantErr
 	f.backend.artifacts = []platform.Artifact{commitArtifact("abc123", "feat: коммит")}
@@ -201,7 +201,7 @@ func TestMonitor_PullRequestErrorFailsExecution(t *testing.T) {
 // where a human can see nothing was produced.
 func TestMonitor_SuccessWithoutArtifactsStillCompletes(t *testing.T) {
 	ctx := context.Background()
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	f.backend.artifacts = nil
 
 	if err := runDispatch(t, f); err != nil {
@@ -225,7 +225,7 @@ func TestMonitor_SuccessWithoutArtifactsStillCompletes(t *testing.T) {
 
 // Finish failing must not change the outcome of the work itself.
 func TestMonitor_FinishErrorDoesNotFailSuccessfulExecution(t *testing.T) {
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	f.backend.finishErr = errors.New("container already gone")
 	f.backend.artifacts = []platform.Artifact{commitArtifact("abc123", "feat: коммит")}
 
@@ -239,7 +239,7 @@ func TestMonitor_FinishErrorDoesNotFailSuccessfulExecution(t *testing.T) {
 
 // Marking the pull request is cosmetic; failing it must not fail the work.
 func TestMonitor_RequestReviewOnProviderFailureDoesNotFailExecution(t *testing.T) {
-	f := newDispatchFixture(t, []string{"github.com/org/repo"}, activeDeveloper(t, "exec-dev"))
+	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 	f.repos.requestReviewErr = errors.New("cannot comment")
 	f.backend.artifacts = []platform.Artifact{commitArtifact("abc123", "feat: коммит")}
 

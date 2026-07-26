@@ -16,6 +16,7 @@ import (
 
 	claudecode "ai-studio-os/agents/claude-code"
 	"ai-studio-os/internal/application"
+	"ai-studio-os/internal/domain/shared"
 	"ai-studio-os/internal/domain/workflow"
 	"ai-studio-os/internal/infrastructure/github"
 	"ai-studio-os/internal/infrastructure/wiring"
@@ -54,7 +55,7 @@ func run() error {
 	defer sys.Close()
 
 	executors := &application.ExecutorService{Executors: sys.Executors, Events: sys.Events}
-	executorID, err := EnsureDeveloperExecutor(ctx, executors, sys.Executors)
+	executorID, err := EnsureExecutor(ctx, executors, sys.Executors, shared.RoleDeveloper)
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,9 @@ func run() error {
 		},
 		Views: application.NewTaskProjection(),
 		Repos: sys.Repository,
-		NewExecutor: func() (platform.Executor, error) {
+		// One adapter serves every role; the role reaches the agent through
+		// ExecutorTask.Role, which shapes its prompt (ADR-007).
+		NewExecutor: func(shared.Role) (platform.Executor, error) {
 			return claudecode.New(cfg.ExecutionImage, cfg.GitToken, cfg.ProviderAPIKey)
 		},
 		Log: logger,
