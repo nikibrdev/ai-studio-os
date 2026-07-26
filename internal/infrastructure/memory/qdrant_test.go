@@ -90,10 +90,12 @@ func TestEnsureCollection_PropagatesUnexpectedError(t *testing.T) {
 
 func TestUpsert_SendsPointWithVectorAndPayload(t *testing.T) {
 	var gotBody map[string]any
+	var gotWait string
 	c := newTestQdrantClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut || r.URL.Path != "/collections/memory_entries/points" {
 			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
+		gotWait = r.URL.Query().Get("wait")
 		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
 			t.Fatalf("decode request body: %v", err)
 		}
@@ -112,6 +114,13 @@ func TestUpsert_SendsPointWithVectorAndPayload(t *testing.T) {
 	point := points[0].(map[string]any)
 	if point["id"] != "id-1" {
 		t.Errorf("point id = %v, want id-1", point["id"])
+	}
+
+	// BUGFIX-008: without wait=true Qdrant only queues the operation
+	// ("status":"acknowledged") and the point is not yet searchable, so
+	// Record would report success before the entry could be found.
+	if gotWait != "true" {
+		t.Errorf("wait query parameter = %q, want \"true\" so the point is searchable when Upsert returns", gotWait)
 	}
 }
 
