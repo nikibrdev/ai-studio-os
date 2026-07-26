@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DecisionActions from "./DecisionActions";
 import { decisionLabels, listAwaitingDecision } from "@/lib/api";
 
 // Always render at request time — this page needs live data from apps/api,
@@ -18,13 +19,16 @@ export default async function DecisionsPage() {
         <p>Задач, ожидающих решения, нет.</p>
       ) : (
         <ul>
-          {awaiting.map(({ decision, task }) => (
-            <li key={`${task.projectId}/${task.id}`}>
-              <Link href={`/projects/${task.projectId}/tasks/${task.id}`}>
-                {task.id}: {task.title}
+          {awaiting.map((entry) => (
+            <li key={`${entry.task.projectId}/${entry.task.id}`}>
+              <Link
+                href={`/projects/${entry.task.projectId}/tasks/${entry.task.id}`}
+              >
+                {entry.task.id}: {entry.task.title}
               </Link>{" "}
-              — <span>{decisionLabels[decision]}</span>{" "}
-              <span>({task.projectId})</span>
+              — <span>{decisionLabels[entry.decision]}</span>{" "}
+              <span>({entry.task.projectId})</span>{" "}
+              <DecisionActions awaiting={entry} />
             </li>
           ))}
         </ul>
