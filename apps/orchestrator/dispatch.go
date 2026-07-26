@@ -70,6 +70,14 @@ type Dispatcher struct {
 	// adapter serves every role, differing only by prompt (ADR-007).
 	NewExecutor func(role shared.Role) (platform.Executor, error)
 
+	// NewReviewer builds the Executor for a review. Separate from NewExecutor
+	// because reviewing needs one capability beyond the Executor contract —
+	// reporting a decision — and because that keeps this file free of any
+	// concrete adapter: ReviewExecutor is satisfied here through primitives,
+	// and adapting a real adapter to it happens in main.go, the only place
+	// permitted to name one (module-boundaries.md).
+	NewReviewer func() (ReviewExecutor, error)
+
 	Log *log.Logger
 }
 
@@ -89,10 +97,14 @@ func (d *Dispatcher) Handle(ctx context.Context, e platform.Event) error {
 	if err := d.Observe(ctx, e); err != nil {
 		return err
 	}
-	if e.Type() != event.TaskPlanned {
+	switch {
+	case e.Type() == event.TaskPlanned:
+		return d.dispatchTaskPlanned(ctx, e)
+	case reviewRequested(e):
+		return d.dispatchReviewRequested(ctx, e)
+	default:
 		return nil
 	}
-	return d.dispatchTaskPlanned(ctx, e)
 }
 
 // dispatchTaskPlanned takes a task from Ready to a running Execution:

@@ -23,6 +23,24 @@ import (
 	"ai-studio-os/internal/platform"
 )
 
+// reviewAdapter presents a claudecode.Executor as a ReviewExecutor.
+//
+// This wrapper is the reason dispatch logic never names a concrete AI backend:
+// the adapter's verdict type stops here, and the rest of the process sees only
+// primitives (module-boundaries.md — naming a provider is permitted in this
+// composition root and nowhere else).
+type reviewAdapter struct{ *claudecode.Executor }
+
+// Review reports the agent's decision, flattening the adapter's own verdict
+// type so ReviewExecutor stays free of it.
+func (a reviewAdapter) Review(ctx context.Context) (bool, string, error) {
+	v, err := a.Verdict(ctx)
+	if err != nil {
+		return false, "", err
+	}
+	return v.Approved, v.Comment, nil
+}
+
 // actor identifies this process as the initiator of the commands it issues
 // (platform.Event's Actor field, docs/architecture/events.md: role plus
 // executor identity).
@@ -60,6 +78,12 @@ func run() error {
 		return err
 	}
 	logger.Printf("developer executor ready: %s (image %s)", executorID, cfg.ExecutionImage)
+
+	reviewerID, err := EnsureExecutor(ctx, executors, sys.Executors, shared.RoleReviewer)
+	if err != nil {
+		return err
+	}
+	logger.Printf("reviewer executor ready: %s", reviewerID)
 	if cfg.ProviderAPIKey == "" {
 		logger.Printf("warning: %s is empty — sandboxes will start but the AI provider will not be called", providerAPIKeyEnv)
 	}
@@ -88,6 +112,13 @@ func run() error {
 		// ExecutorTask.Role, which shapes its prompt (ADR-007).
 		NewExecutor: func(shared.Role) (platform.Executor, error) {
 			return claudecode.New(cfg.ExecutionImage, cfg.GitToken, cfg.ProviderAPIKey)
+		},
+		NewReviewer: func() (ReviewExecutor, error) {
+			e, err := claudecode.New(cfg.ExecutionImage, cfg.GitToken, cfg.ProviderAPIKey)
+			if err != nil {
+				return nil, err
+			}
+			return reviewAdapter{e}, nil
 		},
 		Log: logger,
 	}
