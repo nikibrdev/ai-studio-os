@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.8 Dashboard — завершён (2026-07-23); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)); v1.0 First Public MVP — **в работе** (открыт 2026-07-23, декомпозирован на 4 эпика) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | Нет открытого эпика — [EPIC-011 Роли исполнителей](docs/roadmap/EPIC-011-executor-roles.md) закрыт (2026-07-26): role-aware промпты (один адаптер и образ на все роли, ADR-007), автоматизация Reviewer, согласованный выбор исполнителя, TASK-086…090. Следующий — **механизм подтверждения человеком** (третий эпик декомпозиции v1.0), и только после него диспетчеризация PM/QA |
+| **Current Epic** | [EPIC-012 Контрольные точки человека](docs/roadmap/EPIC-012-human-checkpoints.md) — третий из 4 эпиков декомпозиции v1.0: нормативное определение контрольных точек (долг ADR-007), read-модель «ожидает решения», первый мутирующий UI в `apps/dashboard`, TASK-091…095. Команды подтверждения уже существуют — эпик делает точки видимыми и действенными, не меняя каноническую state machine |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
