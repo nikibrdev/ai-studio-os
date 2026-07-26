@@ -67,7 +67,7 @@ func (d *Dispatcher) monitorExecution(ctx context.Context, backend platform.Exec
 		}
 	}()
 
-	status, waitErr := d.waitForTerminalStatus(ctx, backend, ec)
+	status, waitErr := d.waitForTerminalStatus(ctx, backend, ec.executionID)
 	if waitErr != nil {
 		return d.failExecution(ctx, ec, waitErr)
 	}
@@ -87,7 +87,7 @@ func (d *Dispatcher) monitorExecution(ctx context.Context, backend platform.Exec
 // waitForTerminalStatus polls until the executor reports success or failure,
 // the context ends, or the timeout expires. A failed poll is logged and
 // retried: one transient docker error must not abandon a live execution.
-func (d *Dispatcher) waitForTerminalStatus(ctx context.Context, backend platform.Executor, ec executionContext) (platform.ExecutionStatus, error) {
+func (d *Dispatcher) waitForTerminalStatus(ctx context.Context, backend platform.Executor, label string) (platform.ExecutionStatus, error) {
 	deadline := time.Now().Add(d.executionTimeout())
 	ticker := time.NewTicker(d.statusPollInterval())
 	defer ticker.Stop()
@@ -96,17 +96,17 @@ func (d *Dispatcher) waitForTerminalStatus(ctx context.Context, backend platform
 		status, err := backend.Status(ctx)
 		switch {
 		case err != nil:
-			d.Log.Printf("status of execution %s unavailable, retrying: %v", ec.executionID, err)
+			d.Log.Printf("status of execution %s unavailable, retrying: %v", label, err)
 		case status.State == statusSucceeded, status.State == statusFailed:
 			return status, nil
 		case status.State != statusRunning:
 			// An adapter reporting something unexpected is not a reason to
 			// tear down work that may still be progressing.
-			d.Log.Printf("execution %s reported unknown state %q, treating as running", ec.executionID, status.State)
+			d.Log.Printf("execution %s reported unknown state %q, treating as running", label, status.State)
 		}
 
 		if time.Now().After(deadline) {
-			return platform.ExecutionStatus{}, fmt.Errorf("%w: %s", ErrExecutionTimedOut, ec.executionID)
+			return platform.ExecutionStatus{}, fmt.Errorf("%w: %s", ErrExecutionTimedOut, label)
 		}
 		select {
 		case <-ctx.Done():
