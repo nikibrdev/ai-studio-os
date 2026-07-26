@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Первый реальный адаптер `platform.Executor` ([ADR-005](../../docs/adr/ADR-005-executor-contract.md)): исполняет роль Developer через Claude Code, запущенный внутри изолированного Docker-контейнера ([ADR-006](../../docs/adr/ADR-006-agent-execution-environment.md)).
+Первый реальный адаптер `platform.Executor` ([ADR-005](../../docs/adr/ADR-005-executor-contract.md)): исполняет роли через Claude Code, запущенный внутри изолированного Docker-контейнера ([ADR-006](../../docs/adr/ADR-006-agent-execution-environment.md)). Один адаптер и один образ на все роли, различие — в промпте ([ADR-007](../../docs/adr/ADR-007-pm-qa-executors.md)); сейчас диспетчеризуются Developer и Reviewer — см. «Роли» ниже.
 
 ## Содержание
 
@@ -84,7 +84,7 @@ go test -tags=integration ./agents/claude-code/container/...
 
 ## Статус
 
-В работе (EPIC-006)
+Актуален (EPIC-006 закрыт; роли и вердикт — EPIC-011)
 
 ## Последнее обновление
 

@@ -57,7 +57,7 @@ flowchart TB
 
 #### Orchestrator (`apps/orchestrator/`)
 
-Координатор процесса: реагирует на события жизненного цикла задачи, назначает исполнителя и запускает его через контракт Executor, следит за исполнением до Pull Request'а и ревью. Доменных правил и durable-состояния не содержит ([core.md](core.md)). Первая версия ([EPIC-010](../roadmap/EPIC-010-orchestrator.md), v1.0) диспетчеризует одну роль — Developer; роли PM/QA — следующий эпик декомпозиции v1.0. Подробнее: [orchestrator.md](orchestrator.md).
+Координатор процесса: реагирует на события жизненного цикла задачи, назначает исполнителя и запускает его через контракт Executor, следит за исполнением. Доменных правил и durable-состояния не содержит ([core.md](core.md)). Диспетчеризует две роли: Developer на `TaskPlanned` ([EPIC-010](../roadmap/EPIC-010-orchestrator.md)) и Reviewer на `ReviewRequested` ([EPIC-011](../roadmap/EPIC-011-executor-roles.md)); PM и QA сознательно не диспетчеризуются — их выходы контрольные точки человека ([ADR-007](../adr/ADR-007-pm-qa-executors.md)), и их автоматизация идёт после механизма подтверждения. Подробнее: [orchestrator.md](orchestrator.md).
 
 #### Ядро (`internal/`)
 
