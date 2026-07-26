@@ -13,6 +13,13 @@ export interface Project {
   createdAt: string;
 }
 
+// DecisionKind — какое решение человека ждёт задача (docs/api/decisions.md).
+// Пустая строка означает, что решение не требуется. Значение приходит с
+// сервера: соответствие состояния и решения — правило платформы, и выводить
+// его здесь из state запрещено (docs/architecture/module-boundaries.md —
+// «дублирование доменных правил в UI»).
+export type DecisionKind = "definition-of-ready" | "acceptance" | "";
+
 export interface TaskView {
   id: string;
   projectId: string;
@@ -22,7 +29,22 @@ export interface TaskView {
   type: string;
   scope: string;
   acceptanceCriteria: string[];
+  awaitingDecision: DecisionKind;
 }
+
+// AwaitingDecision — одна задача, ждущая решения человека
+// (docs/api/decisions.md, «Список ожидающих решения»).
+export interface AwaitingDecision {
+  decision: Exclude<DecisionKind, "">;
+  task: TaskView;
+}
+
+// Человекочитаемые названия решений — единственное место, где они заданы,
+// чтобы формулировка не расходилась между экранами.
+export const decisionLabels: Record<Exclude<DecisionKind, "">, string> = {
+  "definition-of-ready": "Принять Definition of Ready",
+  acceptance: "Приёмочное решение",
+};
 
 export class ApiError extends Error {
   constructor(
@@ -53,6 +75,13 @@ export function listProjects(): Promise<Project[]> {
 // listProjectTasks — docs/api/tasks.md, "Список задач проекта".
 export function listProjectTasks(projectId: string): Promise<TaskView[]> {
   return get<TaskView[]>(`/projects/${encodeURIComponent(projectId)}/tasks`);
+}
+
+// listAwaitingDecision — docs/api/decisions.md, «Список ожидающих решения».
+// Сквозной по проектам: отвечает на «что ждёт решения вообще».
+export async function listAwaitingDecision(): Promise<AwaitingDecision[]> {
+  const body = await get<{ decisions: AwaitingDecision[] }>("/decisions");
+  return body.decisions;
 }
 
 // getTask — docs/api/tasks.md, "Получить состояние задачи".

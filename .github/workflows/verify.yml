@@ -75,6 +75,14 @@ jobs:
         working-directory: apps/dashboard
         run: pnpm format:check
 
+      # Typechecks test files too, which neither `pnpm test` nor `pnpm build`
+      # does: Vitest strips types without checking them, and `next build` only
+      # typechecks what the app imports. Type errors in tests went unnoticed
+      # until TASK-093 introduced three of them and every check stayed green.
+      - name: Typecheck dashboard
+        working-directory: apps/dashboard
+        run: pnpm typecheck
+
       - name: Test dashboard
         working-directory: apps/dashboard
         run: pnpm test
