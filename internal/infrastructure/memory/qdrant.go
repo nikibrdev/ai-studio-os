@@ -81,7 +81,15 @@ func (c *QdrantClient) Upsert(ctx context.Context, id string, vector []float32, 
 			{"id": id, "vector": vector, "payload": payload},
 		},
 	}
-	if err := c.do(ctx, http.MethodPut, "/collections/"+collectionName+"/points", body, nil); err != nil {
+	// wait=true is required, not an optimisation (BUGFIX-008). Qdrant's
+	// default is wait=false, where the response reports
+	// "status":"acknowledged" — the operation is only queued, and the point
+	// is not yet searchable. Record would then return success before the
+	// entry could be found, which is not what MemoryProvider.Record's
+	// signature promises: it looks synchronous, so its success has to mean
+	// "recorded and findable". With wait=true Qdrant answers
+	// "status":"completed" instead.
+	if err := c.do(ctx, http.MethodPut, "/collections/"+collectionName+"/points?wait=true", body, nil); err != nil {
 		return fmt.Errorf("qdrant: upsert point %s: %w", id, err)
 	}
 	return nil
