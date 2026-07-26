@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.8 Dashboard — завершён (2026-07-23); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)); v1.0 First Public MVP — **в работе** (открыт 2026-07-23, декомпозирован на 4 эпика) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-011 Роли исполнителей](docs/roadmap/EPIC-011-executor-roles.md) — второй из 4 эпиков декомпозиции v1.0: role-aware промпты (один адаптер на все роли, ADR-007) и автоматизация Reviewer, TASK-086…090. Диспетчеризация PM/QA сознательно перенесена в эпик после механизма подтверждения — они и есть контрольные точки человека по ADR-007 |
+| **Current Epic** | Нет открытого эпика — [EPIC-011 Роли исполнителей](docs/roadmap/EPIC-011-executor-roles.md) закрыт (2026-07-26): role-aware промпты (один адаптер и образ на все роли, ADR-007), автоматизация Reviewer, согласованный выбор исполнителя, TASK-086…090. Следующий — **механизм подтверждения человеком** (третий эпик декомпозиции v1.0), и только после него диспетчеризация PM/QA |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -40,7 +40,7 @@
 | Поле | Значение |
 | --- | --- |
 | **Last ADR** | [ADR-007](docs/adr/ADR-007-pm-qa-executors.md)/[ADR-010](docs/adr/ADR-010-documentation-language.md)/[ADR-013](docs/adr/ADR-013-managed-projects.md) приняты при открытии v1.0 (2026-07-23) — все 18 ADR проекта теперь Accepted |
-| **Last Review** | 2026-07-25 — EPIC-010 (TASK-079…085 + BUGFIX-004…007, PR #97–#107) закрыт целиком; предыдущее ревью — EPIC-009 (TASK-072…078, PR #90–#95) |
+| **Last Review** | 2026-07-26 — EPIC-011 (TASK-086…090 + BUGFIX-008, PR #109–#115) закрыт целиком; предыдущее ревью — EPIC-010 (TASK-079…085 + BUGFIX-004…007, PR #97–#107) |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check (теперь включает `apps/dashboard`: pnpm lint/format/test/build, TASK-077); `main` защищена; toolchain честно закреплён — Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)), pnpm — через `packageManager` в `package.json` (TASK-077); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 0 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) (все 18 приняты, 2026-07-23) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
