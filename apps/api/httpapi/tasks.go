@@ -106,12 +106,19 @@ type taskViewResponse struct {
 	Type               string    `json:"type"`
 	Scope              string    `json:"scope"`
 	AcceptanceCriteria []string  `json:"acceptanceCriteria"`
+
+	// AwaitingDecision names the decision a human owes this task, or is empty
+	// when none is owed (docs/api/decisions.md). Served here so a client does
+	// not map states to decisions itself — that rule belongs to the platform,
+	// and duplicating it in a UI is forbidden (module-boundaries.md).
+	AwaitingDecision string `json:"awaitingDecision"`
 }
 
 func taskViewResponseFrom(v application.TaskView) taskViewResponse {
 	return taskViewResponse{
 		ID: v.ID, ProjectID: v.ProjectID, State: string(v.State), UpdatedAt: v.UpdatedAt,
 		Title: v.Title, Type: v.Type, Scope: v.Scope, AcceptanceCriteria: v.AcceptanceCriteria,
+		AwaitingDecision: string(application.DecisionFor(v.State)),
 	}
 }
 

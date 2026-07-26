@@ -34,6 +34,7 @@
 | Tasks | [tasks.md](tasks.md) | `TaskPlanningService`, `WorkService`, `CompletionService`, `TaskProjection` |
 | Artifacts | [artifacts.md](artifacts.md) | `ResultService` |
 | Executions | [executions.md](executions.md) | `ResultService` |
+| Decisions | [decisions.md](decisions.md) | `TaskProjection` (контрольные точки человека) |
 
 ## Статус
 
