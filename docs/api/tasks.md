@@ -76,9 +76,12 @@
   "title": "string",
   "type": "string",
   "scope": "string",
-  "acceptanceCriteria": ["string"]
+  "acceptanceCriteria": ["string"],
+  "awaitingDecision": "definition-of-ready | acceptance | пусто, если решение не требуется"
 }
 ```
+
+`awaitingDecision` — какое решение человека ждёт задача ([decisions.md](decisions.md)). Отдаётся платформой, а не выводится клиентом из `state`: соответствие состояния и решения — правило платформы, и дублировать его в UI запрещено ([module-boundaries.md](../architecture/module-boundaries.md)).
 
 `title`/`type`/`scope`/`acceptanceCriteria` — записаны один раз при создании (`TaskCreated`) и не меняются последующими переходами (TASK-076, EPIC-009): `TaskProjection` — единственный путь чтения Task (ADR-014), поэтому это единственная форма, в которой клиент вообще может увидеть эти поля — отдельного «полного» ответа с прямым чтением `TaskStore` нет и не будет.
 
@@ -104,7 +107,8 @@
     "title": "string",
     "type": "string",
     "scope": "string",
-    "acceptanceCriteria": ["string"]
+    "acceptanceCriteria": ["string"],
+    "awaitingDecision": "definition-of-ready | acceptance | пусто"
   }
 ]
 ```

@@ -28,6 +28,7 @@ func NewServer(deps Deps) http.Handler {
 	registerArtifactRoutes(mux, deps)
 	registerExecutionRoutes(mux, deps)
 	registerCompletionRoutes(mux, deps)
+	registerDecisionRoutes(mux, deps)
 	return mux
 }
 
