@@ -19,6 +19,7 @@ describe("ProjectPage", () => {
         type: "feature",
         scope: "",
         acceptanceCriteria: [],
+        awaitingDecision: "definition-of-ready",
       },
     ]);
 

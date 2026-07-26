@@ -17,7 +17,8 @@ export default function RootLayout({
       <body>
         <header className="site-header">
           <nav>
-            <Link href="/">AI Studio OS</Link>
+            <Link href="/">AI Studio OS</Link>{" "}
+            <Link href="/decisions">Ждут решения</Link>
           </nav>
         </header>
         <main>{children}</main>

@@ -18,6 +18,7 @@ describe("TaskPage", () => {
       type: "feature",
       scope: "Описание области работ",
       acceptanceCriteria: ["критерий раз", "критерий два"],
+      awaitingDecision: "",
     });
 
     render(
@@ -45,6 +46,7 @@ describe("TaskPage", () => {
       type: "bugfix",
       scope: "",
       acceptanceCriteria: [],
+      awaitingDecision: "",
     });
 
     render(
