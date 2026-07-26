@@ -19,6 +19,8 @@ describe("TaskPage", () => {
       scope: "Описание области работ",
       acceptanceCriteria: ["критерий раз", "критерий два"],
       awaitingDecision: "",
+      repository: "github.com/org/repo",
+      pullRequestId: "42",
     });
 
     render(
@@ -47,6 +49,8 @@ describe("TaskPage", () => {
       scope: "",
       acceptanceCriteria: [],
       awaitingDecision: "",
+      repository: "",
+      pullRequestId: "",
     });
 
     render(

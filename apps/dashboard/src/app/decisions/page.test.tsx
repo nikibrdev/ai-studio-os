@@ -22,6 +22,8 @@ function task(overrides: Partial<TaskView> = {}): TaskView {
     scope: "",
     acceptanceCriteria: [],
     awaitingDecision: "definition-of-ready",
+    repository: "",
+    pullRequestId: "",
     ...overrides,
   };
 }

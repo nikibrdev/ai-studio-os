@@ -20,6 +20,8 @@ describe("ProjectPage", () => {
         scope: "",
         acceptanceCriteria: [],
         awaitingDecision: "definition-of-ready",
+        repository: "",
+        pullRequestId: "",
       },
     ]);
 

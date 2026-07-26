@@ -30,6 +30,12 @@ export interface TaskView {
   scope: string;
   acceptanceCriteria: string[];
   awaitingDecision: DecisionKind;
+
+  // Ссылка на Pull Request под ревью — пустая, пока он неизвестен
+  // (BUGFIX-009). Нужна, чтобы человек видел, что именно сольёт приёмочное
+  // решение: в рамках задачи оно необратимо.
+  repository: string;
+  pullRequestId: string;
 }
 
 // AwaitingDecision — одна задача, ждущая решения человека
@@ -65,6 +71,55 @@ async function get<T>(path: string): Promise<T> {
     );
   }
   return (await res.json()) as T;
+}
+
+// post отправляет команду в apps/api. Вызывается только из Server Actions
+// (src/lib/actions.ts): у apps/api нет CORS-заголовков, поэтому запрос из
+// браузера был бы заблокирован — запись идёт через сервер Next.js, который и
+// так общается с API.
+async function post(path: string, body?: unknown): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    cache: "no-store",
+    headers:
+      body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    // Тело ошибки API — {"error": "..."}; показываем его человеку, а не общий
+    // код статуса: «переход недопустим» и «задача не найдена» требуют разных
+    // действий от того, кто это увидит.
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const parsed = (await res.json()) as { error?: string };
+      if (parsed.error) detail = parsed.error;
+    } catch {
+      // Тело не JSON — остаётся статус.
+    }
+    throw new ApiError(res.status, detail);
+  }
+}
+
+// planTask — docs/api/tasks.md, «Запланировать задачу»: приём Definition of
+// Ready, первая контрольная точка человека.
+export function planTask(projectId: string, taskId: string): Promise<void> {
+  return post(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}/plan`,
+  );
+}
+
+// completeTesting — docs/api/tasks.md, «Завершить тестирование»: приёмочное
+// решение, вторая контрольная точка. При passed=true платформа сливает Pull
+// Request (ADR-008); ссылку она знает сама (BUGFIX-009), поэтому здесь её нет.
+export function completeTesting(
+  projectId: string,
+  taskId: string,
+  passed: boolean,
+): Promise<void> {
+  return post(
+    `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}/complete-testing`,
+    { passed },
+  );
 }
 
 // listProjects — docs/api/projects.md, "Список проектов".
