@@ -136,20 +136,32 @@ func (d *Dispatcher) recordOutcome(ctx context.Context, backend platform.Executo
 		}
 	}
 
+	var prID string
 	if len(produced) == 0 {
 		// A succeeded execution that produced no commits is a real outcome,
 		// not a failure: there is simply nothing to open a pull request for.
 		// The Execution is still concluded as succeeded and the Task still
 		// goes to Review, where a human sees that nothing was produced.
 		d.Log.Printf("execution %s succeeded without producing commits; no pull request to open", ec.executionID)
-	} else if err := d.openPullRequest(ctx, ec); err != nil {
-		return err
+	} else {
+		opened, err := d.openPullRequest(ctx, ec)
+		if err != nil {
+			return err
+		}
+		prID = opened
 	}
 
 	if err := d.Results.SucceedExecution(ctx, ec.projectID, ec.executionID, actor); err != nil {
 		return fmt.Errorf("orchestrator: succeed execution %s: %w", ec.executionID, err)
 	}
-	if err := d.Completion.RequestReview(ctx, ec.projectID, ec.taskID, actor); err != nil {
+
+	// The pull request reference travels with ReviewRequested (BUGFIX-009), so
+	// whoever makes the acceptance decision later does not have to know it.
+	// Empty when nothing was produced — there is no pull request to reference.
+	if err := d.Completion.RequestReview(ctx, application.RequestReviewParams{
+		ProjectID: ec.projectID, TaskID: ec.taskID,
+		Repository: ec.repository, PullRequestID: prID, Actor: actor,
+	}); err != nil {
 		return fmt.Errorf("orchestrator: request review for %s/%s: %w", ec.projectID, ec.taskID, err)
 	}
 
@@ -186,14 +198,18 @@ func (d *Dispatcher) recordArtifact(ctx context.Context, ec executionContext, a 
 // openPullRequest opens the pull request for the task's branch. Opening it
 // is the caller's job, not the adapter's: the Executor contract reports
 // produced commits and nothing more (agents/claude-code/README.md).
-func (d *Dispatcher) openPullRequest(ctx context.Context, ec executionContext) error {
+// Returns the pull request's identifier so the caller can hand it to
+// CompletionService.RequestReview: the platform must remember what it opened
+// (BUGFIX-009 — this identifier used to be logged and dropped, leaving the
+// acceptance decision impossible to perform).
+func (d *Dispatcher) openPullRequest(ctx context.Context, ec executionContext) (string, error) {
 	title := ec.view.Title
 	if title == "" {
 		title = ec.taskID
 	}
 	prID, err := d.Repos.OpenPullRequest(ctx, ec.repository, ec.branch, title, pullRequestBody(ec))
 	if err != nil {
-		return fmt.Errorf("orchestrator: open pull request for %s: %w", ec.branch, err)
+		return "", fmt.Errorf("orchestrator: open pull request for %s: %w", ec.branch, err)
 	}
 
 	// RequestReview on the provider marks the pull request itself; the Task's
@@ -203,7 +219,7 @@ func (d *Dispatcher) openPullRequest(ctx context.Context, ec executionContext) e
 		// annotate it must not fail the execution.
 		d.Log.Printf("marking review requested on PR %s failed: %v", prID, err)
 	}
-	return nil
+	return prID, nil
 }
 
 // pullRequestBody builds the description from the task's planning content,

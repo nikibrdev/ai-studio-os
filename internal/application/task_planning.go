@@ -99,10 +99,10 @@ func (s *TaskPlanningService) CreateTask(ctx context.Context, p CreateTaskParams
 	}
 	e := NewEvent(event.TaskCreated, "task", p.Actor, p.ProjectID, t.ID(), created.At).
 		WithData(map[string]string{
-			"title":              t.Title(),
-			"type":               t.Type(),
-			"scope":              t.Scope(),
-			"acceptanceCriteria": string(acceptanceCriteriaJSON),
+			dataKeyTitle:              t.Title(),
+			dataKeyType:               t.Type(),
+			dataKeyScope:              t.Scope(),
+			dataKeyAcceptanceCriteria: string(acceptanceCriteriaJSON),
 		})
 	if err := s.Events.Publish(ctx, e); err != nil {
 		return nil, err

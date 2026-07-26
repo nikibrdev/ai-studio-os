@@ -75,7 +75,7 @@ func TestTaskProjection_ReviewCompletedDisambiguatesOutcome(t *testing.T) {
 	if _, err := work.StartTask(ctx, application.StartTaskParams{ProjectID: "proj-1", TaskID: "task-1", ExecutorID: "executor-1"}); err != nil {
 		t.Fatalf("StartTask: %v", err)
 	}
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", ""); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: ""}); err != nil {
 		t.Fatalf("RequestReview: %v", err)
 	}
 
@@ -89,7 +89,7 @@ func TestTaskProjection_ReviewCompletedDisambiguatesOutcome(t *testing.T) {
 		t.Fatalf("State() after changes-requested = %v, want %v", view.State, shared.StateInProgress)
 	}
 
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", ""); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: ""}); err != nil {
 		t.Fatalf("second RequestReview: %v", err)
 	}
 	if err := completion.CompleteReview(ctx, "proj-1", "task-1", true, ""); err != nil {

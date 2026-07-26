@@ -6,6 +6,28 @@ import (
 	"ai-studio-os/internal/platform"
 )
 
+// Keys used in Envelope.WithData payloads. Named rather than written as bare
+// strings at both ends because producer and consumer sit on opposite sides of
+// a boundary: BUGFIX-004 was exactly a producer/consumer mismatch across it,
+// and a typo in a literal would fail the same silent way — the reader simply
+// finds nothing.
+const (
+	// dataKeyTo carries ReviewCompleted's target state, which the event name
+	// alone leaves ambiguous (Testing or back to In Progress).
+	dataKeyTo = "to"
+
+	// Descriptive fields of a task, attached to TaskCreated (TASK-076).
+	dataKeyTitle              = "title"
+	dataKeyType               = "type"
+	dataKeyScope              = "scope"
+	dataKeyAcceptanceCriteria = "acceptanceCriteria"
+
+	// Pull request reference, attached to ReviewRequested as
+	// docs/architecture/events.md requires (BUGFIX-009).
+	dataKeyRepository    = "repository"
+	dataKeyPullRequestID = "pullRequestId"
+)
+
 // Envelope adapts a domain event's data to the platform.Event contract
 // (docs/architecture/events.md, "Общие поля всех событий"). Domain
 // packages return their events as plain data values and never depend on
