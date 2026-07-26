@@ -4,8 +4,10 @@ package wiring
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/application/inmemory"
@@ -176,7 +178,14 @@ func TestGoldenPath_Infrastructure(t *testing.T) {
 
 func newActiveProject(ctx context.Context, t *testing.T, store application.ProjectStore) {
 	t.Helper()
-	p, _, err := project.New("proj-1", "AI Studio OS")
+	newActiveProjectWithID(ctx, t, store, "proj-1")
+}
+
+// newActiveProjectWithID lets a test pick the id, so runs against the shared
+// database do not collide with each other's data.
+func newActiveProjectWithID(ctx context.Context, t *testing.T, store application.ProjectStore, id string) {
+	t.Helper()
+	p, _, err := project.New(id, "AI Studio OS")
 	if err != nil {
 		t.Fatalf("project.New: %v", err)
 	}
@@ -213,5 +222,87 @@ func requireState(t *testing.T, proj *application.TaskProjection, projectID, tas
 	}
 	if view.State != want {
 		t.Fatalf("projection State() for %q = %v, want %v", taskID, view.State, want)
+	}
+}
+
+// TestProjectionRebuildsFromJournal_AfterRestart is BUGFIX-010: a process that
+// only subscribes to the bus starts with an empty read model, so every restart
+// used to make tasks in PostgreSQL invisible — GET /decisions answered "nothing
+// awaits a decision" while a task sat waiting for one.
+//
+// Simulates the restart the way it actually happens: a brand-new projection,
+// never subscribed to anything, fed only from the durable journal.
+func TestProjectionRebuildsFromJournal_AfterRestart(t *testing.T) {
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("TEST_DATABASE_URL not set; run docker compose up and set it to run this test")
+	}
+
+	ctx := context.Background()
+	sys, err := New(ctx, dsn, "")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer sys.Close()
+
+	rules := workflow.Machine{}
+	live := application.NewTaskProjection()
+	if err := live.Subscribe(sys.Events); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+
+	// A task left in Backlog is one awaiting a human decision — exactly what
+	// must survive a restart (docs/architecture/workflow.md).
+	projectID := fmt.Sprintf("proj-rebuild-%d", time.Now().UnixNano())
+	newActiveProjectWithID(ctx, t, sys.Projects, projectID)
+
+	planning := &application.TaskPlanningService{
+		Projects: sys.Projects, Tasks: sys.Tasks, Events: sys.Events, Rules: rules,
+	}
+	if _, err := planning.CreateTask(ctx, application.CreateTaskParams{
+		ID: "TASK-001", ProjectID: projectID, Title: "Ждёт решения человека", Type: "feature",
+		Scope: "Проверка восстановления", AcceptanceCriteria: []string{"выживает перезапуск"},
+	}); err != nil {
+		t.Fatalf("CreateTask: %v", err)
+	}
+
+	// The restart: nothing subscribed, nothing in memory — only the journal.
+	restarted := application.NewTaskProjection()
+	entries, err := sys.EventJournal.Since(ctx, 0)
+	if err != nil {
+		t.Fatalf("Since: %v", err)
+	}
+	events := make([]platform.Event, 0, len(entries))
+	for _, e := range entries {
+		events = append(events, e.Event)
+	}
+	if err := restarted.Rebuild(ctx, events); err != nil {
+		t.Fatalf("Rebuild: %v", err)
+	}
+
+	view, ok := restarted.Get(projectID, "TASK-001")
+	if !ok {
+		t.Fatal("task is not in the rebuilt projection — a restart would hide it from the human")
+	}
+	if view.State != shared.StateBacklog {
+		t.Errorf("state = %v, want %v", view.State, shared.StateBacklog)
+	}
+	// Descriptive fields too, not just the state: BUGFIX-004's lesson.
+	if view.Title != "Ждёт решения человека" || view.Scope != "Проверка восстановления" {
+		t.Errorf("view = {Title:%q Scope:%q}, want the values CreateTask was given", view.Title, view.Scope)
+	}
+
+	// And it must be reported as awaiting a decision, which is the whole point.
+	var found bool
+	for _, a := range restarted.ListAwaitingDecision() {
+		if a.Task.ProjectID == projectID && a.Task.ID == "TASK-001" {
+			found = true
+			if a.Decision != application.DecisionDefinitionOfReady {
+				t.Errorf("decision = %q, want %q", a.Decision, application.DecisionDefinitionOfReady)
+			}
+		}
+	}
+	if !found {
+		t.Error("task is not listed as awaiting a decision after rebuild")
 	}
 }

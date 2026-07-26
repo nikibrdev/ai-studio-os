@@ -10,7 +10,7 @@
 
 | Пакет | Содержимое | Задача |
 | --- | --- | --- |
-| (корень) | `main.go` — точка входа: сборка зависимостей через `wiring.System`, запуск HTTP-сервера, graceful shutdown | TASK-067 |
+| (корень) | `main.go` — точка входа: сборка зависимостей через `wiring.System`,  запуск HTTP-сервера, восстановление read-модели из журнала при старте (BUGFIX-010), graceful shutdown | TASK-067 |
 | `httpapi/` | Маршрутизация, хендлеры (`projects.go`, `tasks.go`, `work.go`, `artifacts.go`, `executions.go`, `completion.go`), JSON-кодирование, отображение ошибок в HTTP-коды | TASK-067…070 |
 
 ### Зависимости (module-boundaries.md)
