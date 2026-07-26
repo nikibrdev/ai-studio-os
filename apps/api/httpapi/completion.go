@@ -14,15 +14,32 @@ func registerCompletionRoutes(mux *http.ServeMux, deps Deps) {
 	mux.HandleFunc("POST /projects/{projectId}/tasks/{id}/complete-testing", handleCompleteTesting(deps))
 }
 
+// requestReviewRequest optionally carries the pull request under review —
+// docs/architecture/events.md requires ReviewRequested to reference it, and
+// the acceptance decision later needs it to merge (BUGFIX-009). Both fields
+// may be omitted: a review can be requested before a pull request exists.
+type requestReviewRequest struct {
+	Repository    string `json:"repository"`
+	PullRequestID string `json:"pullRequestId"`
+	Actor         string `json:"actor"`
+}
+
 func handleRequestReview(deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req actorRequest
+		var req requestReviewRequest
 		if err := decodeOptionalJSON(r, &req); err != nil {
 			writeInvalidBody(w, err)
 			return
 		}
 
-		if err := deps.Completion.RequestReview(r.Context(), r.PathValue("projectId"), r.PathValue("id"), req.Actor); err != nil {
+		err := deps.Completion.RequestReview(r.Context(), application.RequestReviewParams{
+			ProjectID:     r.PathValue("projectId"),
+			TaskID:        r.PathValue("id"),
+			Repository:    req.Repository,
+			PullRequestID: req.PullRequestID,
+			Actor:         req.Actor,
+		})
+		if err != nil {
 			writeError(w, err)
 			return
 		}

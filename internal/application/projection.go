@@ -33,6 +33,19 @@ type TaskView struct {
 	Type               string
 	Scope              string
 	AcceptanceCriteria []string
+
+	// Repository and PullRequestID identify the pull request under review,
+	// captured from ReviewRequested's attached data (BUGFIX-009) — the
+	// reference docs/architecture/events.md always required that event to
+	// carry. Without it the platform opened a pull request and then forgot
+	// it, making the acceptance decision impossible: CompleteTesting needs
+	// it to merge, and nothing else remembered it.
+	//
+	// Empty until a review is requested with a pull request, and left alone
+	// afterwards: a later ReviewRequested without a reference (a human
+	// re-requesting review by hand) must not erase what is already known.
+	Repository    string
+	PullRequestID string
 }
 
 // taskProjectionEvents are the event types TaskProjection subscribes to —
@@ -102,6 +115,9 @@ func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 	if e.Type() == event.TaskCreated {
 		applyCreatedData(&v, e)
 	}
+	if e.Type() == event.ReviewRequested {
+		applyReviewRequestedData(&v, e)
+	}
 	v.UpdatedAt = e.OccurredAt()
 	p.views[key] = v
 	return nil
@@ -132,14 +148,35 @@ func applyCreatedData(v *TaskView, e platform.Event) {
 		return
 	}
 	data := carrier.Data()
-	v.Title = data["title"]
-	v.Type = data["type"]
-	v.Scope = data["scope"]
-	if raw := data["acceptanceCriteria"]; raw != "" {
+	v.Title = data[dataKeyTitle]
+	v.Type = data[dataKeyType]
+	v.Scope = data[dataKeyScope]
+	if raw := data[dataKeyAcceptanceCriteria]; raw != "" {
 		var criteria []string
 		if err := json.Unmarshal([]byte(raw), &criteria); err == nil {
 			v.AcceptanceCriteria = criteria
 		}
+	}
+}
+
+// applyReviewRequestedData records the pull request under review from
+// ReviewRequested's attached data (BUGFIX-009).
+//
+// Only ever fills in, never clears: a review can legitimately be requested
+// without a reference (a human doing it by hand), and treating that as "the
+// pull request is gone" would lose a reference the platform already had and
+// break the acceptance decision that depends on it.
+func applyReviewRequestedData(v *TaskView, e platform.Event) {
+	carrier, ok := e.(dataCarrier)
+	if !ok {
+		return
+	}
+	data := carrier.Data()
+	if repo := data[dataKeyRepository]; repo != "" {
+		v.Repository = repo
+	}
+	if prID := data[dataKeyPullRequestID]; prID != "" {
+		v.PullRequestID = prID
 	}
 }
 
@@ -160,7 +197,7 @@ func targetState(e platform.Event) (shared.TaskState, bool) {
 		return shared.StateReview, true
 	case event.ReviewCompleted:
 		if carrier, ok := e.(dataCarrier); ok {
-			if to, ok := carrier.Data()["to"]; ok {
+			if to, ok := carrier.Data()[dataKeyTo]; ok {
 				return shared.TaskState(to), true
 			}
 		}

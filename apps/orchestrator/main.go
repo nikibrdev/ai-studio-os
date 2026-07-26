@@ -92,6 +92,12 @@ func run() error {
 		return fmt.Errorf("orchestrator: %s is not set — a repository provider is required to create task branches", github.TokenEnv)
 	}
 
+	// One projection instance, shared: the dispatcher fills it from the journal
+	// and CompletionService reads the pull request reference back out of it
+	// (BUGFIX-009). Two instances would leave the reference invisible to the
+	// service that needs it.
+	views := application.NewTaskProjection()
+
 	dispatcher := &Dispatcher{
 		Projects:  sys.Projects,
 		Executors: sys.Executors,
@@ -104,9 +110,10 @@ func run() error {
 			Artifacts: sys.Artifacts, Events: sys.Events,
 		},
 		Completion: &application.CompletionService{
-			Tasks: sys.Tasks, Repositories: sys.Repository, Events: sys.Events, Rules: workflow.Machine{},
+			Tasks: sys.Tasks, Repositories: sys.Repository, Events: sys.Events,
+			Rules: workflow.Machine{}, Views: views,
 		},
-		Views: application.NewTaskProjection(),
+		Views: views,
 		Repos: sys.Repository,
 		// One adapter serves every role; the role reaches the agent through
 		// ExecutorTask.Role, which shapes its prompt (ADR-007).

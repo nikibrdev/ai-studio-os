@@ -112,6 +112,13 @@ type taskViewResponse struct {
 	// not map states to decisions itself — that rule belongs to the platform,
 	// and duplicating it in a UI is forbidden (module-boundaries.md).
 	AwaitingDecision string `json:"awaitingDecision"`
+
+	// Repository and PullRequestID identify the pull request under review,
+	// empty until one is known (BUGFIX-009). Exposed so a human about to make
+	// the acceptance decision can see what they are merging — the decision is
+	// irreversible within the task (ADR-008).
+	Repository    string `json:"repository"`
+	PullRequestID string `json:"pullRequestId"`
 }
 
 func taskViewResponseFrom(v application.TaskView) taskViewResponse {
@@ -119,6 +126,8 @@ func taskViewResponseFrom(v application.TaskView) taskViewResponse {
 		ID: v.ID, ProjectID: v.ProjectID, State: string(v.State), UpdatedAt: v.UpdatedAt,
 		Title: v.Title, Type: v.Type, Scope: v.Scope, AcceptanceCriteria: v.AcceptanceCriteria,
 		AwaitingDecision: string(application.DecisionFor(v.State)),
+		Repository:       v.Repository,
+		PullRequestID:    v.PullRequestID,
 	}
 }
 

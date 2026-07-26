@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"ai-studio-os/internal/domain/event"
@@ -20,14 +21,40 @@ type CompletionService struct {
 	Repositories platform.RepositoryProvider
 	Events       platform.EventBus
 	Rules        workflow.Rules
+
+	// Views, when set, lets CompleteTesting find the pull request the platform
+	// itself opened instead of requiring the caller to supply it (BUGFIX-009).
+	// Optional so existing callers that pass the reference explicitly — and
+	// tests built before this — keep working unchanged.
+	Views *TaskProjection
+}
+
+// RequestReviewParams are the inputs to RequestReview. ProjectID is required
+// because TASK-NNN is unique only within a Project (ADR-011, BUGFIX-003).
+//
+// Repository and PullRequestID carry the pull request being reviewed —
+// docs/architecture/events.md requires ReviewRequested to carry a reference to
+// it ("Данные: идентификатор задачи, ссылка на PR, автор изменений"), and
+// nothing did until BUGFIX-009. Losing it made the acceptance decision
+// impossible to perform: CompleteTesting needs it to merge, and no other part
+// of the platform remembered it.
+//
+// Both may be empty — a review can be requested before a pull request exists
+// (a human driving the task by hand), and the domain does not require one.
+type RequestReviewParams struct {
+	ProjectID     string
+	TaskID        string
+	Repository    string
+	PullRequestID string
+	Actor         string
 }
 
 // RequestReview transitions a Task In Progress -> Review. Publishes
-// ReviewRequested (source: task, per docs/architecture/events.md).
-// projectID is required because TASK-NNN is unique only within a Project
-// (ADR-011, BUGFIX-003).
-func (s *CompletionService) RequestReview(ctx context.Context, projectID, taskID, actor string) error {
-	t, err := s.Tasks.Get(ctx, projectID, taskID)
+// ReviewRequested (source: task, per docs/architecture/events.md) carrying the
+// pull request reference, so whoever later makes the acceptance decision does
+// not have to supply it.
+func (s *CompletionService) RequestReview(ctx context.Context, p RequestReviewParams) error {
+	t, err := s.Tasks.Get(ctx, p.ProjectID, p.TaskID)
 	if err != nil {
 		return err
 	}
@@ -38,7 +65,15 @@ func (s *CompletionService) RequestReview(ctx context.Context, projectID, taskID
 	if err := s.Tasks.Save(ctx, t); err != nil {
 		return err
 	}
-	return s.publish(ctx, event.ReviewRequested, "task", actor, t.ProjectID(), t.ID(), transitioned.At)
+
+	e := NewEvent(event.ReviewRequested, "task", p.Actor, t.ProjectID(), t.ID(), transitioned.At)
+	if p.Repository != "" || p.PullRequestID != "" {
+		e = e.WithData(map[string]string{
+			dataKeyRepository:    p.Repository,
+			dataKeyPullRequestID: p.PullRequestID,
+		})
+	}
+	return s.Events.Publish(ctx, e)
 }
 
 // CompleteReview transitions a Task out of Review: to Testing if approved,
@@ -65,18 +100,20 @@ func (s *CompletionService) CompleteReview(ctx context.Context, projectID, taskI
 		return err
 	}
 	e := NewEvent(event.ReviewCompleted, "git", actor, t.ProjectID(), t.ID(), transitioned.At).
-		WithData(map[string]string{"to": string(to)})
+		WithData(map[string]string{dataKeyTo: string(to)})
 	return s.Events.Publish(ctx, e)
 }
 
-// CompleteTestingParams are the inputs to CompleteTesting. Repository and
-// PullRequestID are required only when Passed is true (the merge call
-// needs them); a real Task does not yet carry a git reference of its own
-// (the domain git module is outside EPIC-003/004 scope) — the caller
-// (Application-adjacent orchestration, later a real Executor adapter)
-// supplies them explicitly, the same way TASK-042 accepts an
-// already-chosen Executor. ProjectID is required because TASK-NNN is
-// unique only within a Project (ADR-011, BUGFIX-003).
+// CompleteTestingParams are the inputs to CompleteTesting. ProjectID is
+// required because TASK-NNN is unique only within a Project (ADR-011,
+// BUGFIX-003).
+//
+// Repository and PullRequestID are optional (BUGFIX-009): when empty and
+// Passed is true, the service looks the reference up in Views — the platform
+// opened the pull request itself and recorded the reference on
+// ReviewRequested, so a caller should not have to know it. Explicitly passed
+// values win, which keeps existing callers and tests working and allows a
+// human to merge a pull request the platform never opened.
 type CompleteTestingParams struct {
 	ProjectID     string
 	TaskID        string
@@ -85,6 +122,10 @@ type CompleteTestingParams struct {
 	PullRequestID string
 	Actor         string
 }
+
+// ErrPullRequestUnknown is returned when a positive acceptance decision needs
+// a pull request to merge and neither the caller nor the projection knows one.
+var ErrPullRequestUnknown = errors.New("application: no pull request is known for this task")
 
 // CompleteTesting concludes the Testing stage. On failure: Testing -> In
 // Progress, publishes TestsFailed. On success: publishes TestsPassed,
@@ -110,10 +151,15 @@ func (s *CompletionService) CompleteTesting(ctx context.Context, p CompleteTesti
 		return s.publish(ctx, event.TestsFailed, "execution", p.Actor, t.ProjectID(), t.ID(), transitioned.At)
 	}
 
+	repo, prID, err := s.pullRequestFor(p)
+	if err != nil {
+		return err
+	}
+
 	if err := s.publish(ctx, event.TestsPassed, "execution", p.Actor, t.ProjectID(), t.ID(), time.Now()); err != nil {
 		return err
 	}
-	if err := s.Repositories.MergePullRequest(ctx, p.Repository, p.PullRequestID); err != nil {
+	if err := s.Repositories.MergePullRequest(ctx, repo, prID); err != nil {
 		return err
 	}
 	if err := s.publish(ctx, event.MergeCompleted, "git", p.Actor, t.ProjectID(), t.ID(), time.Now()); err != nil {
@@ -128,6 +174,37 @@ func (s *CompletionService) CompleteTesting(ctx context.Context, p CompleteTesti
 		return err
 	}
 	return s.publish(ctx, event.TaskCompleted, "task", p.Actor, t.ProjectID(), t.ID(), transitioned.At)
+}
+
+// pullRequestFor resolves which pull request to merge: what the caller passed,
+// otherwise what the platform recorded when review was requested (BUGFIX-009).
+//
+// Resolved before TestsPassed is published, not at the merge call: an
+// unresolvable reference must abort the whole sequence, and publishing
+// TestsPassed first would announce a passing test run for a task that then
+// stays in Testing — ADR-008's order exists precisely so events describe what
+// actually happened.
+func (s *CompletionService) pullRequestFor(p CompleteTestingParams) (string, string, error) {
+	repo, prID := p.Repository, p.PullRequestID
+	if repo != "" && prID != "" {
+		return repo, prID, nil
+	}
+
+	if s.Views != nil {
+		if v, ok := s.Views.Get(p.ProjectID, p.TaskID); ok {
+			if repo == "" {
+				repo = v.Repository
+			}
+			if prID == "" {
+				prID = v.PullRequestID
+			}
+		}
+	}
+
+	if repo == "" || prID == "" {
+		return "", "", ErrPullRequestUnknown
+	}
+	return repo, prID, nil
 }
 
 func (s *CompletionService) publish(ctx context.Context, eventType, source, actor, projectID, subjectID string, at time.Time) error {

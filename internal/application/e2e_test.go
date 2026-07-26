@@ -82,7 +82,7 @@ func TestGoldenPath_Application(t *testing.T) {
 	}
 
 	// Открывает Pull Request → Review.
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", "developer:executor-1"); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: "developer:executor-1"}); err != nil {
 		t.Fatalf("RequestReview: %v", err)
 	}
 	requireState(t, proj, "proj-1", "task-1", shared.StateReview)
@@ -94,7 +94,7 @@ func TestGoldenPath_Application(t *testing.T) {
 	requireState(t, proj, "proj-1", "task-1", shared.StateInProgress)
 
 	// Разработчик поправил, снова отправляет на ревью — на этот раз одобрено.
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", "developer:executor-1"); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: "developer:executor-1"}); err != nil {
 		t.Fatalf("second RequestReview: %v", err)
 	}
 	if err := completion.CompleteReview(ctx, "proj-1", "task-1", true, "reviewer:executor-3"); err != nil {
@@ -109,7 +109,7 @@ func TestGoldenPath_Application(t *testing.T) {
 	requireState(t, proj, "proj-1", "task-1", shared.StateInProgress)
 
 	// Возврат в Review -> Testing и повторный прогон — на этот раз успешно, с merge.
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", "developer:executor-1"); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: "developer:executor-1"}); err != nil {
 		t.Fatalf("third RequestReview: %v", err)
 	}
 	if err := completion.CompleteReview(ctx, "proj-1", "task-1", true, "reviewer:executor-3"); err != nil {

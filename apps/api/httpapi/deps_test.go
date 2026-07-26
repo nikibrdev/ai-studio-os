@@ -71,7 +71,12 @@ func testDeps() Deps {
 			Projects: projects, Tasks: tasks, Executions: executions, Artifacts: artifacts, Events: bus,
 		},
 		Completion: &application.CompletionService{
-			Tasks: tasks, Repositories: inmemory.NewRepositoryProvider(), Events: bus, Rules: rules,
+			// Views wired exactly as apps/api/main.go wires it, so
+			// CompleteTesting can resolve the pull request the platform itself
+			// recorded (BUGFIX-009). Leaving it nil here would make the fixture
+			// quietly weaker than production.
+			Tasks: tasks, Repositories: inmemory.NewRepositoryProvider(), Events: bus,
+			Rules: rules, Views: views,
 		},
 		Views: views,
 	}

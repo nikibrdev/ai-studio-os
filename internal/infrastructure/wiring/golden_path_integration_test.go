@@ -97,7 +97,7 @@ func TestGoldenPath_Infrastructure(t *testing.T) {
 		t.Fatalf("SucceedExecution: %v", err)
 	}
 
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", "developer:executor-1"); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: "developer:executor-1"}); err != nil {
 		t.Fatalf("RequestReview: %v", err)
 	}
 	requireState(t, proj, "proj-1", "task-1", shared.StateReview)
@@ -108,7 +108,7 @@ func TestGoldenPath_Infrastructure(t *testing.T) {
 	}
 	requireState(t, proj, "proj-1", "task-1", shared.StateInProgress)
 
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", "developer:executor-1"); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: "developer:executor-1"}); err != nil {
 		t.Fatalf("second RequestReview: %v", err)
 	}
 	if err := completion.CompleteReview(ctx, "proj-1", "task-1", true, "reviewer:executor-3"); err != nil {
@@ -122,7 +122,7 @@ func TestGoldenPath_Infrastructure(t *testing.T) {
 	}
 	requireState(t, proj, "proj-1", "task-1", shared.StateInProgress)
 
-	if err := completion.RequestReview(ctx, "proj-1", "task-1", "developer:executor-1"); err != nil {
+	if err := completion.RequestReview(ctx, application.RequestReviewParams{ProjectID: "proj-1", TaskID: "task-1", Actor: "developer:executor-1"}); err != nil {
 		t.Fatalf("third RequestReview: %v", err)
 	}
 	if err := completion.CompleteReview(ctx, "proj-1", "task-1", true, "reviewer:executor-3"); err != nil {

@@ -146,8 +146,14 @@
 **Запрос:** `POST /projects/{projectId}/tasks/{id}/request-review`
 
 ```json
-{ "actor": "string, опционален" }
+{
+  "repository": "string, опционален — репозиторий Pull Request'а",
+  "pullRequestId": "string, опционален — идентификатор Pull Request'а",
+  "actor": "string, опционален"
+}
 ```
+
+`repository`/`pullRequestId` — ссылка на Pull Request, который предстоит ревьюить. Прикрепляется к событию `ReviewRequested`, как требует [events.md](../architecture/events.md), и сохраняется в представлении задачи, чтобы **приёмочное решение не требовало её от вызывающего кода** ([BUGFIX-009](../../tasks/done/BUGFIX-009-pull-request-reference-lost.md)). Оба поля можно опустить: ревью бывает запрошено до появления Pull Request'а. Повторный запрос ревью без ссылки **не стирает** уже известную.
 
 **Ответ:** `204 No Content`.
 
@@ -180,15 +186,17 @@
 ```json
 {
   "passed": true,
-  "repository": "string, обязателен если passed=true",
-  "pullRequestId": "string, обязателен если passed=true",
+  "repository": "string, опционален — платформа знает ссылку сама",
+  "pullRequestId": "string, опционален — платформа знает ссылку сама",
   "actor": "string, опционален"
 }
 ```
 
 **Ответ:** `204 No Content`.
 
-**Ошибки:** `404` — задача не найдена; `409` — переход недопустим; `500` — отказ merge (`RepositoryProvider.MergePullRequest`, задача остаётся в `testing`).
+При `passed=true` ссылка на Pull Request берётся из представления задачи, если не передана явно ([BUGFIX-009](../../tasks/done/BUGFIX-009-pull-request-reference-lost.md)): платформа сама открыла Pull Request и запомнила ссылку при `request-review`, поэтому клиент — например Dashboard — знать её не обязан. Явно переданные значения имеют приоритет: так можно слить Pull Request, который платформа не открывала.
+
+**Ошибки:** `404` — задача не найдена; `409` — переход недопустим; `500` — отказ merge (`RepositoryProvider.MergePullRequest`, задача остаётся в `testing`) либо ссылка на Pull Request неизвестна ни клиенту, ни платформе (при `passed=true`). Во втором случае **ни одно событие не публикуется**: объявить `TestsPassed` и остановиться значило бы сообщить об успешном прогоне для задачи, которая осталась в `testing`.
 
 **События:** при отказе — `TestsFailed`; при успехе — `TestsPassed`, затем `MergeCompleted`, затем `TaskCompleted` (в этом порядке, ADR-008).
 
@@ -196,7 +204,7 @@
 
 **Task** (представление в ответах): `id`, `projectId`, `epicId`, `title`, `type`, `scope`, `acceptanceCriteria` (string[]), `state`.
 
-**TaskView** (ответ `GET /projects/{projectId}/tasks/{id}`, из `TaskProjection`): `id`, `projectId`, `state`, `updatedAt`.
+**TaskView** (ответ `GET /projects/{projectId}/tasks/{id}`, из `TaskProjection`): `id`, `projectId`, `state`, `updatedAt`, `title`, `type`, `scope`, `acceptanceCriteria`, `awaitingDecision`, `repository`, `pullRequestId`.
 
 ## Статус
 

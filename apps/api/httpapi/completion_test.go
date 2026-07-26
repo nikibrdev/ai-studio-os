@@ -139,3 +139,46 @@ func TestCompleteTesting_MergeFailureKeepsTaskInTesting(t *testing.T) {
 		t.Errorf("State = %q, want testing (Done must be unreachable without a successful merge)", view.State)
 	}
 }
+
+// TestRequestReviewThenCompleteTesting_NoPullRequestIdFromClient is BUGFIX-009
+// through real HTTP: the platform remembers the pull request from
+// request-review, so the acceptance decision needs no reference from the
+// client. A UI has no way to learn a pull request id.
+func TestRequestReviewThenCompleteTesting_NoPullRequestIdFromClient(t *testing.T) {
+	deps := testDeps()
+	server := NewServer(deps)
+	projectID := createActiveProject(t, server)
+	taskID := createReadyTask(t, server, projectID)
+	startExecution(t, server, deps, projectID, taskID)
+
+	doRequest(t, server, httptest.NewRequest(http.MethodPost,
+		"/projects/"+projectID+"/tasks/"+taskID+"/request-review",
+		jsonBody(t, requestReviewRequest{Repository: "github.com/org/repo", PullRequestID: "42"})), nil)
+
+	// The reference is visible to whoever will decide.
+	var view taskViewResponse
+	doRequest(t, server, httptest.NewRequest(http.MethodGet,
+		"/projects/"+projectID+"/tasks/"+taskID, nil), &view)
+	if view.Repository != "github.com/org/repo" || view.PullRequestID != "42" {
+		t.Fatalf("view = {Repository:%q PullRequestID:%q}, want the reference request-review carried",
+			view.Repository, view.PullRequestID)
+	}
+
+	doRequest(t, server, httptest.NewRequest(http.MethodPost,
+		"/projects/"+projectID+"/tasks/"+taskID+"/complete-review",
+		jsonBody(t, completeReviewRequest{Approved: true})), nil)
+
+	// No repository, no pullRequestId in the body — what a UI can actually send.
+	rec := doRequest(t, server, httptest.NewRequest(http.MethodPost,
+		"/projects/"+projectID+"/tasks/"+taskID+"/complete-testing",
+		jsonBody(t, completeTestingRequest{Passed: true})), nil)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	doRequest(t, server, httptest.NewRequest(http.MethodGet,
+		"/projects/"+projectID+"/tasks/"+taskID, nil), &view)
+	if view.State != "done" {
+		t.Errorf("state = %q, want done", view.State)
+	}
+}

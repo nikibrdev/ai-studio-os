@@ -57,7 +57,7 @@ func run() error {
 			Projects: sys.Projects, Tasks: sys.Tasks, Executions: sys.Executions, Artifacts: sys.Artifacts, Events: sys.Events,
 		},
 		Completion: &application.CompletionService{
-			Tasks: sys.Tasks, Repositories: sys.Repository, Events: sys.Events, Rules: rules,
+			Tasks: sys.Tasks, Repositories: sys.Repository, Events: sys.Events, Rules: rules, Views: views,
 		},
 		Views: views,
 	}
