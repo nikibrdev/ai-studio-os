@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.8 Dashboard — завершён (2026-07-23); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)); v1.0 First Public MVP — **в работе** (открыт 2026-07-23, декомпозирован на 4 эпика) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | [EPIC-010 Orchestrator](docs/roadmap/EPIC-010-orchestrator.md) — первый из 4 эпиков декомпозиции v1.0: автоматический запуск Developer-исполнителя на `TaskPlanned` через контракт Executor, TASK-079…085 |
+| **Current Epic** | Нет открытого эпика — [EPIC-010 Orchestrator](docs/roadmap/EPIC-010-orchestrator.md) закрыт (2026-07-25): первый из 4 эпиков декомпозиции v1.0, автоматический запуск Developer-исполнителя на `TaskPlanned`, TASK-079…085. Следующий — «Роли PM/QA» |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
@@ -30,7 +30,8 @@
 | Infrastructure | **Implemented** — PostgreSQL (пять Store, `pgx/v5`, самописные миграции, составной ключ Task — BUGFIX-003), производственный EventBus с журналом, GitHub Repository Provider, Memory Provider (файлы + Qdrant, ADR-018) ([README](internal/infrastructure/README.md)) |
 | API | **Implemented** (EPIC-008/009, `apps/api` — REST над `internal/application`, ADR-003, весь golden path + списковые операции, 17 операций; без auth — ADR-012 Вариант 1) ([README](apps/api/README.md)) |
 | Dashboard | **Implemented** (EPIC-009, v0.8 — `apps/dashboard` Next.js, read-only: список проектов, задачи проекта, детали задачи) ([README](apps/dashboard/README.md)) |
-| Developer Engine | **Implemented** — первый реальный адаптер Executor ([agents/claude-code](agents/claude-code/README.md)): Docker-контейнер на Execution, сетевой allowlist, короткоживущие секреты (ADR-005/006); реальный AI-вызов не проверен — нет ключа в этой сессии (честный предел, TASK-056) |
+| Developer Engine | **Implemented** — первый реальный адаптер Executor ([agents/claude-code](agents/claude-code/README.md)): Docker-контейнер на Execution, сетевой allowlist, короткоживущие секреты (ADR-005/006). Сквозная живая проверка EPIC-010 нашла и закрыла два дефекта, существовавших с EPIC-006: BUGFIX-006 (удвоенный хост в URL клонирования — **ни одно** исполнение не могло начаться) и BUGFIX-007 (`Artifacts` возвращал унаследованную историю как произведённые коммиты). Реальный AI-вызов по-прежнему не проверен — нет ключа провайдера (честный предел, TASK-056/085) |
+| Orchestrator | **Implemented** (EPIC-010, v1.0 — [apps/orchestrator](apps/orchestrator/README.md), [механизм](docs/architecture/orchestrator.md)): курсорный опрос журнала событий, идемпотентный бутстрап Developer-исполнителя, диспетчеризация на `TaskPlanned`, слежение за исполнением, гарантированный `Finish`. Подтверждено вживую (реальный репозиторий, токен, Docker). Ограничения: только роль Developer, один исполнитель, курсор в памяти, слежение синхронное; участок «коммиты → PR → Review» вживую не пройден без ключа провайдера |
 | Workflow | **Machine реализована** — каноническая state machine (20 переходов, 100% покрытия); Definition/Step — контракты до появления потребителя (v0.4) |
 | Memory | **Implemented** — `platform.MemoryProvider` целиком (Record/Search/Reindex), файлы — источник истины, Qdrant — производный индекс; эмбеддинг наивный (feature hashing, ADR-018), не семантический по сути — честно задокументированное ограничение MVP |
 
@@ -39,7 +40,7 @@
 | Поле | Значение |
 | --- | --- |
 | **Last ADR** | [ADR-007](docs/adr/ADR-007-pm-qa-executors.md)/[ADR-010](docs/adr/ADR-010-documentation-language.md)/[ADR-013](docs/adr/ADR-013-managed-projects.md) приняты при открытии v1.0 (2026-07-23) — все 18 ADR проекта теперь Accepted |
-| **Last Review** | 2026-07-23 — EPIC-009 (TASK-072…078, PR #90–#95) закрыт целиком; предыдущее ревью — EPIC-008 (TASK-064…071 + BUGFIX-003, PR #80–#87) |
+| **Last Review** | 2026-07-25 — EPIC-010 (TASK-079…085 + BUGFIX-004…007, PR #97–#107) закрыт целиком; предыдущее ревью — EPIC-009 (TASK-072…078, PR #90–#95) |
 | **Quality** | All checks passed; CI: GitHub Actions `verify` — green, required status check (теперь включает `apps/dashboard`: pnpm lint/format/test/build, TASK-077); `main` защищена; toolchain честно закреплён — Go 1.24 без маскировки ([BUGFIX-001](tasks/done/BUGFIX-001-pin-gofumpt.md), [BUGFIX-002](tasks/done/BUGFIX-002-pin-golangci-lint-and-toolchain.md)), pnpm — через `packageManager` в `package.json` (TASK-077); локальная среда воспроизводима и практически проверена — git-хуки (реальные негативные тесты) и Dev Container (реальная сборка, `0 issues.`) |
 | **Открытые решения** | 0 ADR в статусе Decision Required — [индекс](docs/adr/DECISIONS_INDEX.md) (все 18 приняты, 2026-07-23) |
 | **Прогресс** | [PROJECT_HEALTH.md](PROJECT_HEALTH.md) |
@@ -54,4 +55,4 @@
 
 ## Последнее обновление
 
-2026-07-23
+2026-07-25
