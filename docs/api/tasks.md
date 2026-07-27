@@ -204,7 +204,7 @@
 
 **Task** (представление в ответах): `id`, `projectId`, `epicId`, `title`, `type`, `scope`, `acceptanceCriteria` (string[]), `state`.
 
-**TaskView** (ответ `GET /projects/{projectId}/tasks/{id}`, из `TaskProjection`): `id`, `projectId`, `state`, `updatedAt`, `title`, `type`, `scope`, `acceptanceCriteria`, `awaitingDecision`, `repository`, `pullRequestId`.
+**TaskView** (ответ `GET /projects/{projectId}/tasks/{id}`, из `TaskProjection`): `id`, `projectId`, `state`, `updatedAt`, `title`, `type`, `scope`, `acceptanceCriteria`, `awaitingDecision`, `repository`, `pullRequestId`, `qaReportId` (идентификатор отчёта QA; содержимое — через `GET /artifacts/{id}`).
 
 ## Статус
 

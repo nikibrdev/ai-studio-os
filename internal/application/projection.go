@@ -50,6 +50,13 @@ type TaskView struct {
 	// re-requesting review by hand) must not erase what is already known.
 	Repository    string
 	PullRequestID string
+
+	// QAReportID identifies the published TestReport a QA agent produced for
+	// this task, empty until one exists (TASK-100). Only the identifier: the
+	// report itself stays in the artifact, and a reader fetches it by id —
+	// duplicating the text here would put the same content in two places and in
+	// the event journal.
+	QAReportID string
 }
 
 // taskProjectionEvents are the event types TaskProjection subscribes to —
@@ -65,6 +72,10 @@ var taskProjectionEvents = []string{
 	event.TestsFailed,
 	event.TestsPassed,
 	event.TaskCompleted,
+	// Not a task event, but it carries the task it concerns (TASK-100): this is
+	// how a QA report becomes reachable from the task whose acceptance decision
+	// it informs.
+	event.ArtifactPublished,
 }
 
 // TaskProjection is a read-only view of Task state, built exclusively
@@ -107,6 +118,15 @@ func (p *TaskProjection) Subscribe(bus platform.EventBus) error {
 func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	// ArtifactPublished is the one subscribed event whose subject is not a task
+	// — it is the artifact. Handled apart from everything below, which would
+	// otherwise key a view by the artifact's identifier and invent a task that
+	// does not exist.
+	if e.Type() == event.ArtifactPublished {
+		p.applyPublishedArtifact(e)
+		return nil
+	}
 
 	key := viewKey(e.ProjectID(), e.SubjectID())
 	v := p.views[key]
@@ -166,6 +186,42 @@ func applyCreatedData(v *TaskView, e platform.Event) {
 		}
 	}
 }
+
+// applyPublishedArtifact attaches a published artifact to the task it concerns
+// (TASK-100). Called with p.mu held.
+//
+// Only TestReport is attached, and only when the event names a task: an artifact
+// carries no task reference of its own, so anything without that data simply is
+// not attributable — silently guessing which task a commit belongs to would be
+// worse than leaving the field empty.
+func (p *TaskProjection) applyPublishedArtifact(e platform.Event) {
+	carrier, ok := e.(dataCarrier)
+	if !ok {
+		return
+	}
+	data := carrier.Data()
+
+	taskID := data[dataKeyTaskID]
+	if taskID == "" || data[dataKeyArtifactType] != artifactTypeTestReport {
+		return
+	}
+
+	key := viewKey(e.ProjectID(), taskID)
+	v, seen := p.views[key]
+	if !seen {
+		// A report for a task the projection has never seen would create a view
+		// with nothing but this field. Skipped rather than half-invented: the
+		// task's own events establish it, and replay delivers them first.
+		return
+	}
+	v.QAReportID = e.SubjectID()
+	v.UpdatedAt = e.OccurredAt()
+	p.views[key] = v
+}
+
+// artifactTypeTestReport is the artifact type a QA run produces
+// (docs/specifications/domain/artifact.md names it).
+const artifactTypeTestReport = "TestReport"
 
 // applyRefinedData applies a refinement of scope and/or acceptance criteria
 // from TaskRefined's attached data (EPIC-013, TASK-096).

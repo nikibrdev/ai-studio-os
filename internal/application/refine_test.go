@@ -7,6 +7,7 @@ import (
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/application/inmemory"
+	"ai-studio-os/internal/domain/event"
 	"ai-studio-os/internal/domain/shared"
 	"ai-studio-os/internal/domain/task"
 	"ai-studio-os/internal/domain/workflow"
@@ -202,5 +203,106 @@ func TestRefineTask_UnknownTaskNotFound(t *testing.T) {
 	})
 	if !errors.Is(err, application.ErrNotFound) {
 		t.Fatalf("RefineTask() error = %v, want %v", err, application.ErrNotFound)
+	}
+}
+
+// TestRecordTestReport_AttachesReportToTask is TASK-100: a report recorded
+// without a task reference is unreachable from the task whose acceptance
+// decision it informs — Artifact carries no task field of its own.
+func TestRecordTestReport_AttachesReportToTask(t *testing.T) {
+	ctx := context.Background()
+	projects := inmemory.NewProjectStore()
+	tasks := inmemory.NewTaskStore()
+	artifacts := inmemory.NewArtifactStore()
+	bus := inmemory.NewEventBus()
+	newActiveProject(t, projects)
+
+	views := application.NewTaskProjection()
+	if err := views.Subscribe(bus); err != nil {
+		t.Fatalf("Subscribe: %v", err)
+	}
+
+	planning := &application.TaskPlanningService{
+		Projects: projects, Tasks: tasks, Events: bus, Rules: workflow.Machine{},
+	}
+	if _, err := planning.CreateTask(ctx, application.CreateTaskParams{
+		ID: "TASK-001", ProjectID: "proj-1", Title: "Задача", Type: "feature",
+	}); err != nil {
+		t.Fatalf("CreateTask: %v", err)
+	}
+
+	results := &application.ResultService{
+		Projects: projects, Tasks: tasks, Artifacts: artifacts, Events: bus,
+	}
+	stored, err := results.RecordTestReport(ctx, application.RecordTestReportParams{
+		ID: "report-1", ProjectID: "proj-1", TaskID: "TASK-001",
+		Report: []byte("Проверил: критерии сходятся."), Author: "claude-code",
+	})
+	if err != nil {
+		t.Fatalf("RecordTestReport: %v", err)
+	}
+
+	view, ok := views.Get("proj-1", "TASK-001")
+	if !ok {
+		t.Fatal("Get() ok = false, want true")
+	}
+	if view.QAReportID != stored.ID() {
+		t.Errorf("QAReportID = %q, want the recorded report %q", view.QAReportID, stored.ID())
+	}
+	// The report itself stays in the artifact — the view holds only the id.
+	if got, err := results.Artifact(ctx, view.QAReportID); err != nil {
+		t.Errorf("Artifact: %v", err)
+	} else if string(got.Payload()) != "Проверил: критерии сходятся." {
+		t.Errorf("payload = %q", got.Payload())
+	}
+}
+
+// An artifact published for something other than a task — a commit produced by a
+// developer run — must not be mistaken for a QA report.
+func TestPublishedArtifact_OnlyTestReportsAttachToTasks(t *testing.T) {
+	ctx := context.Background()
+	views := application.NewTaskProjection()
+
+	created := journalLikeEvent{
+		typ: event.TaskCreated, projectID: "proj-1", subjectID: "TASK-001",
+		data: map[string]string{"title": "Задача"},
+	}
+	if err := views.Handle(ctx, created); err != nil {
+		t.Fatalf("Handle(TaskCreated): %v", err)
+	}
+
+	commit := journalLikeEvent{
+		typ: event.ArtifactPublished, projectID: "proj-1", subjectID: "abc123",
+		data: map[string]string{"taskId": "TASK-001", "artifactType": "Commit"},
+	}
+	if err := views.Handle(ctx, commit); err != nil {
+		t.Fatalf("Handle(ArtifactPublished): %v", err)
+	}
+
+	if view, _ := views.Get("proj-1", "TASK-001"); view.QAReportID != "" {
+		t.Errorf("QAReportID = %q, want empty — a commit is not a QA report", view.QAReportID)
+	}
+}
+
+// The artifact is the event's subject, not the task. Without special handling
+// the projection would key a view by the artifact's identifier and invent a task
+// that does not exist.
+func TestPublishedArtifact_DoesNotInventTasks(t *testing.T) {
+	ctx := context.Background()
+	views := application.NewTaskProjection()
+
+	report := journalLikeEvent{
+		typ: event.ArtifactPublished, projectID: "proj-1", subjectID: "report-1",
+		data: map[string]string{"taskId": "TASK-404", "artifactType": "TestReport"},
+	}
+	if err := views.Handle(ctx, report); err != nil {
+		t.Fatalf("Handle: %v", err)
+	}
+
+	if _, ok := views.Get("proj-1", "report-1"); ok {
+		t.Error("a view was created keyed by the artifact's id")
+	}
+	if _, ok := views.Get("proj-1", "TASK-404"); ok {
+		t.Error("a view was invented for a task the projection has never seen")
 	}
 }

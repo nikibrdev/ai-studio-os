@@ -31,6 +31,11 @@ export interface TaskView {
   acceptanceCriteria: string[];
   awaitingDecision: DecisionKind;
 
+  // Идентификатор отчёта QA, пустой пока отчёта нет (TASK-100). Содержимое —
+  // отдельным запросом getArtifact: отчёт хранится в артефакте, задача знает
+  // только ссылку.
+  qaReportId: string;
+
   // Ссылка на Pull Request под ревью — пустая, пока он неизвестен
   // (BUGFIX-009). Нужна, чтобы человек видел, что именно сольёт приёмочное
   // решение: в рамках задачи оно необратимо.
@@ -144,4 +149,22 @@ export function getTask(projectId: string, taskId: string): Promise<TaskView> {
   return get<TaskView>(
     `/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
   );
+}
+
+// Artifact — docs/api/artifacts.md, «Прочитать артефакт».
+export interface Artifact {
+  id: string;
+  projectId: string;
+  type: string;
+  origin: string;
+  author: string;
+  state: string;
+  payload: string;
+  createdAt: string;
+}
+
+// getArtifact — содержимое артефакта; нужно, чтобы показать человеку отчёт QA
+// перед приёмочным решением (TASK-100).
+export function getArtifact(id: string): Promise<Artifact> {
+  return get<Artifact>(`/artifacts/${encodeURIComponent(id)}`);
 }

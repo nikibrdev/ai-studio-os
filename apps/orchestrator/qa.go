@@ -128,6 +128,7 @@ func (d *Dispatcher) recordReport(ctx context.Context, backend ReportExecutor, p
 	stored, err := d.Results.RecordTestReport(ctx, application.RecordTestReportParams{
 		ID:        application.NewID(),
 		ProjectID: projectID,
+		TaskID:    taskID,
 		Report:    []byte(report),
 		Author:    artifact.Author(reportAuthor),
 		Actor:     actor,

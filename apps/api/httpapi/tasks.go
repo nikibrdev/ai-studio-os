@@ -119,6 +119,11 @@ type taskViewResponse struct {
 	// irreversible within the task (ADR-008).
 	Repository    string `json:"repository"`
 	PullRequestID string `json:"pullRequestId"`
+
+	// QAReportID identifies the QA report to read before the acceptance
+	// decision, empty when none exists (TASK-100). Only the identifier — the
+	// report itself comes from GET /artifacts/{id}.
+	QAReportID string `json:"qaReportId"`
 }
 
 func taskViewResponseFrom(v application.TaskView) taskViewResponse {
@@ -128,6 +133,7 @@ func taskViewResponseFrom(v application.TaskView) taskViewResponse {
 		AwaitingDecision: string(application.DecisionFor(v.State)),
 		Repository:       v.Repository,
 		PullRequestID:    v.PullRequestID,
+		QAReportID:       v.QAReportID,
 	}
 }
 

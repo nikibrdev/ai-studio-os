@@ -93,9 +93,17 @@ func (s *ResultService) RecordDraftArtifact(ctx context.Context, p RecordDraftAr
 type RecordTestReportParams struct {
 	ID        string
 	ProjectID string
-	Report    []byte
-	Author    artifact.Author
-	Actor     string
+
+	// TaskID is the task the report is about. Required: without it the report
+	// is unreachable from the task whose acceptance decision it informs
+	// (TASK-100). Artifact itself carries no task reference — the
+	// specification makes that link indirect, through an Execution, and a QA
+	// run has none — so the reference travels as event data instead.
+	TaskID string
+
+	Report []byte
+	Author artifact.Author
+	Actor  string
 }
 
 // RecordTestReport stores what a QA agent found as a published TestReport
@@ -125,7 +133,7 @@ func (s *ResultService) RecordTestReport(ctx context.Context, p RecordTestReport
 	}
 
 	a, created, err := artifact.New(
-		p.ID, p.ProjectID, artifact.Type("TestReport"), artifact.OriginProduced, p.Author, "",
+		p.ID, p.ProjectID, artifact.Type(artifactTypeTestReport), artifact.OriginProduced, p.Author, "",
 	)
 	if err != nil {
 		return nil, err
@@ -144,7 +152,27 @@ func (s *ResultService) RecordTestReport(ctx context.Context, p RecordTestReport
 	if err := s.publish(ctx, event.ArtifactCreated, "artifact", p.Actor, p.ProjectID, a.ID(), created.At); err != nil {
 		return nil, err
 	}
-	return a, s.publish(ctx, event.ArtifactPublished, "artifact", p.Actor, p.ProjectID, a.ID(), published.At)
+
+	// The task reference travels as event data (docs/architecture/events.md
+	// documents it): the artifact stays the event's subject, as the catalogue
+	// prescribes, while the task arrives alongside so a projection can attach
+	// the report to the task whose acceptance decision it informs.
+	e := NewEvent(event.ArtifactPublished, "artifact", p.Actor, p.ProjectID, a.ID(), published.At).
+		WithData(map[string]string{
+			dataKeyTaskID:       p.TaskID,
+			dataKeyArtifactType: string(a.ArtifactType()),
+		})
+	return a, s.Events.Publish(ctx, e)
+}
+
+// Artifact returns one Artifact by identifier (TASK-100).
+//
+// A read on ResultService rather than a store reached directly from the
+// delivery layer: apps/api goes through use-case services, never storage
+// (module-boundaries.md). Narrow on purpose — the need is showing a human the
+// QA report behind an acceptance decision, not general artifact browsing.
+func (s *ResultService) Artifact(ctx context.Context, id string) (*artifact.Artifact, error) {
+	return s.Artifacts.Get(ctx, id)
 }
 
 // UpdateArtifactDraft updates the Payload and/or Author of an Artifact
