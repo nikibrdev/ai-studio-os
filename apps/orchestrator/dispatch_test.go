@@ -356,23 +356,25 @@ func TestDispatch_TaskPlannedStartsWorkAndAcceptsTask(t *testing.T) {
 	}
 }
 
-func TestDispatch_IgnoresEventsOtherThanTaskPlanned(t *testing.T) {
+// Events no role reacts to are observed but not dispatched. TaskCreated left
+// this list in EPIC-013 (it now starts a Project Manager run — see plan_test.go);
+// TaskCompleted is dispatched by nobody, and never should be — the task is done.
+func TestDispatch_ObservesButDoesNotDispatchUnrelatedEvents(t *testing.T) {
 	ctx := context.Background()
 	f := newDispatchFixture(t, []string{"github.com/org/repo"}, ownDeveloper(t))
 
-	created := application.NewEvent(event.TaskCreated, "task", "human", "proj-1", "TASK-001", nowForTest()).
-		WithData(map[string]string{"title": "Заголовок", "type": "feature"})
+	completed := application.NewEvent(event.TaskCompleted, "task", "human", "proj-1", "TASK-001", nowForTest())
 
-	if err := f.dispatcher.Handle(ctx, created); err != nil {
+	if err := f.dispatcher.Handle(ctx, completed); err != nil {
 		t.Fatalf("Handle: %v", err)
 	}
 
 	if len(f.backend.accepted) != 0 {
-		t.Errorf("Accept called %d times for TaskCreated, want 0", len(f.backend.accepted))
+		t.Errorf("Accept called %d times for TaskCompleted, want 0", len(f.backend.accepted))
 	}
 	// The projection must still have been updated — observing is not
 	// conditional on dispatching.
-	if view, ok := f.views.Get("proj-1", "TASK-001"); !ok || view.Title != "Заголовок" {
+	if view, ok := f.views.Get("proj-1", "TASK-001"); !ok || view.State != shared.StateDone {
 		t.Errorf("projection view = (%+v, %v), want it updated from the observed event", view, ok)
 	}
 }

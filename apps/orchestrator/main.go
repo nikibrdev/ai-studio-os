@@ -23,6 +23,19 @@ import (
 	"ai-studio-os/internal/platform"
 )
 
+// planAdapter presents a claudecode.Executor as a PlanExecutor, flattening the
+// adapter's proposal type so the dispatch logic never sees it.
+type planAdapter struct{ *claudecode.Executor }
+
+// Propose reports the scope and acceptance criteria the agent prepared.
+func (a planAdapter) Propose(ctx context.Context) (string, []string, error) {
+	p, err := a.Proposal(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+	return p.Scope, p.AcceptanceCriteria, nil
+}
+
 // reviewAdapter presents a claudecode.Executor as a ReviewExecutor.
 //
 // This wrapper is the reason dispatch logic never names a concrete AI backend:
@@ -84,6 +97,13 @@ func run() error {
 		return err
 	}
 	logger.Printf("reviewer executor ready: %s", reviewerID)
+
+	plannerID, err := EnsureExecutor(ctx, executors, sys.Executors, shared.RoleProjectManager)
+	if err != nil {
+		return err
+	}
+	logger.Printf("project manager executor ready: %s", plannerID)
+
 	if cfg.ProviderAPIKey == "" {
 		logger.Printf("warning: %s is empty — sandboxes will start but the AI provider will not be called", providerAPIKeyEnv)
 	}
@@ -109,6 +129,12 @@ func run() error {
 			Projects: sys.Projects, Tasks: sys.Tasks, Executions: sys.Executions,
 			Artifacts: sys.Artifacts, Events: sys.Events,
 		},
+		// Only RefineTask is ever called from here — PlanTask would pass a human
+		// checkpoint, which no automation may do (EPIC-013).
+		Planning: &application.TaskPlanningService{
+			Projects: sys.Projects, Tasks: sys.Tasks, Events: sys.Events,
+			Rules: workflow.Machine{},
+		},
 		Completion: &application.CompletionService{
 			Tasks: sys.Tasks, Repositories: sys.Repository, Events: sys.Events,
 			Rules: workflow.Machine{}, Views: views,
@@ -126,6 +152,13 @@ func run() error {
 				return nil, err
 			}
 			return reviewAdapter{e}, nil
+		},
+		NewPlanner: func() (PlanExecutor, error) {
+			e, err := claudecode.New(cfg.ExecutionImage, cfg.GitToken, cfg.ProviderAPIKey)
+			if err != nil {
+				return nil, err
+			}
+			return planAdapter{e}, nil
 		},
 		Log: logger,
 	}
