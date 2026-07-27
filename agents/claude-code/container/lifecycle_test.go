@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 )
@@ -19,6 +20,11 @@ type fakeRunner struct {
 	calls     []fakeCall
 	responses map[string]string
 	errors    map[string]error
+
+	// beforeRun observes a call while it is being made — needed for state
+	// that does not outlive it, such as the secrets env file, which Start
+	// removes as soon as `docker run` returns.
+	beforeRun func(name string, args ...string)
 }
 
 func newFakeRunner() *fakeRunner {
@@ -31,18 +37,14 @@ func (f *fakeRunner) key(name string, args ...string) string {
 
 func (f *fakeRunner) Run(_ context.Context, name string, args ...string) (string, error) {
 	f.calls = append(f.calls, fakeCall{name: name, args: args})
+	if f.beforeRun != nil {
+		f.beforeRun(name, args...)
+	}
 	key := f.key(name, args...)
 	if err, ok := f.errors[key]; ok {
 		return "", err
 	}
 	return f.responses[key], nil
-}
-
-func (f *fakeRunner) lastCall() fakeCall {
-	if len(f.calls) == 0 {
-		return fakeCall{}
-	}
-	return f.calls[len(f.calls)-1]
 }
 
 func (f *fakeRunner) callCount(name string, argPrefix ...string) int {
@@ -138,9 +140,72 @@ func TestStart_ExecutionContainerNeverJoinsPublicNetwork(t *testing.T) {
 	}
 }
 
-func TestStart_SecretsPassedAsEnvNotArgvValue(t *testing.T) {
+// Secret values must never appear in the arguments of any command the
+// package runs. Two paths depend on it: the host's process list, which
+// any local user can read, and execRunner's error text, which embeds the
+// whole argument list and is what ends up in logs (TASK-106).
+//
+// The assertion is deliberately made over *every* call rather than the
+// container start alone: a secret leaking through the proxy or network
+// commands would be the same defect somewhere else.
+func TestStart_SecretValuesNeverAppearInArgv(t *testing.T) {
 	run := newFakeRunner()
 	m := newTestManager(run)
+
+	const (
+		token = "super-secret-token"
+		key   = "super-secret-key"
+	)
+
+	if _, err := m.Start(context.Background(), StartParams{
+		ExecutionID: "exec-1", Repository: "org/repo", Branch: "main",
+		GitToken: token, ProviderAPIKey: key,
+	}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	for _, call := range run.calls {
+		joined := strings.Join(call.args, " ")
+		if strings.Contains(joined, token) {
+			t.Errorf("git token leaked into argv of %q: %v", call.name, call.args)
+		}
+		if strings.Contains(joined, key) {
+			t.Errorf("provider key leaked into argv of %q: %v", call.name, call.args)
+		}
+	}
+}
+
+// The secrets still have to reach the container — the point is the
+// delivery mechanism, not dropping them.
+func TestStart_SecretsDeliveredThroughEnvFile(t *testing.T) {
+	run := newFakeRunner()
+	m := newTestManager(run)
+
+	var envFile string
+	run.beforeRun = func(name string, args ...string) {
+		if name != "docker" || len(args) < 2 || args[0] != "run" {
+			return
+		}
+		for i, a := range args {
+			if a == "--env-file" && i+1 < len(args) {
+				// Read while the file still exists: Start removes it as
+				// soon as `docker run` returns.
+				envFile = args[i+1]
+				content, err := os.ReadFile(envFile)
+				if err != nil {
+					t.Errorf("read env file: %v", err)
+					return
+				}
+				got := string(content)
+				if !strings.Contains(got, "GIT_TOKEN=super-secret-token\n") {
+					t.Errorf("env file missing git token, got:\n%s", got)
+				}
+				if !strings.Contains(got, "ANTHROPIC_API_KEY=super-secret-key\n") {
+					t.Errorf("env file missing provider key, got:\n%s", got)
+				}
+			}
+		}
+	}
 
 	if _, err := m.Start(context.Background(), StartParams{
 		ExecutionID: "exec-1", Repository: "org/repo", Branch: "main",
@@ -149,18 +214,52 @@ func TestStart_SecretsPassedAsEnvNotArgvValue(t *testing.T) {
 		t.Fatalf("Start: %v", err)
 	}
 
-	call := run.lastCall()
-	joined := strings.Join(call.args, " ")
-	if !strings.Contains(joined, "GIT_TOKEN=super-secret-token") {
-		t.Errorf("expected GIT_TOKEN passed via -e, args: %v", call.args)
+	if envFile == "" {
+		t.Fatal("expected the container start to pass --env-file")
 	}
-	if !strings.Contains(joined, "ANTHROPIC_API_KEY=super-secret-key") {
-		t.Errorf("expected ANTHROPIC_API_KEY passed via -e, args: %v", call.args)
+	if _, err := os.Stat(envFile); !os.IsNotExist(err) {
+		t.Errorf("env file %q must not outlive the container start (stat err = %v)", envFile, err)
 	}
-	// The clone script must read the token from the environment
-	// (GIT_ASKPASS), not embed it directly in an argv-visible URL or flag.
-	if strings.Contains(joined, "super-secret-token@github.com") {
-		t.Errorf("git token must not be embedded directly in the clone URL: %v", call.args)
+}
+
+// An absent provider key is how the sandbox reports "no key configured"
+// (TASK-056); writing it as an empty value would look like a configured
+// one.
+func TestStart_EmptyProviderKeyIsOmittedFromEnvFile(t *testing.T) {
+	run := newFakeRunner()
+	m := newTestManager(run)
+
+	run.beforeRun = func(name string, args ...string) {
+		if name != "docker" || len(args) < 2 || args[0] != "run" {
+			return
+		}
+		for i, a := range args {
+			if a == "--env-file" && i+1 < len(args) {
+				content, err := os.ReadFile(args[i+1])
+				if err != nil {
+					t.Errorf("read env file: %v", err)
+					return
+				}
+				if strings.Contains(string(content), "ANTHROPIC_API_KEY") {
+					t.Errorf("empty provider key must be omitted, got:\n%s", content)
+				}
+			}
+		}
+	}
+
+	if _, err := m.Start(context.Background(), StartParams{
+		ExecutionID: "exec-1", Repository: "org/repo", Branch: "main",
+		GitToken: "tok",
+	}); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+}
+
+// A line break would silently split one credential into a second,
+// malformed entry in docker's --env-file format.
+func TestWriteSecretsEnvFile_RejectsLineBreakInValue(t *testing.T) {
+	if _, err := writeSecretsEnvFile("probe", map[string]string{"GIT_TOKEN": "abc\ndef"}); err == nil {
+		t.Fatal("expected a secret containing a line break to be refused")
 	}
 }
 

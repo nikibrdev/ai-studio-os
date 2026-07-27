@@ -3,6 +3,8 @@ package container
 import (
 	"context"
 	"fmt"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -30,9 +32,18 @@ type StartParams struct {
 	Branch     string
 
 	// GitToken and ProviderAPIKey are short-lived secrets injected as
-	// container environment variables only — never written to the
-	// image, never logged, never present in argv visible via
-	// `docker inspect`/`ps` (see cloneAndRunScript's use of GIT_ASKPASS).
+	// container environment variables only — never written to the image
+	// and never placed in argv, where the host's process list would
+	// expose them to any local user (see writeSecretsEnvFile; and
+	// cloneAndRunScript's use of GIT_ASKPASS for the same reason inside
+	// the container).
+	//
+	// They do remain readable through `docker inspect` for the
+	// container's lifetime. That is accepted, not overlooked: reading it
+	// requires access to the Docker socket, which is already equivalent
+	// to root on the host — hiding a secret from someone who can start a
+	// privileged container anyway would be the appearance of protection
+	// rather than protection (TASK-106).
 	GitToken       string
 	ProviderAPIKey string
 
@@ -100,17 +111,34 @@ func (m *Manager) Start(ctx context.Context, p StartParams) (*Handle, error) {
 
 	proxyURL := fmt.Sprintf("http://%s:%s", h.proxyName, proxyPort)
 
+	// Secrets travel in a file read by the docker CLI, never as `-e
+	// NAME=value` arguments: argv is world-readable through the host's
+	// process list, and this package's own runner puts the full argument
+	// list into the text of a failed command's error (runner.go) — which
+	// is exactly what gets logged. Keeping secrets out of argv closes
+	// both paths at once (TASK-106).
+	envFile, err := writeSecretsEnvFile(h.containerName, map[string]string{
+		"GIT_TOKEN":         p.GitToken,
+		"ANTHROPIC_API_KEY": p.ProviderAPIKey,
+	})
+	if err != nil {
+		_ = removeContainer(ctx, m.run, h.proxyName)
+		_ = removeNetwork(ctx, m.run, h.networkName)
+		return nil, err
+	}
+	// Removed as soon as `docker run` returns — the CLI has read the file
+	// by then, so nothing needs it for the rest of the Execution. Deferred
+	// so a failed start does not leave secrets on disk either.
+	defer func() { _ = os.Remove(envFile) }()
+
 	args := []string{
 		"run", "-d", "--name", h.containerName,
 		"--network", h.networkName,
-		"-e", "GIT_TOKEN=" + p.GitToken,
+		"--env-file", envFile,
 		"-e", "HTTP_PROXY=" + proxyURL,
 		"-e", "HTTPS_PROXY=" + proxyURL,
+		"--entrypoint", "sh", m.image, "-c", script,
 	}
-	if p.ProviderAPIKey != "" {
-		args = append(args, "-e", "ANTHROPIC_API_KEY="+p.ProviderAPIKey)
-	}
-	args = append(args, "--entrypoint", "sh", m.image, "-c", script)
 
 	if _, err := m.run.Run(ctx, "docker", args...); err != nil {
 		_ = removeContainer(ctx, m.run, h.proxyName)
@@ -118,6 +146,64 @@ func (m *Manager) Start(ctx context.Context, p StartParams) (*Handle, error) {
 		return nil, fmt.Errorf("container: start execution %s: %w", h.containerName, err)
 	}
 	return h, nil
+}
+
+// writeSecretsEnvFile writes the given secrets in docker's --env-file
+// format to a file only the current user can read, and returns its path.
+// Empty values are omitted rather than written as empty strings: an
+// absent ANTHROPIC_API_KEY is how the sandbox reports "no provider key"
+// (TASK-056), and an empty one would look like a configured key.
+func writeSecretsEnvFile(name string, secrets map[string]string) (string, error) {
+	// Sorted so the file content is deterministic — a test asserting on
+	// it should not depend on map iteration order.
+	names := make([]string, 0, len(secrets))
+	for k := range secrets {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+
+	var b strings.Builder
+	for _, k := range names {
+		v := secrets[k]
+		if v == "" {
+			continue
+		}
+		// docker's --env-file format is one NAME=value per line with no
+		// quoting, so a value containing a line break would silently turn
+		// into a second, malformed entry. Refusing beats truncating a
+		// credential into something that fails obscurely later.
+		if strings.ContainsAny(v, "\r\n") {
+			return "", fmt.Errorf("container: secret %s contains a line break", k)
+		}
+		b.WriteString(k)
+		b.WriteString("=")
+		b.WriteString(v)
+		b.WriteString("\n")
+	}
+
+	f, err := os.CreateTemp("", name+"-env-*")
+	if err != nil {
+		return "", fmt.Errorf("container: create env file: %w", err)
+	}
+	path := f.Name()
+
+	// Narrowed before anything is written: CreateTemp already makes the
+	// file 0600 on Unix, and this keeps that explicit rather than assumed.
+	if err := f.Chmod(0o600); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return "", fmt.Errorf("container: restrict env file: %w", err)
+	}
+	if _, err := f.WriteString(b.String()); err != nil {
+		_ = f.Close()
+		_ = os.Remove(path)
+		return "", fmt.Errorf("container: write env file: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(path)
+		return "", fmt.Errorf("container: close env file: %w", err)
+	}
+	return path, nil
 }
 
 // Status reports whether the clone-and-command sequence is still running
