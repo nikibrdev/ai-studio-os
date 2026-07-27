@@ -48,9 +48,9 @@
 | Developer | Реализация задач, оформление изменений | Claude Code |
 | QA Engineer | Контроль качества, тестирование | не определён |
 
-### Decision Required
+### Статус решений
 
-- [ADR-007](../adr/ADR-007-pm-qa-executors.md) — исполнители по умолчанию для ролей Project Manager и QA Engineer в MVP (Developer уже определён — Claude Code).
+- [ADR-007](../adr/ADR-007-pm-qa-executors.md) — **принято**: роли Project Manager и QA Engineer исполняют агенты, человек подтверждает на контрольных точках. Реализовано в [EPIC-013](../roadmap/EPIC-013-pm-qa-roles.md): все четыре роли (Developer, Reviewer, PM, QA) исполняет один адаптер и один образ, различие — в промпте; агенты не имеют доступа к API платформы, поэтому контрольные точки недоступны им структурно.
 
 Контракт адаптера технического бэкенда — [ADR-005](../adr/ADR-005-executor-contract.md) (принято): ровно четыре возможности (`Accept`, `Artifacts`, `Status`, `Finish`); терминология Agent/Executor — [ubiquitous-language.md](../domain/ubiquitous-language.md). Способ запуска и изоляции исполнителей — [ADR-006](../adr/ADR-006-agent-execution-environment.md) (принято, v0.6): один Execution — один Docker-контейнер, сетевой allowlist, короткоживущие секреты; реализовано в [agents/claude-code](../../agents/claude-code/README.md) (EPIC-006).
 
@@ -62,4 +62,4 @@
 
 ## Последнее обновление
 
-2026-07-22
+2026-07-27

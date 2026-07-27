@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Завершение Execution — успехом или отказом (`ResultService`, `internal/application/result.go`). Создание Execution происходит не здесь, а как побочный эффект `POST /tasks/{id}/start` ([tasks.md](tasks.md)) — Execution не создаётся отдельной операцией.
+Завершение Execution — успехом или отказом (`ResultService`, `internal/application/result.go`). Создание Execution происходит не здесь, а как побочный эффект `POST /projects/{projectId}/tasks/{id}/start` ([tasks.md](tasks.md)) — Execution не создаётся отдельной операцией.
 
 ## Содержание
 
@@ -48,7 +48,7 @@
 
 ### Модели данных
 
-**Execution** (представление в ответах — только в ответе `POST /tasks/{id}/start`, [tasks.md](tasks.md)): `executionId`, `taskId`, `executorId`, `state` (`queued` | `running` | `succeeded` | `failed` | `aborted`).
+**Execution** (представление в ответах — только в ответе `POST /projects/{projectId}/tasks/{id}/start`, [tasks.md](tasks.md)): `executionId`, `taskId`, `executorId`, `state` (`queued` | `running` | `succeeded` | `failed` | `aborted`).
 
 ## Статус
 
@@ -56,4 +56,4 @@
 
 ## Последнее обновление
 
-2026-07-22
+2026-07-27
