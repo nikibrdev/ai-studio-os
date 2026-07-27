@@ -49,8 +49,13 @@ type Dispatcher struct {
 	Work       *application.WorkService
 	Results    *application.ResultService
 	Completion *application.CompletionService
-	Views      *application.TaskProjection
-	Repos      platform.RepositoryProvider
+
+	// Planning applies what a Project Manager agent proposed (EPIC-013).
+	// RefineTask is the only planning command the orchestrator calls: PlanTask
+	// would pass a human checkpoint, which no automation may do.
+	Planning *application.TaskPlanningService
+	Views    *application.TaskProjection
+	Repos    platform.RepositoryProvider
 
 	// StatusPollInterval and ExecutionTimeout override the defaults for
 	// watching an execution (monitor.go). Zero means use the default; tests
@@ -78,6 +83,12 @@ type Dispatcher struct {
 	// permitted to name one (module-boundaries.md).
 	NewReviewer func() (ReviewExecutor, error)
 
+	// NewPlanner builds the Executor for a planning run (Project Manager).
+	// Separate for the same reason as NewReviewer: preparing a Definition of
+	// Ready needs a capability beyond the Executor contract, and keeping it
+	// behind a factory keeps this file free of any concrete adapter.
+	NewPlanner func() (PlanExecutor, error)
+
 	Log *log.Logger
 }
 
@@ -98,6 +109,8 @@ func (d *Dispatcher) Handle(ctx context.Context, e platform.Event) error {
 		return err
 	}
 	switch {
+	case taskCreated(e):
+		return d.dispatchTaskCreated(ctx, e)
 	case e.Type() == event.TaskPlanned:
 		return d.dispatchTaskPlanned(ctx, e)
 	case reviewRequested(e):
