@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.8 Dashboard — завершён (2026-07-23); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)); v1.0 First Public MVP — **в работе** (открыт 2026-07-23, декомпозирован на 4 эпика) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | Нет открытого эпика — [EPIC-013 Роли PM и QA](docs/roadmap/EPIC-013-pm-qa-roles.md) закрыт (2026-07-27): все четыре роли автоматизированы и платформа останавливается перед обеими контрольными точками человека, TASK-096…101. Остаётся **пятый пункт декомпозиции v1.0** — стабилизация и релиз: синхронизация накопившейся неточности документации (в т.ч. устаревший `README.md` корня) и публикация `v1.0.0` |
+| **Current Epic** | [EPIC-014 Стабилизация и релиз](docs/roadmap/EPIC-014-stabilization-release.md) — **последний** пункт декомпозиции v1.0, TASK-102…105: привести документацию к фактическому состоянию (корневой `README.md` описывает **отменённую** ревизию roadmap), сверить контракты с реализацией, подготовить `v1.0.0`. **Публикация тега — решение владельца проекта**, в эпик не входит |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
