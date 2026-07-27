@@ -22,13 +22,17 @@ type TaskView struct {
 	State     shared.TaskState
 	UpdatedAt time.Time
 
-	// Title, Type, Scope and AcceptanceCriteria are captured once, from
-	// TaskCreated's Envelope.WithData (EPIC-009, TASK-076) — the task
-	// detail page needs them, and TaskProjection is the only read path
-	// for Task (ADR-014). They never change afterwards: no later event
-	// in taskProjectionEvents revises them (Task's own SetScope/
-	// SetAcceptanceCriteria only run before the first save, inside
-	// CreateTask, so nothing publishes a revision event for them).
+	// Title, Type, Scope and AcceptanceCriteria come from TaskCreated's
+	// Envelope.WithData (EPIC-009, TASK-076) — the task detail page needs
+	// them, and TaskProjection is the only read path for Task (ADR-014).
+	//
+	// Scope and AcceptanceCriteria are revisable: TaskRefined carries a better
+	// version while the task is still in Backlog (EPIC-013, TASK-096 — what a
+	// Project Manager prepares before a human accepts Definition of Ready).
+	// Before that event existed these fields were captured once and never
+	// revised; ignoring the revision would show the human the original task
+	// and hide the agent's work, which is indistinguishable from "the agent
+	// did nothing". Title and Type still have no revising event.
 	Title              string
 	Type               string
 	Scope              string
@@ -53,6 +57,7 @@ type TaskView struct {
 // names.
 var taskProjectionEvents = []string{
 	event.TaskCreated,
+	event.TaskRefined,
 	event.TaskPlanned,
 	event.TaskStarted,
 	event.ReviewRequested,
@@ -115,6 +120,9 @@ func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
 	if e.Type() == event.TaskCreated {
 		applyCreatedData(&v, e)
 	}
+	if e.Type() == event.TaskRefined {
+		applyRefinedData(&v, e)
+	}
 	if e.Type() == event.ReviewRequested {
 		applyReviewRequestedData(&v, e)
 	}
@@ -152,6 +160,32 @@ func applyCreatedData(v *TaskView, e platform.Event) {
 	v.Type = data[dataKeyType]
 	v.Scope = data[dataKeyScope]
 	if raw := data[dataKeyAcceptanceCriteria]; raw != "" {
+		var criteria []string
+		if err := json.Unmarshal([]byte(raw), &criteria); err == nil {
+			v.AcceptanceCriteria = criteria
+		}
+	}
+}
+
+// applyRefinedData applies a refinement of scope and/or acceptance criteria
+// from TaskRefined's attached data (EPIC-013, TASK-096).
+//
+// Only fields actually present are touched: TaskRefined carries just what
+// changed, so an absent key means "not refined", never "cleared". That reading
+// is safe because the domain forbids clearing — SetScope("") is
+// ErrMissingField — so an empty value is never a legitimate refinement. A
+// refinement of scope alone must not wipe criteria a previous one recorded.
+func applyRefinedData(v *TaskView, e platform.Event) {
+	carrier, ok := e.(dataCarrier)
+	if !ok {
+		return
+	}
+	data := carrier.Data()
+
+	if scope, present := data[dataKeyScope]; present && scope != "" {
+		v.Scope = scope
+	}
+	if raw, present := data[dataKeyAcceptanceCriteria]; present && raw != "" {
 		var criteria []string
 		if err := json.Unmarshal([]byte(raw), &criteria); err == nil {
 			v.AcceptanceCriteria = criteria
