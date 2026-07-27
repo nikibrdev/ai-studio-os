@@ -112,7 +112,7 @@
 | Событие | Источник | Данные (ключевое) |
 | --- | --- | --- |
 | ArtifactCreated | модуль `artifact` | Identifier, Type, Origin, Author, CreatedAt, Project |
-| ArtifactPublished | модуль `artifact` | Identifier, момент, ссылка на породившее Execution (если есть) |
+| ArtifactPublished | модуль `artifact` | Identifier, момент, ссылка на породившее Execution (если есть); **тип артефакта и ссылка на задачу, если артефакт относится к задаче** (TASK-100) — субъект события остаётся артефактом, а задача приходит данными, поскольку сам `Artifact` ссылки на задачу не несёт (связь опосредованная, через Execution, которого у прогона QA нет) |
 | ArtifactArchived | модуль `artifact` | Identifier, момент, состояние-источник (Draft \| Published) |
 | ExecutionQueued | модуль `execution` | Identifier, Task, Executor, момент создания |
 | ExecutionStarted | модуль `execution` | Identifier, момент |

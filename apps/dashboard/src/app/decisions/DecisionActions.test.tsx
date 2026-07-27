@@ -27,6 +27,7 @@ function awaiting(
     awaitingDecision: decision,
     repository: "",
     pullRequestId: "",
+    qaReportId: "",
     ...overrides,
   };
   return { decision, task };

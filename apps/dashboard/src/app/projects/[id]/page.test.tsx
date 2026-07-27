@@ -22,6 +22,7 @@ describe("ProjectPage", () => {
         awaitingDecision: "definition-of-ready",
         repository: "",
         pullRequestId: "",
+        qaReportId: "",
       },
     ]);
 

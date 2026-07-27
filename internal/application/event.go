@@ -26,6 +26,13 @@ const (
 	// docs/architecture/events.md requires (BUGFIX-009).
 	dataKeyRepository    = "repository"
 	dataKeyPullRequestID = "pullRequestId"
+
+	// Task reference and artifact type, attached to ArtifactPublished so a
+	// projection can attach an artifact to the task it concerns (TASK-100).
+	// Artifact carries no task reference of its own — the specification makes
+	// that link indirect, through an Execution, which a QA run does not have.
+	dataKeyTaskID       = "taskId"
+	dataKeyArtifactType = "artifactType"
 )
 
 // Envelope adapts a domain event's data to the platform.Event contract

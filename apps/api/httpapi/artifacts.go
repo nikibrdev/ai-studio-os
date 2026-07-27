@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"time"
 
 	"ai-studio-os/internal/application"
 	"ai-studio-os/internal/domain/artifact"
@@ -12,6 +13,7 @@ import (
 // already (de)serializes []byte as a base64 string, matching the spec's
 // "string (base64)" without any manual encoding here.
 func registerArtifactRoutes(mux *http.ServeMux, deps Deps) {
+	mux.HandleFunc("GET /artifacts/{id}", handleGetArtifact(deps))
 	mux.HandleFunc("POST /artifacts", handleRecordDraftArtifact(deps))
 	mux.HandleFunc("PATCH /artifacts/{id}", handleUpdateArtifactDraft(deps))
 	mux.HandleFunc("POST /artifacts/{id}/publish", handlePublishArtifact(deps))
@@ -35,6 +37,14 @@ type artifactResponse struct {
 	Origin    string `json:"origin"`
 	Author    string `json:"author"`
 	State     string `json:"state"`
+
+	// Payload and CreatedAt are filled on read (TASK-100) — a human needs the
+	// text of a QA report, not just its metadata. As a string, not base64: the
+	// artifacts this serves are text, and encoding would only make them harder
+	// to read. Omitted from creation responses, where the caller already has
+	// the payload it just sent.
+	Payload   string `json:"payload,omitempty"`
+	CreatedAt string `json:"createdAt,omitempty"`
 }
 
 func handleRecordDraftArtifact(deps Deps) http.HandlerFunc {
@@ -94,5 +104,26 @@ func handlePublishArtifact(deps Deps) http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusNoContent, nil)
+	}
+}
+
+func handleGetArtifact(deps Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		a, err := deps.Results.Artifact(r.Context(), r.PathValue("id"))
+		if err != nil {
+			writeError(w, err)
+			return
+		}
+
+		writeJSON(w, http.StatusOK, artifactResponse{
+			ID:        a.ID(),
+			ProjectID: a.ProjectID(),
+			Type:      string(a.ArtifactType()),
+			Origin:    string(a.Origin()),
+			Author:    string(a.Author()),
+			State:     string(a.State()),
+			Payload:   string(a.Payload()),
+			CreatedAt: a.CreatedAt().Format(time.RFC3339),
+		})
 	}
 }

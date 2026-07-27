@@ -24,6 +24,7 @@ function task(overrides: Partial<TaskView> = {}): TaskView {
     awaitingDecision: "definition-of-ready",
     repository: "",
     pullRequestId: "",
+    qaReportId: "",
     ...overrides,
   };
 }
