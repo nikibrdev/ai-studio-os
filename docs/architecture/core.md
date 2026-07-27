@@ -88,7 +88,7 @@ flowchart TB
 
 - [ADR-014](../adr/ADR-014-module-interaction.md) — **принято**: все проходят через Core (Core → Events → Workflow → Executor Runtime → Tools; дословная формулировка ADR-014 — «Agent Runtime», терминология обновлена после [ADR-005](../adr/ADR-005-executor-contract.md), суть не менялась); междоменное чтение — только через события и собственные проекции; запрещены Tool → Core, Executor → Database, Workflow → SQL.
 - [ADR-002](../adr/ADR-002-event-delivery.md) — **принято**: In-Memory Event Bus; интерфейс неизменен при смене реализации.
-- [ADR-012](../adr/ADR-012-identity-and-auth.md) — **Decision Required**: входит ли `identity` в MVP.
+- [ADR-012](../adr/ADR-012-identity-and-auth.md) — **принято**: `identity` в MVP не входит, аутентификация отложена (доверенная однопользовательская установка); сущности User/Session не введены.
 
 Физическая структура ([ADR-015](../adr/ADR-015-internal-layering.md)): язык домена — `internal/domain/shared`; доменные модули — `internal/domain/<module>`; платформенные абстракции (EventBus, Executor, Tool, MemoryProvider, RepositoryProvider) — `internal/platform`; слои `internal/application` и `internal/infrastructure` заполняются последующими эпиками. Правила — [module-boundaries.md](module-boundaries.md).
 
@@ -98,4 +98,4 @@ flowchart TB
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-27

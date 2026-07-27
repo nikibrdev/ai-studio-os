@@ -40,7 +40,7 @@ flowchart TB
 ### Ключевые архитектурные решения
 
 1. **Modular Monolith.** Один деплоймент с жёсткими границами модулей ([module-boundaries.md](module-boundaries.md)). Переход к сервисам возможен позже и потребует ADR.
-2. **Event-Driven Architecture.** Модули взаимодействуют через события ([event-model.md](event-model.md), каталог — [events.md](events.md)). Механизм доставки — Decision Required ([ADR-002](../adr/ADR-002-event-delivery.md)).
+2. **Event-Driven Architecture.** Модули взаимодействуют через события ([event-model.md](event-model.md), каталог — [events.md](events.md)). Механизм доставки принят ([ADR-002](../adr/ADR-002-event-delivery.md)): внутрипроцессная шина с журналом в PostgreSQL.
 3. **Executor-agnostic ядро.** Ядро не знает о конкретных AI-моделях или исполнителях; они подключаются через адаптеры к контракту Executor ([agents.md](agents.md), [ADR-005](../adr/ADR-005-executor-contract.md)); Claude Code — реализация роли Developer по умолчанию.
 4. **Clean Architecture.** Зависимости направлены внутрь; состав ядра — [core.md](core.md).
 5. **Documentation First / Interface First.** Контракты ([interfaces.md](interfaces.md)) и документы создаются раньше реализации.
@@ -83,9 +83,11 @@ flowchart TB
 
 Полный и актуальный список ADR со статусами — [DECISIONS_INDEX.md](../adr/DECISIONS_INDEX.md).
 
-### Остающиеся Decision Required
+### Статус архитектурных решений
 
-Не блокируют текущую реализацию, решаются перед соответствующими этапами: [ADR-001](../adr/ADR-001-license.md) (лицензия), [ADR-006](../adr/ADR-006-agent-execution-environment.md) (среда выполнения Executor, v0.3), [ADR-007](../adr/ADR-007-pm-qa-executors.md), [ADR-008](../adr/ADR-008-git-policies.md), [ADR-010](../adr/ADR-010-documentation-language.md), [ADR-011](../adr/ADR-011-task-identifiers.md), [ADR-012](../adr/ADR-012-identity-and-auth.md), [ADR-013](../adr/ADR-013-managed-projects.md).
+**Все 18 ADR приняты** (последние три — 2026-07-23, при открытии v1.0); нерешённых вопросов не осталось — [DECISIONS_INDEX.md](../adr/DECISIONS_INDEX.md).
+
+Перечисленные здесь ранее как нерешённые ADR-001, 006, 007, 008, 010, 011, 012, 013 приняты в ходе соответствующих эпиков.
 
 ## Статус
 
@@ -93,4 +95,4 @@ flowchart TB
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-27

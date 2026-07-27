@@ -54,7 +54,7 @@ refactor/<task-id>-<short-name>  # рефакторинг
 4. PR помечается GitHub-меткой, соответствующей основному типу Conventional Commits (`feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`ci`) — метка используется категоризацией release notes ([release.yml](../../.github/release.yml)).
 5. Перед запросом ревью автор проходит чек-лист [.claude/checklists/PR.md](../../.claude/checklists/PR.md).
 6. Обязательный статус-чек `verify` и проверка Conventional Commits — в CI ([verify.yml](../../.github/workflows/verify.yml)); `main` защищена (прямой push, force-push и удаление ветки запрещены — [TASK-016](../../tasks/done/TASK-016-branch-protection.md)).
-7. Слияние — после ревью и зелёного `verify`; текущая практика — merge commit (единообразная история PR); окончательный способ слияния и обязательное число формальных approve — [ADR-008](../adr/ADR-008-git-policies.md), Decision Required.
+7. Слияние — после ревью и зелёного `verify`, **merge commit** ([ADR-008](../adr/ADR-008-git-policies.md), принято): структура коммитов задачи — часть инженерной истории, squash её уничтожает. Заголовок merge-коммита — по Conventional Commits со ссылкой на PR (`... (#NN)`).
 
 ### Релизный процесс
 
@@ -63,9 +63,14 @@ refactor/<task-id>-<short-name>  # рефакторинг
 3. **GitHub Release notes** — вспомогательный, полуавтоматический артефакт: кнопка «Generate release notes» на странице релиза группирует PR по меткам согласно [.github/release.yml](../../.github/release.yml). Не заменяет CHANGELOG.md — при необходимости содержимое сверяется/переносится в него.
 4. Категоризация release notes работает только если у PR проставлена метка типа (см. правило Pull Request, п. 4); PR без метки попадают в категорию «Other Changes».
 
-### Decision Required
+### Принятые git-политики
 
-Способ слияния PR (см. текущую практику выше), правила защиты `main` (базово настроены — [TASK-016](../../tasks/done/TASK-016-branch-protection.md); обязательное число approve не зафиксировано), момент слияния относительно стадии Testing и политика подписи коммитов — [ADR-008](../adr/ADR-008-git-policies.md).
+Все вопросы этого раздела закрыты [ADR-008](../adr/ADR-008-git-policies.md) (принято):
+
+- **Способ слияния** — merge commit (см. п. 7 выше).
+- **Момент слияния — после Testing:** QA проверяет ветку задачи, в `main` попадает только проверенное. Порядок событий завершения: `TestsPassed` → `MergeCompleted` → `TaskCompleted`; guard перехода Testing → Done включает факт слияния PR.
+- **Ревью** — один обязательный ревьюер, агент-ревьюер допустим. Пока у репозитория один мейнтейнер, число обязательных approve в защите `main` остаётся 0 (self-approval GitHub не засчитывает — [TASK-016](../../tasks/done/TASK-016-branch-protection.md)); обязательность ревью обеспечивается стадией Review канонической state machine, а не настройкой GitHub.
+- **Подпись коммитов** в MVP не требуется: источник изменений устанавливается процессом (PR + CI + защита веток).
 
 ## Статус
 
@@ -73,4 +78,4 @@ refactor/<task-id>-<short-name>  # рефакторинг
 
 ## Последнее обновление
 
-2026-07-20
+2026-07-27

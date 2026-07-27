@@ -121,7 +121,7 @@
 
 #### Запустить работу
 
-**Назначение:** переводит Task `ready` → `in-progress` и порождает Execution для указанного Executor (`WorkService.StartTask`). Выбор исполнителя — забота вызывающего (ADR-007, Decision Required, не входит в этот эпик).
+**Назначение:** переводит Task `ready` → `in-progress` и порождает Execution для указанного Executor (`WorkService.StartTask`). Выбор исполнителя — забота вызывающего; `apps/orchestrator` выбирает свою запись реестра по роли ([ADR-007](../adr/ADR-007-pm-qa-executors.md) принята).
 
 **Запрос:** `POST /projects/{projectId}/tasks/{id}/start`
 
@@ -212,4 +212,4 @@
 
 ## Последнее обновление
 
-2026-07-23
+2026-07-27

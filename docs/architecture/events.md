@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Определяет события AI Studio OS: источник, получателей, данные и последствия каждого. Дополняет принципы событийной модели ([event-model.md](event-model.md)) и state machine задачи ([state-machine.md](state-machine.md)). Схемы описаны концептуально; формат сериализации и версионирование — Decision Required ([ADR-002](../adr/ADR-002-event-delivery.md)).
+Определяет события AI Studio OS: источник, получателей, данные и последствия каждого. Дополняет принципы событийной модели ([event-model.md](event-model.md)) и state machine задачи ([state-machine.md](state-machine.md)). Формат доставки принят ([ADR-002](../adr/ADR-002-event-delivery.md)): внутрипроцессная шина с durable-журналом в PostgreSQL; общие поля события несёт `platform.Event`, специфичные данные прикрепляются через `Envelope.WithData`. Версионирование схем (`schemaVersion`) заложено, но пока всегда `1` — менять было нечего.
 
 ## Содержание
 
@@ -167,4 +167,4 @@ sequenceDiagram
 
 ## Последнее обновление
 
-2026-07-21
+2026-07-27
