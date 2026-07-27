@@ -232,7 +232,14 @@ func newDispatchFixture(t *testing.T, repositories []string, executors ...*execu
 			Artifacts: artifacts, Events: bus,
 		},
 		Completion: &application.CompletionService{
-			Tasks: tasks, Repositories: repos, Events: bus, Rules: workflow.Machine{},
+			// Views wired exactly as apps/orchestrator/main.go wires it, so
+			// CompleteTesting can resolve the pull request the platform recorded
+			// (BUGFIX-009). Leaving it nil made the fixture weaker than
+			// production: CompleteTesting could not succeed even when wrongly
+			// called, so tests asserting "nothing merged" passed for that reason
+			// rather than because the checkpoint was respected.
+			Tasks: tasks, Repositories: repos, Events: bus,
+			Rules: workflow.Machine{}, Views: views,
 		},
 		Views:       views,
 		Repos:       repos,
