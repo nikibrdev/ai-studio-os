@@ -37,7 +37,7 @@ jobs:
       # (not the repo root, which has no package.json of its own) so the
       # action can read the pinned version from its "packageManager" field.
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: apps/dashboard/package.json
 
