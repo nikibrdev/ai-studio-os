@@ -60,6 +60,47 @@
 
 Подробнее: [docs/architecture/overview.md](docs/architecture/overview.md) и [CONSTITUTION.md](CONSTITUTION.md).
 
+### Запуск
+
+Нужны Go 1.24, Node.js 22 LTS, pnpm и Docker ([CONTRIBUTING.md](CONTRIBUTING.md) — настройка окружения разработки, включая Dev Container).
+
+1. **Хранилища.** PostgreSQL и Qdrant поднимаются готовым compose-файлом ([docker-compose.yml](docker-compose.yml), только для разработки — учётные данные намеренно простые):
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. **Образ песочницы исполнения** — нужен только для запуска агентов (шаг 5); без него API и Dashboard работают:
+
+   ```bash
+   docker build -t ai-studio-os-execution -f docker/execution/Dockerfile .
+   ```
+
+3. **API** — применяет миграции при старте, отвечает на `http://localhost:8080` ([apps/api/README.md](apps/api/README.md)):
+
+   ```bash
+   export DATABASE_URL="postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable"
+   export QDRANT_URL="http://localhost:6333"   # опционально: без него память отключена
+   go run ./apps/api
+   ```
+
+4. **Dashboard** — `http://localhost:3000`, требует запущенного API ([apps/dashboard/README.md](apps/dashboard/README.md)):
+
+   ```bash
+   cd apps/dashboard && pnpm install && pnpm dev
+   ```
+
+5. **Orchestrator** — запускает исполнителей; **`GITHUB_TOKEN` обязателен**, без него процесс завершается с ошибкой ([apps/orchestrator/README.md](apps/orchestrator/README.md)):
+
+   ```bash
+   export DATABASE_URL="postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable"
+   export GITHUB_TOKEN="<токен с доступом к управляемому репозиторию>"
+   export ANTHROPIC_API_KEY="<ключ>"   # пустое значение допустимо: песочница запустится, вызова провайдера не будет
+   go run ./apps/orchestrator
+   ```
+
+Порядок операций для первого проекта (создать → подключить репозиторий → активировать → поставить задачу) описан в [docs/api/projects.md](docs/api/projects.md) и [docs/api/tasks.md](docs/api/tasks.md); что ждёт решения человека — `GET /decisions` и раздел «Ждут решения» в Dashboard.
+
 ### Технологический стек
 
 | Слой | Технология |

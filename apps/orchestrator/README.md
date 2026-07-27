@@ -121,7 +121,7 @@
 - `DATABASE_URL` — DSN PostgreSQL, обязателен ([`postgres.DatabaseURLEnv`](../../internal/infrastructure/postgres/config.go)).
 - `QDRANT_URL` — опционален; пустое значение оставляет `wiring.System.Memory` равным `nil` (тот же принцип, что в `apps/api`).
 - `EXECUTION_IMAGE` — образ песочницы исполнения (ADR-006); по умолчанию `ai-studio-os-execution` — имя, которое собирает [agents/claude-code](../../agents/claude-code/README.md).
-- `GITHUB_TOKEN` — токен для git-операций внутри песочницы ([`github.TokenEnv`](../../internal/infrastructure/github/provider.go)).
+- `GITHUB_TOKEN` — **обязателен**: токен для git-операций внутри песочницы и для создания веток задач ([`github.TokenEnv`](../../internal/infrastructure/github/provider.go)). Без него процесс завершается с ошибкой при старте — в отличие от `apps/api`, где провайдер репозиториев необязателен, здесь он и есть основная работа.
 - `ANTHROPIC_API_KEY` — ключ AI-провайдера. **Пустое значение допустимо**: песочница всё равно запустится, но реального вызова провайдера не будет — так проверяется механика контейнера без реального ключа (Open Question TASK-056). При пустом значении процесс печатает предупреждение, а не падает.
 - `POLL_INTERVAL` — период опроса журнала; по умолчанию `5s`. Должен быть положительным.
 
@@ -129,9 +129,13 @@
 
 ```bash
 docker compose up -d postgres
+docker build -t ai-studio-os-execution -f docker/execution/Dockerfile .   # если образ ещё не собран
 DATABASE_URL="postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?sslmode=disable" \
+  GITHUB_TOKEN="<токен>" \
   go run ./apps/orchestrator
 ```
+
+`GITHUB_TOKEN` в этой команде не опускается: без него процесс печатает `a repository provider is required to create task branches` и завершается с кодом 1 (проверено при живой установке по документации, TASK-105).
 
 ### Почему опрос журнала, а не подписка
 
@@ -153,4 +157,4 @@ DATABASE_URL="postgres://ai_studio_os:ai_studio_os@localhost:5432/ai_studio_os?s
 
 ## Последнее обновление
 
-2026-07-25
+2026-07-27
