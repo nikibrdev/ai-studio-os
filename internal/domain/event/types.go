@@ -10,6 +10,7 @@ package event
 // Primary lifecycle events (docs/architecture/events.md).
 const (
 	TaskCreated     = "TaskCreated"
+	TaskRefined     = "TaskRefined"
 	TaskPlanned     = "TaskPlanned"
 	TaskStarted     = "TaskStarted"
 	TaskCompleted   = "TaskCompleted"

@@ -130,6 +130,76 @@ func (s *TaskPlanningService) PlanTask(ctx context.Context, projectID, taskID, a
 	return s.publish(ctx, event.TaskPlanned, actor, t.ProjectID(), t.ID(), transitioned.At)
 }
 
+// ErrNothingToRefine is returned by RefineTask when neither scope nor
+// acceptance criteria were supplied: publishing an event that changes nothing
+// would be journal noise and a false signal that a Project Manager did
+// something.
+var ErrNothingToRefine = errors.New("application: refinement supplied neither scope nor acceptance criteria")
+
+// RefineTaskParams are the inputs to RefineTask. Scope and AcceptanceCriteria
+// are each optional — a refinement may touch one without the other — but at
+// least one is required.
+type RefineTaskParams struct {
+	ProjectID          string
+	TaskID             string
+	Scope              string
+	AcceptanceCriteria []string
+	Actor              string
+}
+
+// RefineTask records a better scope and/or acceptance criteria on a task still
+// in Backlog — what a Project Manager prepares before a human accepts
+// Definition of Ready (EPIC-013).
+//
+// The Backlog-only rule is the domain's: SetScope/SetAcceptanceCriteria return
+// ErrNotBacklog past that point, and this service propagates it rather than
+// duplicating the check — the same division as ProjectService.Activate and its
+// "at least one repository" guard.
+//
+// The task deliberately stays in Backlog: refining is not a transition, and
+// accepting Definition of Ready is a human checkpoint
+// (docs/architecture/workflow.md).
+//
+// Publishes TaskRefined carrying only the fields that actually changed, so a
+// projection can tell "not touched" from "cleared". That distinction is safe
+// because the domain forbids clearing at all (SetScope("") is
+// ErrMissingField), so an absent key can only mean "unchanged".
+func (s *TaskPlanningService) RefineTask(ctx context.Context, p RefineTaskParams) error {
+	if p.Scope == "" && len(p.AcceptanceCriteria) == 0 {
+		return ErrNothingToRefine
+	}
+
+	t, err := s.Tasks.Get(ctx, p.ProjectID, p.TaskID)
+	if err != nil {
+		return err
+	}
+
+	data := map[string]string{}
+	if p.Scope != "" {
+		if err := t.SetScope(p.Scope); err != nil {
+			return err
+		}
+		data[dataKeyScope] = t.Scope()
+	}
+	if len(p.AcceptanceCriteria) > 0 {
+		if err := t.SetAcceptanceCriteria(p.AcceptanceCriteria); err != nil {
+			return err
+		}
+		encoded, err := json.Marshal(t.AcceptanceCriteria())
+		if err != nil {
+			return fmt.Errorf("application: encode acceptance criteria: %w", err)
+		}
+		data[dataKeyAcceptanceCriteria] = string(encoded)
+	}
+
+	if err := s.Tasks.Save(ctx, t); err != nil {
+		return err
+	}
+
+	e := NewEvent(event.TaskRefined, "task", p.Actor, t.ProjectID(), t.ID(), time.Now()).WithData(data)
+	return s.Events.Publish(ctx, e)
+}
+
 func (s *TaskPlanningService) publish(ctx context.Context, eventType, actor, projectID, subjectID string, at time.Time) error {
 	return s.Events.Publish(ctx, NewEvent(eventType, "task", actor, projectID, subjectID, at))
 }
