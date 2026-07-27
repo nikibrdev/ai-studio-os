@@ -98,6 +98,31 @@ func roleInstructions(role string) (string, error) {
 			verdictApproved + " (изменения можно принять) или " + verdictChangesRequested + " (нужны правки); " +
 			"со второй строки — пояснение для человека.\n", nil
 
+	case shared.RoleProjectManager:
+		// Prepares, never decides: accepting Definition of Ready is a human
+		// checkpoint (docs/architecture/workflow.md), and the platform applies
+		// the proposal itself once a human accepts it.
+		return "Ты Project Manager. Задача ещё не принята в работу — твоя цель подготовить её к приёму: " +
+			"уточнить цель и объём (scope) и предложить проверяемые критерии приёмки.\n" +
+			"Изучи репозиторий в текущей директории, чтобы предложение опиралось на реальный код, а не на догадки.\n" +
+			"Ничего не коммить, не менять файлы репозитория и не менять состояние задачи — решение принимает человек.\n" +
+			"Запиши предложение в файл " + container.ProposalFile + " строками с префиксами:\n" +
+			proposalScopePrefix + " <цель и объём; можно продолжить на следующих строках>\n" +
+			proposalCriterionPrefix + " <один критерий приёмки>\n" +
+			proposalCriterionPrefix + " <ещё один критерий>\n", nil
+
+	case shared.RoleQA:
+		// Same base as the reviewer, and for the same reason: the clone already
+		// contains the developer's commits, so HEAD as a base would compare the
+		// branch against itself.
+		return "Ты QA-инженер. Проверь изменения этой ветки относительно основной: " +
+			"`git diff origin/" + baseBranchName + "...HEAD` и `git log origin/" + baseBranchName + "..HEAD`. " +
+			"Проверь соответствие критериям приёмки выше и запусти проверки проекта, если они есть.\n" +
+			"Ничего не коммить, не менять файлы репозитория, не сливать ветку и не менять состояние задачи — " +
+			"приёмочное решение принимает человек.\n" +
+			"Запиши отчёт в файл " + container.ReportFile + ": что проверено, что нашлось, что осталось сомнительным. " +
+			"Формат свободный — отчёт читает человек.\n", nil
+
 	default:
 		return "", fmt.Errorf("%w: %q", ErrUnsupportedRole, role)
 	}

@@ -78,12 +78,11 @@ func TestBuildPrompt_InstructionsDifferByRole(t *testing.T) {
 	}
 }
 
-// PM and QA are deliberately not dispatched yet, so they have no
-// instructions — and must not silently inherit the Developer block.
-func TestBuildPrompt_UndispatchedAndUnknownRolesAreRejected(t *testing.T) {
+// Roles without instructions must not silently inherit another role's block.
+// PM and QA gained instructions in EPIC-013 (TASK-097) and are no longer here;
+// Architect still has none, and neither does anything unrecognised.
+func TestBuildPrompt_UnknownRolesAreRejected(t *testing.T) {
 	for _, role := range []string{
-		string(shared.RoleProjectManager),
-		string(shared.RoleQA),
 		string(shared.RoleArchitect),
 		"",
 		"nonsense",
@@ -92,6 +91,64 @@ func TestBuildPrompt_UndispatchedAndUnknownRolesAreRejected(t *testing.T) {
 		if !errors.Is(err, ErrUnsupportedRole) {
 			t.Errorf("buildPrompt(role=%q) error = %v, want %v", role, err, ErrUnsupportedRole)
 		}
+	}
+}
+
+// Every dispatched role must get its own instructions — and none of them may be
+// told to do another role's job. The checkpoint roles in particular must never
+// be told to change a task's state (docs/architecture/workflow.md).
+func TestBuildPrompt_EachDispatchedRoleGetsOwnInstructions(t *testing.T) {
+	cases := []struct {
+		role        shared.Role
+		mustContain []string
+		mustNotHave []string
+	}{
+		{
+			role:        shared.RoleDeveloper,
+			mustContain: []string{"Закоммить"},
+			mustNotHave: []string{container.ProposalFile, container.ReportFile, container.VerdictFile},
+		},
+		{
+			role:        shared.RoleReviewer,
+			mustContain: []string{container.VerdictFile, "Ничего не коммить"},
+			mustNotHave: []string{container.ProposalFile, container.ReportFile},
+		},
+		{
+			role:        shared.RoleProjectManager,
+			mustContain: []string{container.ProposalFile, "не менять состояние задачи"},
+			mustNotHave: []string{"Закоммить", container.VerdictFile, container.ReportFile},
+		},
+		{
+			role:        shared.RoleQA,
+			mustContain: []string{container.ReportFile, "не менять состояние задачи"},
+			mustNotHave: []string{"Закоммить", container.VerdictFile, container.ProposalFile},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(string(tc.role), func(t *testing.T) {
+			prompt, err := buildPrompt(platform.ExecutorTask{
+				Role: string(tc.role), Title: "T", Type: "feature",
+			})
+			if err != nil {
+				t.Fatalf("buildPrompt: %v", err)
+			}
+			for _, want := range tc.mustContain {
+				if !strings.Contains(prompt, want) {
+					t.Errorf("prompt for %s does not contain %q", tc.role, want)
+				}
+			}
+			for _, unwanted := range tc.mustNotHave {
+				if strings.Contains(prompt, unwanted) {
+					t.Errorf("prompt for %s contains %q, which belongs to another role", tc.role, unwanted)
+				}
+			}
+			// No role talks to the platform's API: that is what keeps the human
+			// checkpoints structurally out of an agent's reach (EPIC-013).
+			if strings.Contains(prompt, "apps/api") || strings.Contains(prompt, "localhost:8080") {
+				t.Errorf("prompt for %s mentions the platform API; agents must not reach it", tc.role)
+			}
+		})
 	}
 }
 
@@ -107,7 +164,7 @@ func TestClaudeCommand_UsesNonInteractiveFlags(t *testing.T) {
 }
 
 func TestClaudeCommand_PropagatesRoleError(t *testing.T) {
-	if _, err := claudeCommand(platform.ExecutorTask{Role: "qa", Title: "T"}); !errors.Is(err, ErrUnsupportedRole) {
+	if _, err := claudeCommand(platform.ExecutorTask{Role: "nonsense", Title: "T"}); !errors.Is(err, ErrUnsupportedRole) {
 		t.Fatalf("claudeCommand() error = %v, want %v", err, ErrUnsupportedRole)
 	}
 }

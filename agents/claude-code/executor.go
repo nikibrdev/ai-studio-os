@@ -151,6 +151,37 @@ func (e *Executor) Verdict(ctx context.Context) (Verdict, error) {
 	return parseVerdict(out)
 }
 
+// Proposal reports the Definition of Ready a Project Manager agent prepared
+// (EPIC-013). Like Verdict, this is a method of this adapter rather than a
+// fifth capability of the Executor contract (ADR-005 fixes four): a proposal is
+// neither an artifact nor a status, and the platform — not the agent — acts on
+// it.
+func (e *Executor) Proposal(ctx context.Context) (Proposal, error) {
+	if e.handle == nil {
+		return Proposal{}, ErrNotAccepted
+	}
+
+	out, err := e.sandbox.Exec(ctx, e.handle, []string{"cat", container.ProposalFile})
+	if err != nil {
+		return Proposal{}, fmt.Errorf("%w: %v", ErrNoProposal, err)
+	}
+	return parseProposal(out)
+}
+
+// Report reports what a QA agent found (EPIC-013). Returned as text: it is read
+// by the human making the acceptance decision, not parsed by the platform.
+func (e *Executor) Report(ctx context.Context) (string, error) {
+	if e.handle == nil {
+		return "", ErrNotAccepted
+	}
+
+	out, err := e.sandbox.Exec(ctx, e.handle, []string{"cat", container.ReportFile})
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrNoReport, err)
+	}
+	return parseReport(out)
+}
+
 // Status implements platform.Executor.
 func (e *Executor) Status(ctx context.Context) (platform.ExecutionStatus, error) {
 	if e.handle == nil {
