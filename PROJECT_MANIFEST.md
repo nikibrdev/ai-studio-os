@@ -13,7 +13,7 @@
 | **Project** | AI Studio OS |
 | **Version** | v0.8 Dashboard — завершён (2026-07-23); v0.9 API — завершён ([порядок реализации](engineering/decisions/2026-07-22-api-before-dashboard-build-order.md)); v1.0 First Public MVP — **в работе** (открыт 2026-07-23, декомпозирован на 4 эпика) ([ROADMAP.md](ROADMAP.md)) |
 | **Status** | **Architecture Frozen** (2026-07-19) |
-| **Current Epic** | Нет открытого эпика — [EPIC-012 Контрольные точки человека](docs/roadmap/EPIC-012-human-checkpoints.md) закрыт (2026-07-26): нормативное определение точек (долг ADR-007), `GET /decisions`, первый мутирующий UI, TASK-091…095. Следующий — **четвёртый эпик декомпозиции v1.0**: диспетчеризация PM/QA, где предпосылка — решение о том, какие команды доступны агенту при открытии доступа к `apps/api` |
+| **Current Epic** | [EPIC-013 Роли PM и QA](docs/roadmap/EPIC-013-pm-qa-roles.md) — **последний** эпик декомпозиции v1.0: роли готовят решения, человек их принимает, TASK-096…101. Ключевое решение при открытии: агентам **не** открывается доступ к `apps/api` — результат передаётся файлом (приём, проверенный на роли Reviewer), поэтому контрольные точки остаются недоступными агенту структурно |
 | **Current Sprint** | — (спринты не введены; итерации ведутся эпиками из 5–15 задач) |
 | **Current Branch** | main |
 | **Repository** | [github.com/nikibrdev/ai-studio-os](https://github.com/nikibrdev/ai-studio-os) (public) |
