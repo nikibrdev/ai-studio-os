@@ -89,6 +89,11 @@ type Dispatcher struct {
 	// behind a factory keeps this file free of any concrete adapter.
 	NewPlanner func() (PlanExecutor, error)
 
+	// NewReporter builds the Executor for a QA run. Separate for the same reason
+	// as the others: checking a task needs a capability beyond the Executor
+	// contract, and the factory keeps this file free of any concrete adapter.
+	NewReporter func() (ReportExecutor, error)
+
 	Log *log.Logger
 }
 
@@ -115,6 +120,8 @@ func (d *Dispatcher) Handle(ctx context.Context, e platform.Event) error {
 		return d.dispatchTaskPlanned(ctx, e)
 	case reviewRequested(e):
 		return d.dispatchReviewRequested(ctx, e)
+	case enteredTesting(e):
+		return d.dispatchEnteredTesting(ctx, e)
 	default:
 		return nil
 	}

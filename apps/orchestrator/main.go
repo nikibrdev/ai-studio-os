@@ -36,6 +36,14 @@ func (a planAdapter) Propose(ctx context.Context) (string, []string, error) {
 	return p.Scope, p.AcceptanceCriteria, nil
 }
 
+// reportAdapter presents a claudecode.Executor as a ReportExecutor.
+type reportAdapter struct{ *claudecode.Executor }
+
+// Check reports what the QA agent found.
+func (a reportAdapter) Check(ctx context.Context) (string, error) {
+	return a.Report(ctx)
+}
+
 // reviewAdapter presents a claudecode.Executor as a ReviewExecutor.
 //
 // This wrapper is the reason dispatch logic never names a concrete AI backend:
@@ -104,6 +112,12 @@ func run() error {
 	}
 	logger.Printf("project manager executor ready: %s", plannerID)
 
+	qaID, err := EnsureExecutor(ctx, executors, sys.Executors, shared.RoleQA)
+	if err != nil {
+		return err
+	}
+	logger.Printf("qa executor ready: %s", qaID)
+
 	if cfg.ProviderAPIKey == "" {
 		logger.Printf("warning: %s is empty — sandboxes will start but the AI provider will not be called", providerAPIKeyEnv)
 	}
@@ -159,6 +173,13 @@ func run() error {
 				return nil, err
 			}
 			return planAdapter{e}, nil
+		},
+		NewReporter: func() (ReportExecutor, error) {
+			e, err := claudecode.New(cfg.ExecutionImage, cfg.GitToken, cfg.ProviderAPIKey)
+			if err != nil {
+				return nil, err
+			}
+			return reportAdapter{e}, nil
 		},
 		Log: logger,
 	}

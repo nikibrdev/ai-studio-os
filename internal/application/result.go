@@ -89,6 +89,64 @@ func (s *ResultService) RecordDraftArtifact(ctx context.Context, p RecordDraftAr
 	return a, s.publish(ctx, event.ArtifactCreated, "artifact", p.Actor, p.ProjectID, a.ID(), created.At)
 }
 
+// RecordTestReportParams are the inputs to RecordTestReport.
+type RecordTestReportParams struct {
+	ID        string
+	ProjectID string
+	Report    []byte
+	Author    artifact.Author
+	Actor     string
+}
+
+// RecordTestReport stores what a QA agent found as a published TestReport
+// artifact (EPIC-013, TASK-099).
+//
+// Deliberately not tied to an Execution, unlike RecordDraftArtifact: a QA run
+// has no Execution to attach to — StartTask is the only way to create one and it
+// performs a Ready -> In Progress transition, which does not happen when a task
+// enters Testing. The specification allows exactly this: the reference to a
+// producing Execution is "необязательная… у Artifact не обязательно есть такое
+// Execution", and its absence "не делает Artifact менее полноценным"
+// (docs/specifications/domain/artifact.md, Behavioral Invariant 3).
+//
+// Created and published in one step, because a report "либо есть целиком, либо
+// его ещё нет" — the specification names TestReport as the type whose lifecycle
+// passes Draft -> Published almost instantly.
+//
+// Recording a report is not a verdict: the acceptance decision stays with a
+// human (docs/architecture/workflow.md), and nothing here moves the task.
+func (s *ResultService) RecordTestReport(ctx context.Context, p RecordTestReportParams) (*artifact.Artifact, error) {
+	proj, err := s.Projects.Get(ctx, p.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if !proj.AcceptsNewContent() {
+		return nil, ErrProjectNotActive
+	}
+
+	a, created, err := artifact.New(
+		p.ID, p.ProjectID, artifact.Type("TestReport"), artifact.OriginProduced, p.Author, "",
+	)
+	if err != nil {
+		return nil, err
+	}
+	if err := a.UpdateDraft(p.Report, ""); err != nil {
+		return nil, err
+	}
+	published, err := a.Publish()
+	if err != nil {
+		return nil, err
+	}
+	if err := s.Artifacts.Save(ctx, a); err != nil {
+		return nil, err
+	}
+
+	if err := s.publish(ctx, event.ArtifactCreated, "artifact", p.Actor, p.ProjectID, a.ID(), created.At); err != nil {
+		return nil, err
+	}
+	return a, s.publish(ctx, event.ArtifactPublished, "artifact", p.Actor, p.ProjectID, a.ID(), published.At)
+}
+
 // UpdateArtifactDraft updates the Payload and/or Author of an Artifact
 // still in Draft (spec Commands: UpdateDraft).
 func (s *ResultService) UpdateArtifactDraft(ctx context.Context, artifactID string, payload []byte, author artifact.Author) error {
