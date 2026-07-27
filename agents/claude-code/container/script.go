@@ -49,6 +49,19 @@ const BaseSHAFile = "/tmp/ai-studio-os-base-sha"
 // Executor contract's four capabilities (ADR-005) stay as they are.
 const VerdictFile = "/tmp/ai-studio-os-verdict"
 
+// ProposalFile is where a Project Manager agent writes its Definition of Ready
+// proposal, and ReportFile is where a QA agent writes its check report
+// (EPIC-013). Both sit in /tmp for the same reason as VerdictFile: inside the
+// working copy they would show up in `git status` and could end up committed.
+//
+// Neither role reaches apps/api — the platform reads these files and applies
+// the result itself, which is what keeps the human checkpoints structurally
+// out of an agent's reach (EPIC-013: the network allowlist is unchanged).
+const (
+	ProposalFile = "/tmp/ai-studio-os-dor-proposal"
+	ReportFile   = "/tmp/ai-studio-os-qa-report"
+)
+
 // cloneAndRunScript builds the shell script executed inside the
 // execution container: set up a GIT_ASKPASS reading the token from the
 // GIT_TOKEN environment variable (never placed in argv — unlike
