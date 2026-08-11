@@ -57,6 +57,43 @@ func TestCloneAndRunScript_StoredFormYieldsSingleHost(t *testing.T) {
 	}
 }
 
+// TestCloneAndRunScript_ConfiguresCommitIdentity is the regression test for
+// BUGFIX-012: without an identity git refuses to commit at all, so the
+// Developer role — which is told to commit — produced nothing, and the
+// platform read that as an agent that chose not to work.
+//
+// It asserts placement, not just presence: before the clone the directory
+// does not exist, and outside the && chain a failed clone would still try to
+// configure it.
+func TestCloneAndRunScript_ConfiguresCommitIdentity(t *testing.T) {
+	script, err := cloneAndRunScript("org/repo", "feature/TASK-001", []string{"true"})
+	if err != nil {
+		t.Fatalf("cloneAndRunScript: %v", err)
+	}
+
+	name := "git config user.name '" + commitAuthorName + "'"
+	email := "git config user.email '" + commitAuthorEmail + "'"
+	for _, want := range []string{name, email} {
+		if !strings.Contains(script, want) {
+			t.Fatalf("script does not configure the commit identity (%q):\n%s", want, script)
+		}
+	}
+
+	cd := strings.Index(script, "cd "+workspaceDir)
+	if cd < 0 {
+		t.Fatalf("script does not cd into the working copy:\n%s", script)
+	}
+	if strings.Index(script, name) < cd {
+		t.Errorf("commit identity is configured before entering the working copy:\n%s", script)
+	}
+
+	// The clone chain ends at the command; anything after it runs even when
+	// the clone failed.
+	if end := strings.Index(script, "\n)\n"); end >= 0 && strings.Index(script, email) > end {
+		t.Errorf("commit identity is configured outside the clone's && chain:\n%s", script)
+	}
+}
+
 // A bad identifier must be rejected while building the script, so Start
 // fails before creating a network and a proxy it would have to clean up.
 func TestCloneAndRunScript_RejectsInvalidRepository(t *testing.T) {

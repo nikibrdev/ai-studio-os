@@ -62,6 +62,23 @@ const (
 	ReportFile   = "/tmp/ai-studio-os-qa-report"
 )
 
+// commitAuthorName and commitAuthorEmail are the identity commits produced
+// inside the sandbox are made under (BUGFIX-012).
+//
+// Set at all, because git refuses to commit without one: the container's
+// hostname is not fully qualified, so git's own auto-detection gives up
+// rather than guessing, and the Developer role — which is told to commit —
+// could not. Set on the working copy rather than --global in the image,
+// because the identity belongs to one Execution's clone, not to the image.
+//
+// The values name the platform rather than a person, and the domain does not
+// resolve: a commit made by an agent must not look like a human's, and the
+// address must not deliver mail to anyone.
+const (
+	commitAuthorName  = "AI Studio OS Agent"
+	commitAuthorEmail = "agent@ai-studio-os.local"
+)
+
 // cloneAndRunScript builds the shell script executed inside the
 // execution container: set up a GIT_ASKPASS reading the token from the
 // GIT_TOKEN environment variable (never placed in argv — unlike
@@ -103,6 +120,11 @@ func cloneAndRunScript(repository, branch string, command []string) (string, err
 	b.WriteString("  git clone --branch " + shellQuote(branch) + " " +
 		shellQuote("https://x-access-token@github.com/"+repoPath+".git") + " " + workspaceDir + " &&\n")
 	b.WriteString("  cd " + workspaceDir + " &&\n")
+	// Inside the same && chain as the clone, so a failed clone configures
+	// nothing — and after `cd`, since these are local to the working copy
+	// that the clone has just created.
+	b.WriteString("  git config user.name " + shellQuote(commitAuthorName) + " &&\n")
+	b.WriteString("  git config user.email " + shellQuote(commitAuthorEmail) + " &&\n")
 	b.WriteString("  git rev-parse HEAD > " + BaseSHAFile + " &&\n")
 	b.WriteString("  " + strings.Join(quoted, " ") + "\n")
 	b.WriteString(")\n")
