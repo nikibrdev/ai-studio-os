@@ -28,6 +28,12 @@ RUN apt-get update \
 # из нескольких внешних хостов (proxy.golang.org, sum.golang.org);
 # единичный сетевой сбой на одном из них не должен требовать пересборки
 # всего шага с нуля.
+#
+# GOBIN в общесистемный каталог, а не в GOPATH сборщика: контейнер
+# исполняется не от root (см. ниже), а /root/go/bin ни в PATH этого
+# пользователя, ни в его правах доступа. Роли Reviewer и QA прогоняют
+# проверки проекта, то есть эти инструменты нужны именно им (BUGFIX-011).
+ENV GOBIN=/usr/local/bin
 RUN for i in 1 2 3 4 5; do \
 		go install mvdan.cc/gofumpt@v0.9.2 \
 		&& go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0 \
@@ -37,5 +43,26 @@ RUN for i in 1 2 3 4 5; do \
 RUN for i in 1 2 3 4 5; do \
 		npm install -g @anthropic-ai/claude-code && break || { echo "retry $i/5"; sleep 5; }; \
 	done
+
+# Непривилегированный пользователь (BUGFIX-011). Claude Code CLI отказывается
+# работать в режиме обхода разрешений от имени root: "--dangerously-skip-
+# permissions cannot be used with root/sudo privileges for security reasons".
+# Отказ наступает до всякой сети, поэтому под root не запускалась ни одна из
+# четырёх ролей - песочница стартовала, а команда внутри неё не выполнялась.
+#
+# Причина устраняется, а не обходится: обход разрешений от root опасен, и CLI
+# в этом прав. Изоляция ADR-006 (сеть только через прокси с allowlist,
+# эфемерная рабочая копия, секреты не в argv) от смены пользователя не
+# меняется - она обеспечивается снаружи контейнера, а не его пользователем.
+#
+# HOME нужен явно: под ним CLI держит своё состояние, а go и npm - кэш.
+# /workspace передаётся во владение, потому что клон создаётся внутри него
+# (container/script.go, workspaceDir).
+RUN useradd --create-home --shell /bin/sh agent \
+	&& mkdir -p /workspace \
+	&& chown -R agent:agent /workspace
+
+USER agent
+ENV HOME=/home/agent
 
 WORKDIR /workspace
