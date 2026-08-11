@@ -37,10 +37,16 @@ const baseBranchName = "main"
 // execution (no human to answer a tool-use confirmation prompt inside
 // the container); this is the boundary ADR-006's sandbox (network
 // allowlist, no platform secrets, ephemeral working copy) exists to make
-// safe. Exact CLI flag behavior is confirmed against the real Claude
-// Code CLI in TASK-056 — this task's own verification is limited to the
-// sandbox itself (TASK-054), not a real AI-provider call (see TASK-056's
-// Open Question on credential availability).
+// safe.
+//
+// The CLI refuses this mode outright when it runs as root, which is why
+// docker/execution runs the command as an unprivileged user (BUGFIX-011).
+// Until then this comment claimed the flag behavior was "confirmed
+// against the real Claude Code CLI in TASK-056" — TASK-056 never reached
+// the CLI (no provider key), so the claim was inherited, not verified,
+// and it hid a refusal that stopped every role before any network call.
+// What is verified now is exactly this: the CLI starts and gets as far as
+// authentication (container.TestManager_Start_RunsUnprivileged).
 func claudeCommand(task platform.ExecutorTask) ([]string, error) {
 	prompt, err := buildPrompt(task)
 	if err != nil {
