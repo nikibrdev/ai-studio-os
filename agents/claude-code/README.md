@@ -113,4 +113,4 @@ go test -tags=integration ./agents/claude-code/container/...
 
 ## Последнее обновление
 
-2026-07-27
+2026-08-12
