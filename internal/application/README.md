@@ -33,6 +33,14 @@ Application Layer (v0.4, [EPIC-004](../../docs/roadmap/EPIC-004-application-laye
 
 Читается обратно **структурно** — через приватный интерфейс `dataCarrier` (`Data() map[string]string`), а не приведением к конкретному типу `Envelope` ([BUGFIX-004](../../tasks/done/BUGFIX-004-projection-rebuild-loses-envelope-data.md)). Это важно именно для пересборки: события, восстановленные из журнала (`eventbus.ReadJournal`), имеют собственный тип пакета `eventbus`, а не `Envelope`, — приведение к конкретному типу молча теряло все данные `WithData` при replay (описательные поля оказывались пустыми, `ReviewCompleted` не двигал состояние), обессмысливая `Rebuild`. Пакет `eventbus` на своей стороне той же границы читает эти данные так же структурно. Тот же механизм переиспользован для описательных полей задачи: `TaskPlanningService.CreateTask` прикрепляет `title`/`type`/`scope`/`acceptanceCriteria` (последнее — JSON-строкой, `WithData` несёт только `map[string]string`) к `TaskCreated`, `TaskProjection.Handle` читает их обратно только для этого типа события (TASK-076, EPIC-009).
 
+### Граница проекции: на что она реагирует и что делает с остальным
+
+`TaskProjection.Handle` обрабатывает **только** типы из `taskProjectionEvents`, всё прочее молча отбрасывает. Проверка стоит в `Handle`, а не в `Rebuild`, и это не дублирование `Subscribe`: подписка фильтрует лишь живой путь, а `Handle` вызывают и напрямую — `apps/api` переигрывает через `Rebuild` **весь** долговременный журнал при старте ([BUGFIX-010](../../tasks/done/BUGFIX-010-projection-not-rebuilt-on-startup.md)).
+
+До [BUGFIX-013](../../tasks/review/BUGFIX-013-projection-rebuild-invents-tasks.md) этого барьера не было, и каждое непрофильное событие создавало представление с ключом по своему субъекту: `ProjectActivated` порождал «задачу» с идентификатором проекта, `ExecutionQueued` — с идентификатором исполнения, и так далее. На рабочей базе это дало **71 несуществующую задачу против 31 настоящей** — списки `GET /projects/{id}/tasks` и Dashboard состояли из мусора на 70%.
+
+Дефект возник не оттого, что `Rebuild` написали неверно, а оттого, что `Handle` полагался на подписку как на неписаное предусловие. Поэтому барьер там, где предусловие: он держится для любого вызывающего, нынешнего и будущего.
+
 ### ADR-008 в коде
 
 `CompletionService.CompleteTesting` кодирует решение ADR-008 не только комментарием: при успехе тестов сначала публикуется `TestsPassed`, затем вызывается `RepositoryProvider.MergePullRequest`, затем `MergeCompleted` — и только после успешного merge задача переходит в Done с `TaskCompleted`. Если merge вернёт ошибку, задача остаётся в Testing и `TaskCompleted` не публикуется — проверено тестом `TestCompleteTesting_MergeFailure_BlocksDone`.
@@ -64,4 +72,4 @@ Use-case'ы оборачивают доменные события (`Created`, `
 
 ## Последнее обновление
 
-2026-07-23
+2026-08-12

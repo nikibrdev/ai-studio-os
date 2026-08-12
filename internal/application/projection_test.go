@@ -273,6 +273,55 @@ func (e journalLikeEvent) ProjectID() string       { return e.projectID }
 func (e journalLikeEvent) SubjectID() string       { return e.subjectID }
 func (e journalLikeEvent) Data() map[string]string { return e.data }
 
+// TestTaskProjection_RebuildIgnoresEventsAboutOtherSubjects is the regression
+// test for BUGFIX-013. Subscribe registers Handle per event type, so the live
+// path never delivers anything else — but apps/api replays the whole durable
+// journal through Rebuild at startup (BUGFIX-010), and that journal holds
+// events about projects, executions, artifacts and executors too. Each of them
+// keyed a view by its own subject and invented a task with an empty state,
+// which then appeared in GET /projects/{id}/tasks.
+//
+// The journal below is deliberately "dirty" in exactly the way a real one is:
+// on the live database every project showed two such phantoms.
+func TestTaskProjection_RebuildIgnoresEventsAboutOtherSubjects(t *testing.T) {
+	ctx := context.Background()
+	proj := application.NewTaskProjection()
+
+	journal := []platform.Event{
+		journalLikeEvent{typ: event.ProjectCreated, projectID: "proj-1", subjectID: "proj-1"},
+		journalLikeEvent{typ: event.RepositoryConnected, projectID: "proj-1", subjectID: "proj-1"},
+		journalLikeEvent{typ: event.ProjectActivated, projectID: "proj-1", subjectID: "proj-1"},
+		journalLikeEvent{
+			typ: event.TaskCreated, projectID: "proj-1", subjectID: "TASK-001",
+			data: map[string]string{"title": "Настоящая задача", "type": "feature"},
+		},
+		journalLikeEvent{typ: event.ExecutionQueued, projectID: "proj-1", subjectID: "exec-abc"},
+		journalLikeEvent{typ: event.ExecutionStarted, projectID: "proj-1", subjectID: "exec-abc"},
+		journalLikeEvent{typ: event.ArtifactCreated, projectID: "proj-1", subjectID: "art-xyz"},
+		journalLikeEvent{typ: event.ExecutorRegistered, projectID: "proj-1", subjectID: "executor-1"},
+		journalLikeEvent{typ: event.MergeCompleted, projectID: "proj-1", subjectID: "TASK-001"},
+	}
+
+	if err := proj.Rebuild(ctx, journal); err != nil {
+		t.Fatalf("Rebuild: %v", err)
+	}
+
+	views := proj.ListByProject("proj-1")
+	if len(views) != 1 {
+		ids := make([]string, len(views))
+		for i, v := range views {
+			ids[i] = v.ID
+		}
+		t.Fatalf("ListByProject() returned %d views %v, want exactly 1 (the only task in the journal)", len(views), ids)
+	}
+	if views[0].ID != "TASK-001" {
+		t.Errorf("view.ID = %q, want %q", views[0].ID, "TASK-001")
+	}
+	if views[0].Title != "Настоящая задача" {
+		t.Errorf("view.Title = %q, want the real task's title", views[0].Title)
+	}
+}
+
 func TestTaskProjection_RebuildFromNonEnvelopeEventsKeepsAttachedData(t *testing.T) {
 	ctx := context.Background()
 	proj := application.NewTaskProjection()
