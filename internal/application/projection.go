@@ -78,6 +78,17 @@ var taskProjectionEvents = []string{
 	event.ArtifactPublished,
 }
 
+// subscribedEvents is taskProjectionEvents as a set, for Handle's own check.
+// Built once rather than searched linearly per event: Handle runs on every
+// event of the live path and on every entry of the journal at startup.
+var subscribedEvents = func() map[string]struct{} {
+	set := make(map[string]struct{}, len(taskProjectionEvents))
+	for _, t := range taskProjectionEvents {
+		set[t] = struct{}{}
+	}
+	return set
+}()
+
 // TaskProjection is a read-only view of Task state, built exclusively
 // from the events published on the golden path. It is not the source of
 // truth (TaskStore is) and is fully rebuildable from the event journal at
@@ -116,6 +127,21 @@ func (p *TaskProjection) Subscribe(bus platform.EventBus) error {
 // (e.g. an EventBus fake's Published()) into a fresh projection, proving
 // rebuildability, without going through a live bus.
 func (p *TaskProjection) Handle(_ context.Context, e platform.Event) error {
+	// Not a duplicate of Subscribe's per-type registration: Subscribe filters
+	// only the live path, and Handle is also called directly with whatever the
+	// caller has — apps/api replays the entire durable journal at startup
+	// (BUGFIX-010). Everything below keys a view by the event's subject, so an
+	// event about a project, an execution, an artifact or an executor invented a
+	// task with that subject's identifier and an empty state, which then showed
+	// up in GET /projects/{id}/tasks and in the dashboard's task list
+	// (BUGFIX-013).
+	//
+	// The barrier lives here rather than in Rebuild so the precondition stops
+	// being unwritten: it holds for every caller, present and future.
+	if _, ok := subscribedEvents[e.Type()]; !ok {
+		return nil
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
